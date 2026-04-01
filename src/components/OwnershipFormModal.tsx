@@ -310,7 +310,7 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving || (hasShareClasses && (!shareClassId || exceeds || sharesNum <= 0))}>
+            <Button onClick={handleSave} disabled={saving || effectiveDateBeforeIncorporation || (hasShareClasses && (!shareClassId || exceeds || sharesNum <= 0))}>
               {saving ? "Saving..." : "Save"}
             </Button>
           </div>
