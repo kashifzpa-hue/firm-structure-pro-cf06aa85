@@ -57,6 +57,8 @@ const App = () => (
               <Route path="/entities/:id" element={<EntityDetail />} />
               <Route path="/entities/:id/edit" element={<EntityForm />} />
               <Route path="/documents" element={<Documents />} />
+              <Route path="/ownership" element={<Ownership />} />
+              <Route path="/org-chart" element={<OrgChart />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
