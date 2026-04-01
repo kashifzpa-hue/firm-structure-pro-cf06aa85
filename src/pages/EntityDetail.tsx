@@ -131,6 +131,28 @@ export default function EntityDetail() {
               {isPerson ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
               {isPerson ? "Person" : "Company"}
             </Badge>
+            {!isPerson && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    {isSetupMode ? (
+                      <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-700">
+                        <Wrench className="h-3 w-3" /> Setup Mode
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 border-green-300 bg-green-50 text-green-700">
+                        <CheckCircle className="h-3 w-3" /> Live Mode
+                      </Badge>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {isSetupMode
+                      ? "Direct editing is enabled. Activate Live Mode when your initial cap table is complete and verified."
+                      : "All changes are recorded via the Movement Ledger."}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {entity.nationality_or_jurisdiction && (
               <span className="text-sm text-muted-foreground">{entity.nationality_or_jurisdiction}</span>
             )}
