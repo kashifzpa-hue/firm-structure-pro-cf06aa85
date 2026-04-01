@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
@@ -18,7 +21,7 @@ import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 import { LedgerTab } from "@/components/LedgerTab";
 import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
 import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield } from "lucide-react";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -44,10 +47,22 @@ export default function EntityDetail() {
   const [editingOwnershipLink, setEditingOwnershipLink] = useState<any>(null);
   const [deleteOwnershipOpen, setDeleteOwnershipOpen] = useState(false);
   const [deletingOwnershipLink, setDeletingOwnershipLink] = useState<any>(null);
+  
+  // Delete protection
+  const [deleteDeps, setDeleteDeps] = useState<{ links: number; appointments: number; movements: number } | null>(null);
+  
+  // Deactivate
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivateReason, setDeactivateReason] = useState("");
+  const [deactivateNotes, setDeactivateNotes] = useState("");
+  const [deactivating, setDeactivating] = useState(false);
+  
+  // Field history
+  const [fieldHistory, setFieldHistory] = useState<any[]>([]);
 
   const fetchAll = async () => {
     if (!id || !workspaceId) return;
-    const [entityRes, docsRes, ownsRes, ownedByRes, scRes, entitiesRes] = await Promise.all([
+    const [entityRes, docsRes, ownsRes, ownedByRes, scRes, entitiesRes, historyRes] = await Promise.all([
       supabase.from("entities").select("*").eq("id", id).single(),
       supabase.from("documents").select("*").eq("entity_id", id),
       supabase
@@ -63,7 +78,8 @@ export default function EntityDetail() {
         .eq("workspace_id", workspaceId)
         .is("end_date", null),
       supabase.from("share_classes").select("*").eq("company_entity_id", id).eq("workspace_id", workspaceId),
-      supabase.from("entities").select("id, name, type").eq("workspace_id", workspaceId).order("name"),
+      supabase.from("entities").select("id, name, type, entity_status").eq("workspace_id", workspaceId).order("name"),
+      supabase.from("entity_field_history").select("*").eq("entity_id", id).order("changed_at", { ascending: false }),
     ]);
     setEntity(entityRes.data);
     setDocs(docsRes.data || []);
@@ -71,15 +87,78 @@ export default function EntityDetail() {
     setOwnedBy(ownedByRes.data || []);
     setShareClasses(scRes.data || []);
     setEntities(entitiesRes.data || []);
+    setFieldHistory(historyRes.data || []);
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, [id, workspaceId]);
 
+  const checkDeleteDeps = async () => {
+    if (!id || !workspaceId) return;
+    const [linksOwner, linksOwned, appts, movsFrom, movsTo] = await Promise.all([
+      supabase.from("equity_links").select("id", { count: "exact", head: true }).eq("owner_entity_id", id).eq("workspace_id", workspaceId),
+      supabase.from("equity_links").select("id", { count: "exact", head: true }).eq("owned_entity_id", id).eq("workspace_id", workspaceId),
+      supabase.from("appointments").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).or(`person_entity_id.eq.${id},company_entity_id.eq.${id}`),
+      supabase.from("movements").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("from_entity_id", id),
+      supabase.from("movements").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("to_entity_id", id),
+    ]);
+    const links = (linksOwner.count || 0) + (linksOwned.count || 0);
+    const appointments = appts.count || 0;
+    const movements = (movsFrom.count || 0) + (movsTo.count || 0);
+    setDeleteDeps({ links, appointments, movements });
+    return { links, appointments, movements };
+  };
+
+  const handleDeleteClick = async () => {
+    const deps = await checkDeleteDeps();
+    if (!deps) return;
+    if (deps.links > 0 || deps.appointments > 0 || deps.movements > 0) {
+      setDeleteOpen(true); // Show blocked dialog
+    } else {
+      setDeleteOpen(true); // Show normal delete dialog
+    }
+  };
+
   const handleDelete = async () => {
     await supabase.from("entities").delete().eq("id", id);
     toast.success("Entity deleted");
     navigate("/entities");
+  };
+
+  const handleDeactivate = async () => {
+    if (!entity || !workspaceId || !deactivateReason) return;
+    setDeactivating(true);
+    
+    // Get profile id
+    const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
+    
+    const { error } = await supabase.from("entities").update({
+      entity_status: "inactive" as any,
+      deactivated_at: new Date().toISOString(),
+      deactivated_by: profile?.id || null,
+      deactivation_reason: deactivateReason === "Other" ? deactivateNotes : deactivateReason,
+    }).eq("id", id);
+    
+    if (error) { toast.error(error.message); setDeactivating(false); return; }
+    toast.success("Entity deactivated");
+    setDeactivateOpen(false);
+    setDeactivating(false);
+    setDeactivateReason("");
+    setDeactivateNotes("");
+    setDeleteOpen(false);
+    fetchAll();
+  };
+
+  const handleReactivate = async () => {
+    const { error } = await supabase.from("entities").update({
+      entity_status: "active" as any,
+      deactivated_at: null,
+      deactivated_by: null,
+      deactivation_reason: null,
+    }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Entity reactivated");
+    fetchAll();
   };
 
   const handleActivateLiveMode = async () => {
@@ -112,6 +191,38 @@ export default function EntityDetail() {
   const isPerson = entity.type === "person";
   const isSetupMode = entity.captable_status !== "live";
   const isLiveMode = entity.captable_status === "live";
+  const isInactive = entity.entity_status === "inactive";
+
+  // Field history helper
+  const getFieldHistory = (fieldName: string) => fieldHistory.filter(h => h.field_name === fieldName);
+  const hasFieldHistory = (fieldName: string) => getFieldHistory(fieldName).length > 0;
+
+  const FieldHistoryPopover = ({ fieldName, label }: { fieldName: string; label: string }) => {
+    const history = getFieldHistory(fieldName);
+    if (history.length === 0) return null;
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline ml-2">
+            <History className="h-3 w-3" /> Edit History
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 max-h-60 overflow-y-auto">
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm">Edit History: {label}</h4>
+            {history.map((h: any) => (
+              <div key={h.id} className="border rounded p-2 text-xs space-y-1">
+                <div><span className="text-muted-foreground">From:</span> {h.old_value || "—"}</div>
+                <div><span className="text-muted-foreground">To:</span> {h.new_value || "—"}</div>
+                <div><span className="text-muted-foreground">Changed:</span> {format(parseISO(h.changed_at), "MMM dd, yyyy HH:mm")}</div>
+                {h.change_reason && <div><span className="text-muted-foreground">Reason:</span> {h.change_reason}</div>}
+              </div>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
   // Group ownedBy links by share class for shareholding summary
   const ownedByGrouped: Record<string, any[]> = {};
@@ -162,14 +273,33 @@ export default function EntityDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate(`/entities/${id}/edit`)}>
-            <Edit className="mr-2 h-4 w-4" /> Edit
-          </Button>
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+          {!isInactive && (
+            <Button variant="outline" onClick={() => navigate(`/entities/${id}/edit`)}>
+              <Edit className="mr-2 h-4 w-4" /> Edit
+            </Button>
+          )}
+          {isInactive && (
+            <Button variant="outline" onClick={handleReactivate}>
+              <CheckCircle className="mr-2 h-4 w-4" /> Reactivate
+            </Button>
+          )}
+          <Button variant="destructive" onClick={handleDeleteClick}>
             <Trash2 className="mr-2 h-4 w-4" /> Delete
           </Button>
         </div>
       </div>
+
+      {/* Inactive Banner */}
+      {isInactive && (
+        <Alert className="border-destructive/50 bg-destructive/5">
+          <Ban className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-destructive">
+            <strong>⚠ This entity is inactive</strong>
+            {entity.deactivated_at && <> as of {format(parseISO(entity.deactivated_at), "MMM dd, yyyy")}</>}.
+            {entity.deactivation_reason && <> Reason: {entity.deactivation_reason}</>}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="profile">
         <TabsList>
@@ -188,15 +318,24 @@ export default function EntityDetail() {
               <CardContent className="pt-6">
                 <dl className="grid grid-cols-2 gap-4">
                   <div>
-                    <dt className="text-sm text-muted-foreground">{isPerson ? "Full Legal Name" : "Company Legal Name"}</dt>
+                    <dt className="text-sm text-muted-foreground flex items-center">
+                      {isPerson ? "Full Legal Name" : "Company Legal Name"}
+                      <FieldHistoryPopover fieldName="name" label={isPerson ? "Full Legal Name" : "Company Legal Name"} />
+                    </dt>
                     <dd className="font-medium">{entity.name}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm text-muted-foreground">{isPerson ? "Nationality" : "Jurisdiction"}</dt>
+                    <dt className="text-sm text-muted-foreground flex items-center">
+                      {isPerson ? "Nationality" : "Jurisdiction"}
+                      <FieldHistoryPopover fieldName="nationality_or_jurisdiction" label={isPerson ? "Nationality" : "Jurisdiction"} />
+                    </dt>
                     <dd className="font-medium">{entity.nationality_or_jurisdiction || "—"}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm text-muted-foreground">{isPerson ? "Date of Birth" : "Date of Incorporation"}</dt>
+                    <dt className="text-sm text-muted-foreground flex items-center">
+                      {isPerson ? "Date of Birth" : "Date of Incorporation"}
+                      <FieldHistoryPopover fieldName="date_of_birth_or_incorporation" label={isPerson ? "Date of Birth" : "Date of Incorporation"} />
+                    </dt>
                     <dd className="font-medium">{entity.date_of_birth_or_incorporation ? format(parseISO(entity.date_of_birth_or_incorporation), "MMM dd, yyyy") : "—"}</dd>
                   </div>
                   {isPerson ? (
@@ -213,11 +352,17 @@ export default function EntityDetail() {
                   ) : (
                     <>
                       <div>
-                        <dt className="text-sm text-muted-foreground">Company Type</dt>
+                        <dt className="text-sm text-muted-foreground flex items-center">
+                          Company Type
+                          <FieldHistoryPopover fieldName="company_type" label="Company Type" />
+                        </dt>
                         <dd className="font-medium">{entity.company_type || "—"}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm text-muted-foreground">Registration Number</dt>
+                        <dt className="text-sm text-muted-foreground flex items-center">
+                          Registration Number
+                          <FieldHistoryPopover fieldName="registration_number" label="Registration Number" />
+                        </dt>
                         <dd className="font-medium">{entity.registration_number || "—"}</dd>
                       </div>
                       <div className="col-span-2">
@@ -651,11 +796,81 @@ export default function EntityDetail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Entity</DialogTitle>
-            <DialogDescription>Are you sure? This action cannot be undone.</DialogDescription>
+            {deleteDeps && (deleteDeps.links > 0 || deleteDeps.appointments > 0 || deleteDeps.movements > 0) ? (
+              <DialogDescription>
+                This entity cannot be deleted because it is referenced in:
+                <ul className="list-disc ml-6 mt-2 space-y-1">
+                  {deleteDeps.links > 0 && <li>{deleteDeps.links} ownership link(s)</li>}
+                  {deleteDeps.appointments > 0 && <li>{deleteDeps.appointments} board/management appointment(s)</li>}
+                  {deleteDeps.movements > 0 && <li>{deleteDeps.movements} movement(s)</li>}
+                </ul>
+                <span className="block mt-2">You can deactivate it instead.</span>
+              </DialogDescription>
+            ) : (
+              <DialogDescription>Are you sure? This action cannot be undone.</DialogDescription>
+            )}
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            {deleteDeps && (deleteDeps.links > 0 || deleteDeps.appointments > 0 || deleteDeps.movements > 0) ? (
+              <Button variant="outline" className="border-warning text-warning" onClick={() => { setDeleteOpen(false); setDeactivateOpen(true); }}>
+                <Ban className="mr-2 h-4 w-4" /> Deactivate Instead
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate Entity Modal */}
+      <Dialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deactivate {entity?.name}</DialogTitle>
+            <DialogDescription>
+              Deactivating will mark this entity as inactive. It will still appear in historical records but won't be selectable for new links or movements.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason *</label>
+              <Select value={deactivateReason} onValueChange={setDeactivateReason}>
+                <SelectTrigger><SelectValue placeholder="Select reason" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Company Dissolved">Company Dissolved</SelectItem>
+                  <SelectItem value="Individual Deceased">Individual Deceased</SelectItem>
+                  <SelectItem value="Individual Resigned from All Roles">Individual Resigned from All Roles</SelectItem>
+                  <SelectItem value="Duplicate — Replaced by Another Entity">Duplicate — Replaced by Another Entity</SelectItem>
+                  <SelectItem value="Other">Other (specify below)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {deactivateReason === "Other" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Specify reason *</label>
+                <Textarea value={deactivateNotes} onChange={(e) => setDeactivateNotes(e.target.value)} placeholder="Enter reason..." />
+              </div>
+            )}
+            {/* Active links warning */}
+            {(owns.length > 0 || ownedBy.length > 0) && (
+              <Alert className="border-warning/50 bg-warning/5">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-sm">
+                  This entity still has <strong>{owns.length + ownedBy.length}</strong> active ownership link(s). Deactivating will not automatically close these. Please review and close them manually.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeactivateOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleDeactivate}
+              disabled={!deactivateReason || (deactivateReason === "Other" && !deactivateNotes.trim()) || deactivating}
+              className="bg-warning text-warning-foreground hover:bg-warning/90"
+            >
+              {deactivating ? "Deactivating..." : "Deactivate Entity"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

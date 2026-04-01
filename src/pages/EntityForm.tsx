@@ -50,7 +50,7 @@ export default function EntityForm() {
   const navigate = useNavigate();
   const { workspaceId } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [companyStep, setCompanyStep] = useState(1); // 1=details, 2=share capital, 3=board
+  const [companyStep, setCompanyStep] = useState(1);
   const [savedEntityId, setSavedEntityId] = useState<string | null>(null);
   const [savedEntityName, setSavedEntityName] = useState("");
   const [entityType, setEntityType] = useState<"person" | "company">("person");
@@ -66,12 +66,19 @@ export default function EntityForm() {
   const [contactEmail, setContactEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [docs, setDocs] = useState<DocRow[]>([emptyDoc()]);
+  
+  // Original values for field change tracking
+  const [originalEntity, setOriginalEntity] = useState<any>(null);
+  const [isLinked, setIsLinked] = useState(false);
+  const [changeReason, setChangeReason] = useState("");
+  const [showReasonPrompt, setShowReasonPrompt] = useState(false);
 
   useEffect(() => {
     if (!isEdit || !workspaceId) return;
     const fetch = async () => {
       const { data: entity } = await supabase.from("entities").select("*").eq("id", id).single();
       if (!entity) { navigate("/entities"); return; }
+      setOriginalEntity(entity);
       setEntityType(entity.type as "person" | "company");
       setName(entity.name);
       if (entity.nationality_or_jurisdiction) {
@@ -86,6 +93,14 @@ export default function EntityForm() {
       setContactName(entity.primary_contact_name || "");
       setContactEmail(entity.primary_contact_email || "");
       setNotes(entity.notes || "");
+
+      // Check if entity is linked
+      const [linksOwner, linksOwned, appts] = await Promise.all([
+        supabase.from("equity_links").select("id", { count: "exact", head: true }).eq("owner_entity_id", id).eq("workspace_id", workspaceId),
+        supabase.from("equity_links").select("id", { count: "exact", head: true }).eq("owned_entity_id", id).eq("workspace_id", workspaceId),
+        supabase.from("appointments").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).or(`person_entity_id.eq.${id},company_entity_id.eq.${id}`),
+      ]);
+      setIsLinked(((linksOwner.count || 0) + (linksOwned.count || 0) + (appts.count || 0)) > 0);
 
       const { data: existingDocs } = await supabase.from("documents").select("*").eq("entity_id", id);
       if (existingDocs && existingDocs.length > 0) {
@@ -120,9 +135,44 @@ export default function EntityForm() {
     setDocs(updated);
   };
 
+  // Identity fields that require versioning
+  const identityFields = entityType === "person"
+    ? { name: "name", nationality_or_jurisdiction: "nationality_or_jurisdiction", date_of_birth_or_incorporation: "date_of_birth_or_incorporation" }
+    : { name: "name", nationality_or_jurisdiction: "nationality_or_jurisdiction", registration_number: "registration_number", company_type: "company_type", date_of_birth_or_incorporation: "date_of_birth_or_incorporation" };
+
+  const getIdentityChanges = () => {
+    if (!originalEntity) return [];
+    const changes: { field: string; old_val: string; new_val: string }[] = [];
+    const newNat = nationalities.length > 0 ? nationalities.join(", ") : null;
+    const newDob = dob ? format(dob, "yyyy-MM-dd") : null;
+    const fields: Record<string, { old: any; cur: any }> = {
+      name: { old: originalEntity.name, cur: name },
+      nationality_or_jurisdiction: { old: originalEntity.nationality_or_jurisdiction, cur: newNat },
+      date_of_birth_or_incorporation: { old: originalEntity.date_of_birth_or_incorporation, cur: newDob },
+      ...(entityType === "company" ? {
+        company_type: { old: originalEntity.company_type, cur: companyType || null },
+        registration_number: { old: originalEntity.registration_number, cur: regNumber || null },
+      } : {}),
+    };
+    for (const [key, { old, cur }] of Object.entries(fields)) {
+      if ((old || "") !== (cur || "")) changes.push({ field: key, old_val: old || "", new_val: cur || "" });
+    }
+    return changes;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!workspaceId) return;
+
+    // Check if identity fields changed on a linked entity — require reason
+    if (isEdit && isLinked) {
+      const changes = getIdentityChanges();
+      if (changes.length > 0 && !changeReason.trim()) {
+        setShowReasonPrompt(true);
+        return;
+      }
+    }
+
     setLoading(true);
 
     const entityData = {
@@ -145,6 +195,23 @@ export default function EntityForm() {
     if (isEdit) {
       const { error } = await supabase.from("entities").update(entityData).eq("id", id);
       if (error) { toast.error(error.message); setLoading(false); return; }
+
+      // Record identity field changes
+      const changes = getIdentityChanges();
+      if (changes.length > 0) {
+        const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
+        for (const ch of changes) {
+          await supabase.from("entity_field_history").insert({
+            entity_id: id!,
+            workspace_id: workspaceId,
+            field_name: ch.field,
+            old_value: ch.old_val,
+            new_value: ch.new_val,
+            changed_by: profile?.id || null,
+            change_reason: changeReason || null,
+          });
+        }
+      }
     } else {
       const { data, error } = await supabase.from("entities").insert(entityData).select().single();
       if (error) { toast.error(error.message); setLoading(false); return; }
@@ -436,8 +503,18 @@ export default function EntityForm() {
             </CardContent>
           </Card>
 
+          {/* Reason prompt for identity field changes on linked entities */}
+          {isEdit && isLinked && showReasonPrompt && (
+            <Card className="shadow-sm border-warning/50">
+              <CardContent className="pt-4 space-y-2">
+                <p className="text-sm font-medium text-warning">Identity field(s) changed on a linked entity. Please provide a reason:</p>
+                <Textarea value={changeReason} onChange={(e) => setChangeReason(e.target.value)} placeholder="e.g. Company rebranded, Name correction..." />
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex gap-4">
-            <Button type="submit" disabled={loading} className="flex-1">
+            <Button type="submit" disabled={loading || (showReasonPrompt && !changeReason.trim())} className="flex-1">
               {loading ? "Saving..." : isEdit ? "Update Entity" : "Create Entity"}
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">Cancel</Button>

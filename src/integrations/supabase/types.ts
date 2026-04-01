@@ -135,7 +135,11 @@ export type Database = {
           company_type: string | null
           created_at: string
           date_of_birth_or_incorporation: string | null
+          deactivated_at: string | null
+          deactivated_by: string | null
+          deactivation_reason: string | null
           email: string | null
+          entity_status: Database["public"]["Enums"]["entity_status"]
           id: string
           name: string
           nationality_or_jurisdiction: string | null
@@ -153,7 +157,11 @@ export type Database = {
           company_type?: string | null
           created_at?: string
           date_of_birth_or_incorporation?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           email?: string | null
+          entity_status?: Database["public"]["Enums"]["entity_status"]
           id?: string
           name: string
           nationality_or_jurisdiction?: string | null
@@ -171,7 +179,11 @@ export type Database = {
           company_type?: string | null
           created_at?: string
           date_of_birth_or_incorporation?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           email?: string | null
+          entity_status?: Database["public"]["Enums"]["entity_status"]
           id?: string
           name?: string
           nationality_or_jurisdiction?: string | null
@@ -186,7 +198,72 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "entities_deactivated_by_fkey"
+            columns: ["deactivated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "entities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_field_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string
+          changed_by: string | null
+          entity_id: string
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          workspace_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          entity_id: string
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          workspace_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          entity_id?: string
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_field_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_field_history_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_field_history_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -694,6 +771,7 @@ export type Database = {
       app_role: "admin" | "viewer"
       appointment_role_category: "board" | "management"
       captable_status: "setup" | "live"
+      entity_status: "active" | "inactive" | "archived"
       entity_type: "person" | "company"
       movement_document_type:
         | "Share Transfer Deed"
@@ -846,6 +924,7 @@ export const Constants = {
       app_role: ["admin", "viewer"],
       appointment_role_category: ["board", "management"],
       captable_status: ["setup", "live"],
+      entity_status: ["active", "inactive", "archived"],
       entity_type: ["person", "company"],
       movement_document_type: [
         "Share Transfer Deed",

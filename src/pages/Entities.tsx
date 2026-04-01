@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, User, Search, Upload, Download } from "lucide-react";
+import { Plus, Building2, User, Search, Upload, Download, Ban } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { format, parseISO } from "date-fns";
 import { getDocumentStatus } from "@/lib/document-status";
 import { EntityImportModal } from "@/components/EntityImportModal";
@@ -22,6 +23,7 @@ export default function Entities() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   const fetchEntities = async () => {
     if (!workspaceId) return;
@@ -116,7 +118,9 @@ export default function Entities() {
       (statusFilter === "attention" && docStatus === "expiring_soon") ||
       (statusFilter === "ok" && docStatus === "valid") ||
       (statusFilter === "no_docs" && !docStatus);
-    return matchSearch && matchType && matchStatus;
+    // Hide inactive unless toggled
+    const matchActive = showInactive || e.entity_status !== "inactive";
+    return matchSearch && matchType && matchStatus && matchActive;
   });
 
   if (loading) {
@@ -171,6 +175,10 @@ export default function Entities() {
             <SelectItem value="no_docs">No Docs</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2 ml-2">
+          <Switch checked={showInactive} onCheckedChange={setShowInactive} />
+          <label className="text-sm text-muted-foreground whitespace-nowrap">Show Inactive</label>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -197,9 +205,15 @@ export default function Entities() {
             <TableBody>
               {filtered.map((entity) => {
                 const docStatus = getEntityDocStatus(entity);
+                const isInactive = entity.entity_status === "inactive";
                 return (
-                  <TableRow key={entity.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/entities/${entity.id}`)}>
-                    <TableCell className="font-medium">{entity.name}</TableCell>
+                  <TableRow key={entity.id} className={`cursor-pointer hover:bg-muted/50 ${isInactive ? "opacity-50" : ""}`} onClick={() => navigate(`/entities/${entity.id}`)}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {entity.name}
+                        {isInactive && <Badge variant="outline" className="text-xs gap-1 border-muted-foreground/30"><Ban className="h-3 w-3" /> Inactive</Badge>}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="gap-1">
                         {entity.type === "person" ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
