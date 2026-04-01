@@ -151,6 +151,11 @@ export default function Ownership() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{link.owned?.name}</span>
+                        {link.owned?.captable_status === "live" ? (
+                          <Badge variant="outline" className="text-xs gap-1 border-green-300 bg-green-50 text-green-700"><CheckCircle className="h-3 w-3" /> Live</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs gap-1 border-amber-300 bg-amber-50 text-amber-700"><Wrench className="h-3 w-3" /> Setup</Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
