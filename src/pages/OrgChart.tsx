@@ -6,7 +6,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   Panel,
@@ -22,13 +21,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Building2, User, Download } from "lucide-react";
 import { toPng } from "html-to-image";
-import { format, parseISO } from "date-fns";
+import { ShareSummaryPanel } from "@/components/orgchart/ShareSummaryPanel";
+import { UnallocatedReport } from "@/components/orgchart/UnallocatedReport";
 
-const NODE_WIDTH = 200;
-const NODE_HEIGHT = 70;
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 90;
 
 function getLayoutedElements(nodes: Node[], edges: Edge[]) {
   const g = new dagre.graphlib.Graph();
@@ -48,14 +47,23 @@ function EntityNode({ data }: { data: any }) {
   const isCompany = data.type === "company";
   return (
     <div
-      className="rounded-lg px-4 py-3 shadow-md cursor-pointer text-center min-w-[180px]"
+      className="rounded-lg px-4 py-3 shadow-md cursor-pointer text-center min-w-[200px]"
       style={{ backgroundColor: isCompany ? "#0F172A" : "#3B82F6", color: "#FFFFFF" }}
     >
       <div className="font-semibold text-sm truncate">{data.label}</div>
       <div className="text-xs opacity-80 mt-0.5">{isCompany ? data.companyType || "Company" : "Individual"}</div>
+      {data.ownerships && data.ownerships.length > 0 && (
+        <div className="mt-1 space-y-0.5">
+          {data.ownerships.map((o: any, i: number) => (
+            <div key={i} className="text-[10px] opacity-70 truncate">
+              Owns {o.percentage.toFixed(1)}% of {o.targetName}
+            </div>
+          ))}
+        </div>
+      )}
       {isCompany && data.officerCount > 0 && (
         <div className="text-xs opacity-70 mt-1 flex items-center justify-center gap-1">
-          <User className="h-3 w-3" /> {data.officerCount} Officer{data.officerCount !== 1 ? "s" : ""}
+          <User className="h-3 w-3" /> {data.officerCount}
         </div>
       )}
     </div>
@@ -72,12 +80,13 @@ export default function OrgChart() {
 
   const [entities, setEntities] = useState<any[]>([]);
   const [allLinks, setAllLinks] = useState<any[]>([]);
-  const [shareClassMap, setShareClassMap] = useState<Record<string, any>>({});
+  const [shareClasses, setShareClasses] = useState<any[]>([]);
   const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedShareClass, setSelectedShareClass] = useState("all");
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -93,24 +102,47 @@ export default function OrgChart() {
       const counts: Record<string, number> = {};
       (apptsRes.data || []).forEach((a: any) => { counts[a.company_entity_id] = (counts[a.company_entity_id] || 0) + 1; });
       setAppointmentCounts(counts);
-      const scMap: Record<string, any> = {};
-      (scRes.data || []).forEach((sc: any) => { scMap[sc.id] = sc; });
-      setShareClassMap(scMap);
+      setShareClasses(scRes.data || []);
     };
     fetchData();
   }, [workspaceId]);
 
   const companyEntities = useMemo(() => entities.filter((e) => e.type === "company"), [entities]);
   const entityMap = useMemo(() => Object.fromEntries(entities.map((e) => [e.id, e])), [entities]);
+  const shareClassMap = useMemo(() => Object.fromEntries(shareClasses.map((sc) => [sc.id, sc])), [shareClasses]);
+
+  const rootShareClasses = useMemo(
+    () => shareClasses.filter((sc) => sc.company_entity_id === rootId),
+    [shareClasses, rootId]
+  );
+
+  // Filter links by selected share class
+  const filteredLinks = useMemo(() => {
+    if (selectedShareClass === "all") return allLinks;
+    return allLinks.filter((l) => l.share_class_id === selectedShareClass);
+  }, [allLinks, selectedShareClass]);
 
   useEffect(() => {
-    if (!rootId || !allLinks.length) { setNodes([]); setEdges([]); return; }
+    if (!rootId || !filteredLinks.length) { setNodes([]); setEdges([]); return; }
 
     const visitedNodes = new Set<string>();
     const graphNodes: Node[] = [];
     const graphEdges: Edge[] = [];
     const queue = [rootId];
     visitedNodes.add(rootId);
+
+    // Pre-compute ownerships for each entity
+    const ownershipsByEntity: Record<string, { targetName: string; percentage: number }[]> = {};
+    filteredLinks.forEach((link) => {
+      if (!ownershipsByEntity[link.owner_entity_id]) ownershipsByEntity[link.owner_entity_id] = [];
+      const target = entityMap[link.owned_entity_id];
+      if (target) {
+        ownershipsByEntity[link.owner_entity_id].push({
+          targetName: target.name,
+          percentage: Number(link.percentage),
+        });
+      }
+    });
 
     while (queue.length > 0) {
       const current = queue.shift()!;
@@ -121,22 +153,29 @@ export default function OrgChart() {
         id: current,
         type: "entityNode",
         position: { x: 0, y: 0 },
-        data: { label: entity.name, type: entity.type, companyType: entity.company_type, officerCount: appointmentCounts[current] || 0 },
+        data: {
+          label: entity.name,
+          type: entity.type,
+          companyType: entity.company_type,
+          officerCount: appointmentCounts[current] || 0,
+          ownerships: ownershipsByEntity[current] || [],
+        },
       });
 
-      const ownedLinks = allLinks.filter((l) => l.owner_entity_id === current);
+      const ownedLinks = filteredLinks.filter((l) => l.owner_entity_id === current);
       ownedLinks.forEach((link) => {
         const pct = Number(link.percentage);
         const color = pct > 50 ? "hsl(142.1, 76.2%, 36.3%)" : pct >= 25 ? "hsl(38, 92%, 50%)" : "hsl(215, 16%, 47%)";
         const sc = link.share_class_id ? shareClassMap[link.share_class_id] : null;
-        const labelText = link.shares_owned
-          ? `${link.shares_owned.toLocaleString()} shares · ${pct.toFixed(2)}%`
-          : `${pct.toFixed(2)}%`;
+        const labelParts: string[] = [];
+        if (sc) labelParts.push(sc.class_name);
+        if (link.shares_owned) labelParts.push(`${link.shares_owned.toLocaleString()} shares`);
+        labelParts.push(`${pct.toFixed(2)}%`);
         graphEdges.push({
           id: link.id,
           source: current,
           target: link.owned_entity_id,
-          label: labelText,
+          label: labelParts.join(" · "),
           style: { stroke: color, strokeWidth: 2 },
           labelStyle: { fontSize: 11, fontWeight: 600 },
           markerEnd: { type: "arrowclosed" as any, color },
@@ -148,7 +187,7 @@ export default function OrgChart() {
         }
       });
 
-      const ownerLinks = allLinks.filter((l) => l.owned_entity_id === current);
+      const ownerLinks = filteredLinks.filter((l) => l.owned_entity_id === current);
       ownerLinks.forEach((link) => {
         const pct = Number(link.percentage);
         const color = pct > 50 ? "hsl(142.1, 76.2%, 36.3%)" : pct >= 25 ? "hsl(38, 92%, 50%)" : "hsl(215, 16%, 47%)";
@@ -158,14 +197,15 @@ export default function OrgChart() {
         }
         if (!graphEdges.find((e) => e.id === link.id)) {
           const sc = link.share_class_id ? shareClassMap[link.share_class_id] : null;
-          const labelText = link.shares_owned
-            ? `${link.shares_owned.toLocaleString()} shares · ${pct.toFixed(2)}%`
-            : `${pct.toFixed(2)}%`;
+          const labelParts: string[] = [];
+          if (sc) labelParts.push(sc.class_name);
+          if (link.shares_owned) labelParts.push(`${link.shares_owned.toLocaleString()} shares`);
+          labelParts.push(`${pct.toFixed(2)}%`);
           graphEdges.push({
             id: link.id,
             source: link.owner_entity_id,
             target: link.owned_entity_id,
-            label: labelText,
+            label: labelParts.join(" · "),
             style: { stroke: color, strokeWidth: 2 },
             labelStyle: { fontSize: 11, fontWeight: 600 },
             markerEnd: { type: "arrowclosed" as any, color },
@@ -178,7 +218,7 @@ export default function OrgChart() {
     const { nodes: layouted, edges: layoutedEdges } = getLayoutedElements(graphNodes, graphEdges);
     setNodes(layouted);
     setEdges(layoutedEdges);
-  }, [rootId, allLinks, entityMap, shareClassMap]);
+  }, [rootId, filteredLinks, entityMap, shareClassMap, appointmentCounts]);
 
   const onNodeClick = useCallback((_: any, node: Node) => {
     const entity = entityMap[node.id];
@@ -207,12 +247,22 @@ export default function OrgChart() {
   const rootEntity = entityMap[rootId];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Org Chart</h1>
       </div>
 
-      <div className="rounded-lg border shadow-sm" style={{ height: "60vh", background: "#F8FAFC" }}>
+      {rootId && rootShareClasses.length > 0 && (
+        <ShareSummaryPanel
+          shareClasses={rootShareClasses}
+          allLinks={allLinks}
+          rootId={rootId}
+          selectedShareClass={selectedShareClass}
+          onShareClassChange={setSelectedShareClass}
+        />
+      )}
+
+      <div className="rounded-lg border shadow-sm" style={{ height: "55vh", background: "#F8FAFC" }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -227,7 +277,7 @@ export default function OrgChart() {
           <Controls showInteractive={false} />
           <Panel position="top-left">
             <div className="bg-background border rounded-lg p-2 shadow-sm">
-              <Select value={rootId} onValueChange={(v) => setSearchParams({ root: v })}>
+              <Select value={rootId} onValueChange={(v) => { setSearchParams({ root: v }); setSelectedShareClass("all"); }}>
                 <SelectTrigger className="w-64"><SelectValue placeholder="View from entity..." /></SelectTrigger>
                 <SelectContent>
                   {companyEntities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
@@ -282,7 +332,7 @@ export default function OrgChart() {
                       <TableCell>{Number(s.percentage).toFixed(2)}%</TableCell>
                       <TableCell>
                         {s.shareClass ? (
-                          s.shareClass.voting_rights ? <Badge className="bg-success text-success-foreground text-xs">Yes</Badge> : <Badge variant="secondary" className="text-xs">Non-voting</Badge>
+                          s.shareClass.voting_rights ? <Badge className="bg-green-100 text-green-700 border-0 text-xs">Yes</Badge> : <Badge variant="secondary" className="text-xs">Non-voting</Badge>
                         ) : "—"}
                       </TableCell>
                       <TableCell>
@@ -296,11 +346,18 @@ export default function OrgChart() {
                 </TableBody>
               </Table>
             )}
-            <p className="text-sm text-muted-foreground italic mt-4">
-              Ultimate Beneficial Owner (UBO) calculation across multiple holding layers will be available in a future update.
-            </p>
           </CardContent>
         </Card>
+      )}
+
+      {rootId && rootEntity && (
+        <UnallocatedReport
+          rootId={rootId}
+          rootEntity={rootEntity}
+          shareClasses={rootShareClasses}
+          allLinks={allLinks}
+          entityMap={entityMap}
+        />
       )}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
