@@ -128,7 +128,7 @@ export default function Dashboard() {
           <CardTitle className="text-lg">Expiry Alerts</CardTitle>
         </CardHeader>
         <CardContent>
-          {alerts.length === 0 ? (
+          {alerts.length === 0 && appointmentAlerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <AlertTriangle className="h-12 w-12 mb-4 opacity-30" />
               <p className="text-lg font-medium">No expiry alerts</p>
@@ -141,16 +141,18 @@ export default function Dashboard() {
                   <TableHead>Entity Name</TableHead>
                   <TableHead>Document Type</TableHead>
                   <TableHead>Document Number</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Expiry Date</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {alerts.map((doc) => (
-                  <TableRow key={doc.id} className="cursor-pointer" onClick={() => navigate(`/entities/${doc.entity_id}`)}>
+                {[...alerts, ...appointmentAlerts].map((doc, idx) => (
+                  <TableRow key={doc.id + "-" + idx} className="cursor-pointer" onClick={() => navigate(`/entities/${doc.entity_id}`)}>
                     <TableCell className="font-medium">{(doc.entities as any)?.name}</TableCell>
                     <TableCell>{doc.document_type}</TableCell>
                     <TableCell>{doc.document_number || "—"}</TableCell>
+                    <TableCell className="text-sm">{doc.appointmentRole || "—"}</TableCell>
                     <TableCell>{doc.expiry_date ? format(parseISO(doc.expiry_date), "MMM dd, yyyy") : "—"}</TableCell>
                     <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
                   </TableRow>
