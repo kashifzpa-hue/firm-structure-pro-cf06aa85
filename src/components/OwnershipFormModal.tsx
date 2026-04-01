@@ -110,6 +110,10 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
       toast.error("An entity cannot own itself");
       return;
     }
+    if (effectiveDateBeforeIncorporation) {
+      toast.error("Effective date cannot be before the company's date of incorporation");
+      return;
+    }
     if (hasShareClasses) {
       if (!shareClassId) { toast.error("Please select a share class"); return; }
       if (sharesNum <= 0) { toast.error("Please enter number of shares"); return; }
