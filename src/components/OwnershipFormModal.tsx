@@ -87,6 +87,10 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
   const percentage = selectedClass && selectedClass.total_shares_issued > 0 ? (sharesNum / selectedClass.total_shares_issued) * 100 : 0;
   const exceeds = sharesNum > available;
 
+  const ownedEntity = entities.find(e => e.id === ownedId);
+  const incorporationDate = ownedEntity?.date_of_birth_or_incorporation || null;
+  const effectiveDateBeforeIncorporation = incorporationDate && effectiveDate ? effectiveDate < incorporationDate : false;
+
   const hasShareClasses = shareClasses.length > 0;
   const ownedEntityName = entities.find(e => e.id === ownedId)?.name || "";
 
@@ -104,6 +108,10 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
     }
     if (ownerId === ownedId) {
       toast.error("An entity cannot own itself");
+      return;
+    }
+    if (effectiveDateBeforeIncorporation) {
+      toast.error("Effective date cannot be before the company's date of incorporation");
       return;
     }
     if (hasShareClasses) {
@@ -287,7 +295,12 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
 
           <div>
             <Label>Effective Date *</Label>
-            <Input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} className="mt-1" />
+            <Input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} className={`mt-1 ${effectiveDateBeforeIncorporation ? "border-destructive" : ""}`} />
+            {effectiveDateBeforeIncorporation && (
+              <p className="text-sm text-destructive mt-1">
+                Effective date cannot be before the date of incorporation ({format(new Date(incorporationDate + "T00:00:00"), "MMM dd, yyyy")})
+              </p>
+            )}
           </div>
 
           <div>
@@ -297,7 +310,7 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving || (hasShareClasses && (!shareClassId || exceeds || sharesNum <= 0))}>
+            <Button onClick={handleSave} disabled={saving || effectiveDateBeforeIncorporation || (hasShareClasses && (!shareClassId || exceeds || sharesNum <= 0))}>
               {saving ? "Saving..." : "Save"}
             </Button>
           </div>
