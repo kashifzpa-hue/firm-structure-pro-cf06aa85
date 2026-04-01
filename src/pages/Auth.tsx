@@ -57,29 +57,13 @@ export default function Auth() {
     }
 
     if (authData.user && authData.session) {
-      // Create workspace
-      const { data: workspace, error: wsError } = await supabase
-        .from("workspaces")
-        .insert({ name: workspaceName })
-        .select()
-        .single();
+      const { error: wsError } = await supabase.rpc("create_workspace", { _name: workspaceName } as any);
 
       if (wsError) {
         setLoading(false);
         toast.error("Failed to create workspace: " + wsError.message);
         return;
       }
-
-      // Update profile with workspace_id
-      await supabase
-        .from("profiles")
-        .update({ workspace_id: workspace.id, full_name: signupName })
-        .eq("user_id", authData.user.id);
-
-      // Create admin role
-      await supabase
-        .from("user_roles")
-        .insert({ user_id: authData.user.id, workspace_id: workspace.id, role: "admin" });
 
       setLoading(false);
       toast.success("Account created successfully!");

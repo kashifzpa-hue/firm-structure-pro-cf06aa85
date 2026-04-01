@@ -19,20 +19,13 @@ export default function SetupWorkspace() {
     if (!user || !name.trim()) return;
     setLoading(true);
 
-    const { data: workspace, error } = await supabase
-      .from("workspaces")
-      .insert({ name })
-      .select()
-      .single();
+    const { error } = await supabase.rpc("create_workspace", { _name: name } as any);
 
     if (error) {
       toast.error(error.message);
       setLoading(false);
       return;
     }
-
-    await supabase.from("profiles").update({ workspace_id: workspace.id }).eq("user_id", user.id);
-    await supabase.from("user_roles").insert({ user_id: user.id, workspace_id: workspace.id, role: "admin" });
 
     toast.success("Workspace created!");
     window.location.href = "/dashboard";
