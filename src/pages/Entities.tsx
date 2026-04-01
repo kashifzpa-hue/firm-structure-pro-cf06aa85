@@ -99,6 +99,11 @@ export default function Entities() {
               <Upload className="mr-2 h-4 w-4" /> Import Excel
             </Button>
           )}
+          {filtered.length > 0 && (
+            <Button variant="outline" onClick={handleExportExcel}>
+              <Download className="mr-2 h-4 w-4" /> Export Excel
+            </Button>
+          )}
           <Button onClick={() => navigate("/entities/new")}>
             <Plus className="mr-2 h-4 w-4" /> Add Entity
           </Button>
