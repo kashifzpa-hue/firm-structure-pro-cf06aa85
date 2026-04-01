@@ -49,7 +49,28 @@ export default function Entities() {
     return "valid";
   };
 
-  const filtered = entities.filter((e) => {
+  const handleExportExcel = () => {
+    const exportData = filtered.map((e) => ({
+      "Name": e.name,
+      "Type": e.type === "person" ? "Person" : "Company",
+      "Nationality / Jurisdiction": e.nationality_or_jurisdiction || "",
+      "Date of Birth / Incorporation": e.date_of_birth_or_incorporation || "",
+      "Email": e.email || "",
+      "Phone": e.phone || "",
+      "Company Type": e.company_type || "",
+      "Registration Number": e.registration_number || "",
+      "Registered Address": e.registered_address || "",
+      "Primary Contact Name": e.primary_contact_name || "",
+      "Primary Contact Email": e.primary_contact_email || "",
+      "Notes": e.notes || "",
+      "Created": format(parseISO(e.created_at), "yyyy-MM-dd"),
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws["!cols"] = Object.keys(exportData[0] || {}).map(() => ({ wch: 22 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Entities");
+    XLSX.writeFile(wb, `CorpSync_Entities_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "all" || e.type === typeFilter;
     const docStatus = getEntityDocStatus(e);
