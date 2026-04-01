@@ -85,6 +85,18 @@ export default function Entities() {
             <SelectItem value="company">Company</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="issues">Issues</SelectItem>
+            <SelectItem value="attention">Attention</SelectItem>
+            <SelectItem value="ok">OK</SelectItem>
+            <SelectItem value="no_docs">No Docs</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {filtered.length === 0 ? (
