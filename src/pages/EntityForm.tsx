@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { countries } from "@/lib/countries";
-import { countries } from "@/lib/countries";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 
