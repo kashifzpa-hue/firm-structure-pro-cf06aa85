@@ -99,21 +99,33 @@ export default function UBORegistry() {
     return Array.from(set).sort();
   }, [persons]);
 
-  const nonCircularSnapshots = useMemo(() => snapshots.filter(s => !s.circular_detected), [snapshots]);
+  const normalSnapshots = useMemo(() => snapshots.filter(s => !s.circular_detected && !s.unresolved_chain && s.person_entity_id), [snapshots]);
   const circularSnapshots = useMemo(() => snapshots.filter(s => s.circular_detected), [snapshots]);
+  const unresolvedSnapshots = useMemo(() => snapshots.filter(s => s.unresolved_chain), [snapshots]);
 
-  // Unresolved: companies with no person UBOs found
-  const companiesWithUBO = useMemo(() => new Set(nonCircularSnapshots.map(s => s.company_entity_id)), [nonCircularSnapshots]);
-  const unresolvedCompanies = useMemo(() => {
-    // Companies that have been calculated but have no UBO results, 
-    // or companies that haven't been calculated at all but have equity links
-    return companies.filter(c => !companiesWithUBO.has(c.id));
-  }, [companies, companiesWithUBO]);
+  // Deduplicate unresolved by company+terminal
+  const unresolvedEntries = useMemo(() => {
+    const map = new Map<string, { companyId: string; companyName: string; terminalId: string; terminalName: string }>();
+    unresolvedSnapshots.forEach(s => {
+      const key = `${s.company_entity_id}_${s.terminal_entity_id}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          companyId: s.company_entity_id,
+          companyName: entityMap[s.company_entity_id]?.name || "Unknown",
+          terminalId: s.terminal_entity_id,
+          terminalName: entityMap[s.terminal_entity_id]?.name || "Unknown",
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [unresolvedSnapshots, entityMap]);
 
   // Summary stats
-  const totalUBOs = useMemo(() => new Set(nonCircularSnapshots.map(s => s.person_entity_id)).size, [nonCircularSnapshots]);
-  const aboveThreshold = useMemo(() => nonCircularSnapshots.filter(s => s.is_above_threshold).length, [nonCircularSnapshots]);
+  const companiesWithUBO = useMemo(() => new Set(normalSnapshots.map(s => s.company_entity_id)), [normalSnapshots]);
+  const totalUBOs = useMemo(() => new Set(normalSnapshots.map(s => s.person_entity_id)).size, [normalSnapshots]);
+  const aboveThreshold = useMemo(() => normalSnapshots.filter(s => s.is_above_threshold).length, [normalSnapshots]);
   const companiesCalculated = useMemo(() => companiesWithUBO.size, [companiesWithUBO]);
+  const unresolvedCount = useMemo(() => new Set(unresolvedSnapshots.map(s => s.company_entity_id)).size, [unresolvedSnapshots]);
 
   // Filter snapshots
   const filtered = useMemo(() => {
