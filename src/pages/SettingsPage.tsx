@@ -8,31 +8,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Trash2, Mail, Clock } from "lucide-react";
 
 export default function SettingsPage() {
   const { workspaceId, userRole, user } = useAuth();
   const [workspaceName, setWorkspaceName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"admin" | "viewer">("viewer");
   const [members, setMembers] = useState<any[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [removeUser, setRemoveUser] = useState<any>(null);
   const isAdmin = userRole === "admin";
 
-  useEffect(() => {
+  const fetchData = async () => {
     if (!workspaceId) return;
-    const fetch = async () => {
-      const { data: ws } = await supabase.from("workspaces").select("name").eq("id", workspaceId).single();
-      if (ws) setWorkspaceName(ws.name);
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("*, user_roles(*)")
-        .eq("workspace_id", workspaceId);
-      setMembers(profiles || []);
-    };
-    fetch();
+    const { data: ws } = await supabase.from("workspaces").select("name").eq("id", workspaceId).single();
+    if (ws) setWorkspaceName(ws.name);
+
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("*, user_roles(*)")
+      .eq("workspace_id", workspaceId);
+    setMembers(profiles || []);
+
+    const { data: invites } = await supabase
+      .from("workspace_invitations")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .is("accepted_at", null)
+      .order("created_at", { ascending: false });
+    setPendingInvites(invites || []);
+  };
+
+  useEffect(() => {
+    fetchData();
   }, [workspaceId]);
 
   const updateWorkspaceName = async () => {
@@ -46,14 +60,54 @@ export default function SettingsPage() {
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
-    toast.info("Invite functionality requires an edge function to send invite emails. For now, users can sign up and be linked to the workspace manually.");
-    setInviteEmail("");
+    const email = inviteEmail.trim().toLowerCase();
+
+    // Check if already a member
+    const existingMember = members.find((m) => m.email?.toLowerCase() === email);
+    if (existingMember) {
+      toast.error("This user is already a member of the workspace");
+      return;
+    }
+
+    // Check if already invited
+    const existingInvite = pendingInvites.find((i) => i.email.toLowerCase() === email);
+    if (existingInvite) {
+      toast.error("An invitation has already been sent to this email");
+      return;
+    }
+
+    setInviting(true);
+    const { error } = await supabase.from("workspace_invitations").insert({
+      workspace_id: workspaceId!,
+      email,
+      role: inviteRole,
+      invited_by: user!.id,
+    } as any);
+    setInviting(false);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`Invitation sent to ${email}. They can sign up and will be automatically added to your workspace.`);
+      setInviteEmail("");
+      setInviteRole("viewer");
+      fetchData();
+    }
+  };
+
+  const handleCancelInvite = async (inviteId: string) => {
+    const { error } = await supabase.from("workspace_invitations").delete().eq("id", inviteId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Invitation cancelled");
+      fetchData();
+    }
   };
 
   const handleRemoveUser = async () => {
     if (!removeUser) return;
     await supabase.from("user_roles").delete().eq("user_id", removeUser.user_id).eq("workspace_id", workspaceId);
-    await supabase.from("profiles").update({ workspace_id: null }).eq("user_id", removeUser.user_id);
+    await supabase.from("profiles").update({ workspace_id: null } as any).eq("user_id", removeUser.user_id);
     setMembers(members.filter((m) => m.user_id !== removeUser.user_id));
     setRemoveUser(null);
     toast.success("User removed from workspace");
@@ -81,11 +135,53 @@ export default function SettingsPage() {
       {isAdmin && (
         <Card className="shadow-sm">
           <CardHeader><CardTitle className="text-base">Invite User</CardTitle></CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex gap-2">
-              <Input placeholder="user@example.com" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-              <Button onClick={handleInvite}>Send Invite</Button>
+              <Input
+                placeholder="user@example.com"
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="flex-1"
+              />
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as "admin" | "viewer")}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={handleInvite} disabled={inviting}>
+                <Mail className="h-4 w-4 mr-2" />
+                {inviting ? "Sending..." : "Invite"}
+              </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Invited users will be automatically added to your workspace when they sign up with the invited email address.
+            </p>
+
+            {pendingInvites.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" /> Pending Invitations
+                </h4>
+                <div className="space-y-2">
+                  {pendingInvites.map((invite) => (
+                    <div key={invite.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span>{invite.email}</span>
+                        <Badge variant="secondary" className="text-xs">{invite.role}</Badge>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleCancelInvite(invite.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
