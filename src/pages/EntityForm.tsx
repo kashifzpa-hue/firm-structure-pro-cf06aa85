@@ -50,7 +50,7 @@ export default function EntityForm() {
   const navigate = useNavigate();
   const { workspaceId } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [companyStep, setCompanyStep] = useState(1); // 1=details, 2=share capital, 3=board
+  const [companyStep, setCompanyStep] = useState(1);
   const [savedEntityId, setSavedEntityId] = useState<string | null>(null);
   const [savedEntityName, setSavedEntityName] = useState("");
   const [entityType, setEntityType] = useState<"person" | "company">("person");
@@ -66,6 +66,12 @@ export default function EntityForm() {
   const [contactEmail, setContactEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [docs, setDocs] = useState<DocRow[]>([emptyDoc()]);
+  
+  // Original values for field change tracking
+  const [originalEntity, setOriginalEntity] = useState<any>(null);
+  const [isLinked, setIsLinked] = useState(false);
+  const [changeReason, setChangeReason] = useState("");
+  const [showReasonPrompt, setShowReasonPrompt] = useState(false);
 
   useEffect(() => {
     if (!isEdit || !workspaceId) return;
