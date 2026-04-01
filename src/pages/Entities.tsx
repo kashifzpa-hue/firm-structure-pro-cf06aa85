@@ -158,6 +158,8 @@ export default function Entities() {
           </Table>
         </div>
       )}
+
+      <EntityImportModal open={importOpen} onOpenChange={setImportOpen} onImported={fetchEntities} />
     </div>
   );
 }
