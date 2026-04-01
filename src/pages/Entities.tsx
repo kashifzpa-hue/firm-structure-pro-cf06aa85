@@ -175,6 +175,10 @@ export default function Entities() {
             <SelectItem value="no_docs">No Docs</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2 ml-2">
+          <Switch checked={showInactive} onCheckedChange={setShowInactive} />
+          <label className="text-sm text-muted-foreground whitespace-nowrap">Show Inactive</label>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
