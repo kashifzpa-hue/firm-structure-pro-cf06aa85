@@ -135,9 +135,44 @@ export default function EntityForm() {
     setDocs(updated);
   };
 
+  // Identity fields that require versioning
+  const identityFields = entityType === "person"
+    ? { name: "name", nationality_or_jurisdiction: "nationality_or_jurisdiction", date_of_birth_or_incorporation: "date_of_birth_or_incorporation" }
+    : { name: "name", nationality_or_jurisdiction: "nationality_or_jurisdiction", registration_number: "registration_number", company_type: "company_type", date_of_birth_or_incorporation: "date_of_birth_or_incorporation" };
+
+  const getIdentityChanges = () => {
+    if (!originalEntity) return [];
+    const changes: { field: string; old_val: string; new_val: string }[] = [];
+    const newNat = nationalities.length > 0 ? nationalities.join(", ") : null;
+    const newDob = dob ? format(dob, "yyyy-MM-dd") : null;
+    const fields: Record<string, { old: any; cur: any }> = {
+      name: { old: originalEntity.name, cur: name },
+      nationality_or_jurisdiction: { old: originalEntity.nationality_or_jurisdiction, cur: newNat },
+      date_of_birth_or_incorporation: { old: originalEntity.date_of_birth_or_incorporation, cur: newDob },
+      ...(entityType === "company" ? {
+        company_type: { old: originalEntity.company_type, cur: companyType || null },
+        registration_number: { old: originalEntity.registration_number, cur: regNumber || null },
+      } : {}),
+    };
+    for (const [key, { old, cur }] of Object.entries(fields)) {
+      if ((old || "") !== (cur || "")) changes.push({ field: key, old_val: old || "", new_val: cur || "" });
+    }
+    return changes;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!workspaceId) return;
+
+    // Check if identity fields changed on a linked entity — require reason
+    if (isEdit && isLinked) {
+      const changes = getIdentityChanges();
+      if (changes.length > 0 && !changeReason.trim()) {
+        setShowReasonPrompt(true);
+        return;
+      }
+    }
+
     setLoading(true);
 
     const entityData = {
@@ -160,6 +195,23 @@ export default function EntityForm() {
     if (isEdit) {
       const { error } = await supabase.from("entities").update(entityData).eq("id", id);
       if (error) { toast.error(error.message); setLoading(false); return; }
+
+      // Record identity field changes
+      const changes = getIdentityChanges();
+      if (changes.length > 0) {
+        const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
+        for (const ch of changes) {
+          await supabase.from("entity_field_history").insert({
+            entity_id: id!,
+            workspace_id: workspaceId,
+            field_name: ch.field,
+            old_value: ch.old_val,
+            new_value: ch.new_val,
+            changed_by: profile?.id || null,
+            change_reason: changeReason || null,
+          });
+        }
+      }
     } else {
       const { data, error } = await supabase.from("entities").insert(entityData).select().single();
       if (error) { toast.error(error.message); setLoading(false); return; }
