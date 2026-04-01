@@ -41,6 +41,8 @@ export function UnallocatedReport({ rootId, rootEntity, shareClasses, allLinks, 
     });
   }, [shareClasses, allLinks, rootId, entityMap]);
 
+  if (!rootId || !rootEntity) return null;
+
   const hasUnallocated = reportData.some((r) => r.unallocated !== 0);
 
   return (
