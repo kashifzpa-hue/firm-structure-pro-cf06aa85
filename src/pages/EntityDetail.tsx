@@ -240,7 +240,7 @@ export default function EntityDetail() {
 
             {/* Share Capital Section for companies */}
             {!isPerson && (
-              <ShareCapitalSection companyEntityId={id!} companyName={entity.name} />
+              <ShareCapitalSection companyEntityId={id!} companyName={entity.name} isLiveMode={isLiveMode} />
             )}
           </div>
         </TabsContent>
