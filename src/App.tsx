@@ -64,6 +64,7 @@ const App = () => (
               <Route path="/org-chart" element={<OrgChart />} />
               <Route path="/ledger" element={<Ledger />} />
               <Route path="/ledger/:id" element={<MovementDetail />} />
+              <Route path="/ubo" element={<UBORegistry />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

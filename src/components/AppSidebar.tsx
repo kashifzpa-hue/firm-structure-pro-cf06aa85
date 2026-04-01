@@ -20,6 +20,7 @@ const navItems = [
   { title: "Ownership", url: "/ownership", icon: Link2 },
   { title: "Org Chart", url: "/org-chart", icon: GitBranch },
   { title: "Ledger", url: "/ledger", icon: ScrollText },
+  { title: "UBO Registry", url: "/ubo", icon: Shield },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
