@@ -17,6 +17,7 @@ export default function Entities() {
   const [entities, setEntities] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
