@@ -268,6 +268,163 @@ export type Database = {
           },
         ]
       }
+      movement_documents: {
+        Row: {
+          document_type: Database["public"]["Enums"]["movement_document_type"]
+          file_url: string
+          id: string
+          movement_id: string
+          notes: string | null
+          uploaded_at: string
+          workspace_id: string
+        }
+        Insert: {
+          document_type?: Database["public"]["Enums"]["movement_document_type"]
+          file_url: string
+          id?: string
+          movement_id: string
+          notes?: string | null
+          uploaded_at?: string
+          workspace_id: string
+        }
+        Update: {
+          document_type?: Database["public"]["Enums"]["movement_document_type"]
+          file_url?: string
+          id?: string
+          movement_id?: string
+          notes?: string | null
+          uploaded_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movement_documents_movement_id_fkey"
+            columns: ["movement_id"]
+            isOneToOne: false
+            referencedRelation: "movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movement_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movements: {
+        Row: {
+          company_entity_id: string
+          confirmed_at: string | null
+          created_at: string
+          created_by: string
+          currency: string | null
+          from_entity_id: string | null
+          id: string
+          movement_date: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          notes: string | null
+          price_per_share: number | null
+          reference_number: string | null
+          share_class_id: string
+          shares_transferred: number
+          status: Database["public"]["Enums"]["movement_status"]
+          to_entity_id: string | null
+          total_consideration: number | null
+          void_reason: string | null
+          voided_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          company_entity_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string | null
+          from_entity_id?: string | null
+          id?: string
+          movement_date: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          notes?: string | null
+          price_per_share?: number | null
+          reference_number?: string | null
+          share_class_id: string
+          shares_transferred: number
+          status?: Database["public"]["Enums"]["movement_status"]
+          to_entity_id?: string | null
+          total_consideration?: number | null
+          void_reason?: string | null
+          voided_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          company_entity_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string | null
+          from_entity_id?: string | null
+          id?: string
+          movement_date?: string
+          movement_type?: Database["public"]["Enums"]["movement_type"]
+          notes?: string | null
+          price_per_share?: number | null
+          reference_number?: string | null
+          share_class_id?: string
+          shares_transferred?: number
+          status?: Database["public"]["Enums"]["movement_status"]
+          to_entity_id?: string | null
+          total_consideration?: number | null
+          void_reason?: string | null
+          voided_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movements_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movements_from_entity_id_fkey"
+            columns: ["from_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movements_share_class_id_fkey"
+            columns: ["share_class_id"]
+            isOneToOne: false
+            referencedRelation: "share_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movements_to_entity_id_fkey"
+            columns: ["to_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movements_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -448,6 +605,8 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { _email: string }; Returns: string }
+      activate_live_mode: { Args: { p_entity_id: string }; Returns: undefined }
+      confirm_movement: { Args: { p_movement_id: string }; Returns: undefined }
       create_workspace: { Args: { _name: string }; Returns: string }
       get_user_workspace_id: { Args: never; Returns: string }
       has_workspace_role: {
@@ -458,12 +617,36 @@ export type Database = {
         }
         Returns: boolean
       }
+      void_movement: {
+        Args: { p_movement_id: string; p_reason: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "viewer"
       appointment_role_category: "board" | "management"
       captable_status: "setup" | "live"
       entity_type: "person" | "company"
+      movement_document_type:
+        | "Share Transfer Deed"
+        | "Share Purchase Agreement"
+        | "Board Resolution"
+        | "Shareholder Resolution"
+        | "Share Certificate"
+        | "Court Order"
+        | "Gift Deed"
+        | "Inheritance Certificate"
+        | "Other"
+      movement_status: "draft" | "confirmed" | "voided"
+      movement_type:
+        | "TRANSFER"
+        | "ISSUANCE"
+        | "CANCELLATION"
+        | "INHERITANCE"
+        | "GIFT"
+        | "COURT_ORDER"
+        | "CAPITAL_INCREASE"
+        | "CAPITAL_DECREASE"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -595,6 +778,28 @@ export const Constants = {
       appointment_role_category: ["board", "management"],
       captable_status: ["setup", "live"],
       entity_type: ["person", "company"],
+      movement_document_type: [
+        "Share Transfer Deed",
+        "Share Purchase Agreement",
+        "Board Resolution",
+        "Shareholder Resolution",
+        "Share Certificate",
+        "Court Order",
+        "Gift Deed",
+        "Inheritance Certificate",
+        "Other",
+      ],
+      movement_status: ["draft", "confirmed", "voided"],
+      movement_type: [
+        "TRANSFER",
+        "ISSUANCE",
+        "CANCELLATION",
+        "INHERITANCE",
+        "GIFT",
+        "COURT_ORDER",
+        "CAPITAL_INCREASE",
+        "CAPITAL_DECREASE",
+      ],
     },
   },
 } as const
