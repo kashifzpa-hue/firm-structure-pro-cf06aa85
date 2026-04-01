@@ -88,6 +88,7 @@ export default function Documents() {
                 <TableHead>Entity Name</TableHead>
                 <TableHead>Document Type</TableHead>
                 <TableHead>Document Number</TableHead>
+                <TableHead>Country of Issue</TableHead>
                 <TableHead>Expiry Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>File</TableHead>
