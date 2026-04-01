@@ -54,6 +54,11 @@ function EntityNode({ data }: { data: any }) {
     >
       <div className="font-semibold text-sm truncate">{data.label}</div>
       <div className="text-xs opacity-80 mt-0.5">{isCompany ? data.companyType || "Company" : "Individual"}</div>
+      {isCompany && data.officerCount > 0 && (
+        <div className="text-xs opacity-70 mt-1 flex items-center justify-center gap-1">
+          <User className="h-3 w-3" /> {data.officerCount} Officer{data.officerCount !== 1 ? "s" : ""}
+        </div>
+      )}
     </div>
   );
 }
