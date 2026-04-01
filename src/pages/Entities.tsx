@@ -20,6 +20,7 @@ export default function Entities() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (!workspaceId) return;
