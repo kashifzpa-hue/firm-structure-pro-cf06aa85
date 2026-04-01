@@ -8,10 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Trash2, User, AlertTriangle } from "lucide-react";
+import { OwnershipFormModal } from "@/components/OwnershipFormModal";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
@@ -24,38 +28,49 @@ export default function EntityDetail() {
   const [owns, setOwns] = useState<any[]>([]);
   const [ownedBy, setOwnedBy] = useState<any[]>([]);
   const [shareClasses, setShareClasses] = useState<any[]>([]);
+  const [entities, setEntities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [activateModalOpen, setActivateModalOpen] = useState(false);
+  const [activateCheck1, setActivateCheck1] = useState(false);
+  const [activateCheck2, setActivateCheck2] = useState(false);
+  const [activateCheck3, setActivateCheck3] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [ownershipModalOpen, setOwnershipModalOpen] = useState(false);
+  const [editingOwnershipLink, setEditingOwnershipLink] = useState<any>(null);
+  const [deleteOwnershipOpen, setDeleteOwnershipOpen] = useState(false);
+  const [deletingOwnershipLink, setDeletingOwnershipLink] = useState<any>(null);
 
-  useEffect(() => {
+  const fetchAll = async () => {
     if (!id || !workspaceId) return;
-    const fetchAll = async () => {
-      const [entityRes, docsRes, ownsRes, ownedByRes, scRes] = await Promise.all([
-        supabase.from("entities").select("*").eq("id", id).single(),
-        supabase.from("documents").select("*").eq("entity_id", id),
-        supabase
-          .from("equity_links")
-          .select("*, owned:entities!equity_links_owned_entity_id_fkey(id, name, type), share_class:share_classes(*)")
-          .eq("owner_entity_id", id)
-          .eq("workspace_id", workspaceId)
-          .is("end_date", null),
-        supabase
-          .from("equity_links")
-          .select("*, owner:entities!equity_links_owner_entity_id_fkey(id, name, type), share_class:share_classes(*)")
-          .eq("owned_entity_id", id)
-          .eq("workspace_id", workspaceId)
-          .is("end_date", null),
-        supabase.from("share_classes").select("*").eq("company_entity_id", id).eq("workspace_id", workspaceId),
-      ]);
-      setEntity(entityRes.data);
-      setDocs(docsRes.data || []);
-      setOwns(ownsRes.data || []);
-      setOwnedBy(ownedByRes.data || []);
-      setShareClasses(scRes.data || []);
-      setLoading(false);
-    };
-    fetchAll();
-  }, [id, workspaceId]);
+    const [entityRes, docsRes, ownsRes, ownedByRes, scRes, entitiesRes] = await Promise.all([
+      supabase.from("entities").select("*").eq("id", id).single(),
+      supabase.from("documents").select("*").eq("entity_id", id),
+      supabase
+        .from("equity_links")
+        .select("*, owned:entities!equity_links_owned_entity_id_fkey(id, name, type), share_class:share_classes(*)")
+        .eq("owner_entity_id", id)
+        .eq("workspace_id", workspaceId)
+        .is("end_date", null),
+      supabase
+        .from("equity_links")
+        .select("*, owner:entities!equity_links_owner_entity_id_fkey(id, name, type), share_class:share_classes(*)")
+        .eq("owned_entity_id", id)
+        .eq("workspace_id", workspaceId)
+        .is("end_date", null),
+      supabase.from("share_classes").select("*").eq("company_entity_id", id).eq("workspace_id", workspaceId),
+      supabase.from("entities").select("id, name, type").eq("workspace_id", workspaceId).order("name"),
+    ]);
+    setEntity(entityRes.data);
+    setDocs(docsRes.data || []);
+    setOwns(ownsRes.data || []);
+    setOwnedBy(ownedByRes.data || []);
+    setShareClasses(scRes.data || []);
+    setEntities(entitiesRes.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAll(); }, [id, workspaceId]);
 
   const handleDelete = async () => {
     await supabase.from("entities").delete().eq("id", id);
@@ -63,10 +78,37 @@ export default function EntityDetail() {
     navigate("/entities");
   };
 
+  const handleActivateLiveMode = async () => {
+    if (!entity || !workspaceId) return;
+    setActivating(true);
+    // Update captable_status to 'live'
+    const { error } = await supabase.from("entities").update({ captable_status: 'live' } as any).eq("id", id);
+    if (error) { toast.error("Failed to activate live mode"); setActivating(false); return; }
+    toast.success("Live Mode activated for " + entity.name);
+    setActivateModalOpen(false);
+    setActivating(false);
+    setActivateCheck1(false);
+    setActivateCheck2(false);
+    setActivateCheck3(false);
+    fetchAll();
+  };
+
+  const handleDeleteOwnership = async () => {
+    if (!deletingOwnershipLink) return;
+    const { error } = await supabase.from("equity_links").delete().eq("id", deletingOwnershipLink.id);
+    if (error) { toast.error("Failed to delete"); return; }
+    toast.success("Shareholding removed");
+    setDeleteOwnershipOpen(false);
+    setDeletingOwnershipLink(null);
+    fetchAll();
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
   if (!entity) return <div className="flex items-center justify-center h-64 text-muted-foreground">Entity not found.</div>;
 
   const isPerson = entity.type === "person";
+  const isSetupMode = entity.captable_status !== "live";
+  const isLiveMode = entity.captable_status === "live";
 
   // Group ownedBy links by share class for shareholding summary
   const ownedByGrouped: Record<string, any[]> = {};
@@ -89,6 +131,28 @@ export default function EntityDetail() {
               {isPerson ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
               {isPerson ? "Person" : "Company"}
             </Badge>
+            {!isPerson && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    {isSetupMode ? (
+                      <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-700">
+                        <Wrench className="h-3 w-3" /> Setup Mode
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 border-green-300 bg-green-50 text-green-700">
+                        <CheckCircle className="h-3 w-3" /> Live Mode
+                      </Badge>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {isSetupMode
+                      ? "Direct editing is enabled. Activate Live Mode when your initial cap table is complete and verified."
+                      : "All changes are recorded via the Movement Ledger."}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {entity.nationality_or_jurisdiction && (
               <span className="text-sm text-muted-foreground">{entity.nationality_or_jurisdiction}</span>
             )}
@@ -176,7 +240,7 @@ export default function EntityDetail() {
 
             {/* Share Capital Section for companies */}
             {!isPerson && (
-              <ShareCapitalSection companyEntityId={id!} companyName={entity.name} />
+              <ShareCapitalSection companyEntityId={id!} companyName={entity.name} isLiveMode={isLiveMode} />
             )}
           </div>
         </TabsContent>
@@ -228,6 +292,38 @@ export default function EntityDetail() {
 
         <TabsContent value="ownership">
           <div className="space-y-6">
+            {/* Setup/Live Mode Banner for companies */}
+            {!isPerson && isSetupMode && (
+              <Alert className="border-amber-300 bg-amber-50">
+                <Wrench className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span className="text-amber-800">
+                    <strong>Setup Mode</strong> — You can directly edit shareholdings and share classes. When your cap table is complete, activate Live Mode to enable the Movement Ledger.
+                  </span>
+                  <Button size="sm" variant="outline" className="ml-4 shrink-0 border-amber-400 text-amber-700 hover:bg-amber-100" onClick={() => setActivateModalOpen(true)}>
+                    Activate Live Mode →
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            {!isPerson && isLiveMode && (
+              <Alert className="border-green-300 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  <strong>Live Mode</strong> — Shareholding changes are managed via the Movement Ledger. Contact your admin to record a new transfer or share issuance.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Add Ownership Link button - Setup mode only for this company's "Owned By" */}
+            {!isPerson && isSetupMode && (
+              <div className="flex justify-end">
+                <Button onClick={() => { setEditingOwnershipLink(null); setOwnershipModalOpen(true); }}>
+                  <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
+                </Button>
+              </div>
+            )}
+
             {/* Owns */}
             <Card className="shadow-sm">
               <CardHeader>
@@ -309,6 +405,7 @@ export default function EntityDetail() {
                           <TableHead>Voting</TableHead>
                           <TableHead>Effective Date</TableHead>
                           <TableHead></TableHead>
+                          {!isPerson && isSetupMode && <TableHead>Actions</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -343,6 +440,18 @@ export default function EntityDetail() {
                                 </Button>
                               )}
                             </TableCell>
+                            {!isPerson && isSetupMode && (
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingOwnershipLink(link); setOwnershipModalOpen(true); }}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setDeletingOwnershipLink(link); setDeleteOwnershipOpen(true); }}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            )}
                           </TableRow>
                         ))}
                       </TableBody>
@@ -404,6 +513,112 @@ export default function EntityDetail() {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Ownership Form Modal for Setup Mode */}
+      {!isPerson && isSetupMode && (
+        <OwnershipFormModal
+          open={ownershipModalOpen}
+          onOpenChange={setOwnershipModalOpen}
+          editingLink={editingOwnershipLink}
+          entities={entities}
+          workspaceId={workspaceId!}
+          onSaved={fetchAll}
+        />
+      )}
+
+      {/* Delete Ownership Confirmation */}
+      <Dialog open={deleteOwnershipOpen} onOpenChange={setDeleteOwnershipOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Shareholding</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove {deletingOwnershipLink?.owner?.name}'s shareholding
+              of {deletingOwnershipLink?.shares_owned?.toLocaleString() || "—"} shares in {entity.name}? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOwnershipOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteOwnership}>Remove</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Activate Live Mode Modal */}
+      <Dialog open={activateModalOpen} onOpenChange={(v) => { setActivateModalOpen(v); if (!v) { setActivateCheck1(false); setActivateCheck2(false); setActivateCheck3(false); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Activate Live Mode for {entity.name}</DialogTitle>
+            <DialogDescription>
+              Once activated, direct editing of shareholdings will be disabled. All future changes must be recorded as Movements. This action cannot be reversed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm font-medium">Before activating, confirm your cap table is correct:</p>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={activateCheck1} onCheckedChange={(v) => setActivateCheck1(!!v)} />
+                All share classes are set up correctly
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={activateCheck2} onCheckedChange={(v) => setActivateCheck2(!!v)} />
+                All shareholders are linked with correct share counts
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={activateCheck3} onCheckedChange={(v) => setActivateCheck3(!!v)} />
+                Total allocated shares match total issued shares
+              </label>
+            </div>
+
+            {/* Mini cap table summary */}
+            {shareClasses.length > 0 && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-sm font-medium">Current Status:</p>
+                {shareClasses.map(sc => {
+                  const classLinks = ownedBy.filter(l => l.share_class_id === sc.id);
+                  const totalAllocated = classLinks.reduce((s, l) => s + (l.shares_owned || 0), 0);
+                  const unallocated = sc.total_shares_issued - totalAllocated;
+                  const fullyAllocated = unallocated === 0;
+                  return (
+                    <div key={sc.id} className="flex items-center justify-between text-sm">
+                      <span>{sc.class_name}</span>
+                      <span className="flex items-center gap-2">
+                        {totalAllocated.toLocaleString()} / {sc.total_shares_issued.toLocaleString()} allocated
+                        {fullyAllocated ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+                {shareClasses.some(sc => {
+                  const classLinks = ownedBy.filter(l => l.share_class_id === sc.id);
+                  const totalAllocated = classLinks.reduce((s, l) => s + (l.shares_owned || 0), 0);
+                  return totalAllocated < sc.total_shares_issued;
+                }) && (
+                  <Alert className="border-amber-300 bg-amber-50 mt-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-800 text-xs">
+                      Some share classes have unallocated shares. Are you sure you want to proceed with gaps in the cap table?
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActivateModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleActivateLiveMode}
+              disabled={!activateCheck1 || !activateCheck2 || !activateCheck3 || activating}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {activating ? "Activating..." : "Yes, Activate Live Mode"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>

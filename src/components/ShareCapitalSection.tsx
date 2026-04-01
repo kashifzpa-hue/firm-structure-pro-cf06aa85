@@ -14,9 +14,10 @@ import { toast } from "sonner";
 interface Props {
   companyEntityId: string;
   companyName: string;
+  isLiveMode?: boolean;
 }
 
-export function ShareCapitalSection({ companyEntityId, companyName }: Props) {
+export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode = false }: Props) {
   const { workspaceId } = useAuth();
   const [shareClasses, setShareClasses] = useState<any[]>([]);
   const [allocations, setAllocations] = useState<Record<string, number>>({});
@@ -80,9 +81,11 @@ export function ShareCapitalSection({ companyEntityId, companyName }: Props) {
             </p>
           )}
         </div>
-        <Button size="sm" onClick={() => { setEditingClass(null); setModalOpen(true); }}>
-          <Plus className="mr-1 h-4 w-4" /> Add Share Class
-        </Button>
+        {!isLiveMode && (
+          <Button size="sm" onClick={() => { setEditingClass(null); setModalOpen(true); }}>
+            <Plus className="mr-1 h-4 w-4" /> Add Share Class
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {shareClasses.length === 0 ? (
@@ -100,7 +103,7 @@ export function ShareCapitalSection({ companyEntityId, companyName }: Props) {
                 <TableHead>Allocated</TableHead>
                 <TableHead>Unallocated</TableHead>
                 <TableHead>% Allocated</TableHead>
-                <TableHead>Actions</TableHead>
+                {!isLiveMode && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -135,16 +138,18 @@ export function ShareCapitalSection({ companyEntityId, companyName }: Props) {
                         <span className="text-xs text-muted-foreground">{pctAllocated.toFixed(0)}%</span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingClass(sc); setModalOpen(true); }}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setDeletingClass(sc); setDeleteOpen(true); }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {!isLiveMode && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingClass(sc); setModalOpen(true); }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setDeletingClass(sc); setDeleteOpen(true); }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}

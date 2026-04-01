@@ -131,6 +131,7 @@ export type Database = {
       }
       entities: {
         Row: {
+          captable_status: Database["public"]["Enums"]["captable_status"]
           company_type: string | null
           created_at: string
           date_of_birth_or_incorporation: string | null
@@ -148,6 +149,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          captable_status?: Database["public"]["Enums"]["captable_status"]
           company_type?: string | null
           created_at?: string
           date_of_birth_or_incorporation?: string | null
@@ -165,6 +167,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          captable_status?: Database["public"]["Enums"]["captable_status"]
           company_type?: string | null
           created_at?: string
           date_of_birth_or_incorporation?: string | null
@@ -459,6 +462,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "viewer"
       appointment_role_category: "board" | "management"
+      captable_status: "setup" | "live"
       entity_type: "person" | "company"
     }
     CompositeTypes: {
@@ -589,6 +593,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "viewer"],
       appointment_role_category: ["board", "management"],
+      captable_status: ["setup", "live"],
       entity_type: ["person", "company"],
     },
   },
