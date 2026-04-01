@@ -86,6 +86,19 @@ export function CompanyUBOTab({ companyEntityId, companyName, ownedBy, owns }: C
         </Alert>
       )}
 
+      {/* Unresolved chain warning */}
+      {unresolvedChains.length > 0 && (
+        <Alert className="border-warning/50 bg-warning/5">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-warning">
+            <strong>⚠ Unresolved Ownership Chain</strong> — {unresolvedChains.map(u => {
+              const terminalName = entities[u.terminal_entity_id]?.name || "Unknown company";
+              return terminalName;
+            }).filter((v, i, a) => a.indexOf(v) === i).join(", ")} {unresolvedChains.length === 1 ? "has" : "have"} no owners linked. UBO calculation is incomplete for affected chains.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Section 1: Direct Shareholders */}
       <Card className="shadow-sm">
         <CardHeader><CardTitle className="text-lg">Direct Shareholders</CardTitle></CardHeader>

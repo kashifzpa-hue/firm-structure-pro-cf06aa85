@@ -381,32 +381,40 @@ export default function UBORegistry() {
       )}
 
       {/* Unresolved Chains */}
-      {unresolvedCompanies.length > 0 && (
+      {unresolvedEntries.length > 0 && (
         <Card className="shadow-sm border-warning/30">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-warning" /> Unresolved Chains
+              <Link2 className="h-5 w-5 text-warning" /> Unresolved Chains ({unresolvedEntries.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Issue</TableHead>
+                  <TableHead>Company Affected</TableHead>
+                  <TableHead>Terminal Entity (No Owners)</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {unresolvedCompanies.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      No natural person found at the top of the ownership chain. Add ownership links to complete the UBO chain.
+                {unresolvedEntries.map((entry, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">
+                      <button className="text-primary hover:underline" onClick={() => navigate(`/entities/${entry.companyId}`)}>
+                        {entry.companyName}
+                      </button>
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/entities/${c.id}`)}>
-                        Fix →
+                      <div className="flex items-center gap-1 text-warning">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span className="text-sm">{entry.terminalName}</span>
+                        <span className="text-xs text-muted-foreground ml-1">— has no owners linked</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/entities/${entry.terminalId}`)}>
+                        Fix Ownership →
                       </Button>
                     </TableCell>
                   </TableRow>
