@@ -22,18 +22,20 @@ export default function Entities() {
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
 
+  const fetchEntities = async () => {
+    if (!workspaceId) return;
+    const { data } = await supabase
+      .from("entities")
+      .select("*, documents(*)")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false });
+    setEntities(data || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (!workspaceId) return;
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("entities")
-        .select("*, documents(*)")
-        .eq("workspace_id", workspaceId)
-        .order("created_at", { ascending: false });
-      setEntities(data || []);
-      setLoading(false);
-    };
-    fetch();
+    fetchEntities();
   }, [workspaceId]);
 
   const getEntityDocStatus = (entity: any) => {
