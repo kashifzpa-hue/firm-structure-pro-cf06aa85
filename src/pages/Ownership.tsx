@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Building2, User, Link2 } from "lucide-react";
+import { Plus, Search, Building2, User, Link2, AlertTriangle } from "lucide-react";
 import { format, parseISO, isToday } from "date-fns";
 import { toast } from "sonner";
 import { OwnershipFormModal } from "@/components/OwnershipFormModal";
@@ -35,7 +35,7 @@ export default function Ownership() {
     const [linksRes, entitiesRes] = await Promise.all([
       supabase
         .from("equity_links")
-        .select("*, owner:entities!equity_links_owner_entity_id_fkey(*), owned:entities!equity_links_owned_entity_id_fkey(*)")
+        .select("*, owner:entities!equity_links_owner_entity_id_fkey(*), owned:entities!equity_links_owned_entity_id_fkey(*), share_class:share_classes(*)")
         .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: false }),
       supabase.from("entities").select("id, name, type").eq("workspace_id", workspaceId).order("name"),
@@ -60,10 +60,7 @@ export default function Ownership() {
 
   const handleCloseLink = async () => {
     if (!closingLink) return;
-    const { error } = await supabase
-      .from("equity_links")
-      .update({ end_date: closeDate })
-      .eq("id", closingLink.id);
+    const { error } = await supabase.from("equity_links").update({ end_date: closeDate }).eq("id", closingLink.id);
     if (error) { toast.error("Failed to close link"); return; }
     toast.success("Ownership link closed");
     setCloseDialogOpen(false);
@@ -98,14 +95,10 @@ export default function Ownership() {
           <Input placeholder="Search by entity name..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={entityFilter} onValueChange={setEntityFilter}>
-          <SelectTrigger className="w-52">
-            <SelectValue placeholder="All Entities" />
-          </SelectTrigger>
+          <SelectTrigger className="w-52"><SelectValue placeholder="All Entities" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Entities</SelectItem>
-            {entities.map((e) => (
-              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-            ))}
+            {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <div className="flex items-center gap-2">
@@ -129,8 +122,11 @@ export default function Ownership() {
             <TableHeader>
               <TableRow>
                 <TableHead>Owner</TableHead>
-                <TableHead>Owns</TableHead>
-                <TableHead>Percentage</TableHead>
+                <TableHead>Owns (Company)</TableHead>
+                <TableHead>Share Class</TableHead>
+                <TableHead>Shares Owned</TableHead>
+                <TableHead>% Holding</TableHead>
+                <TableHead>Voting</TableHead>
                 <TableHead>Effective Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
@@ -140,6 +136,7 @@ export default function Ownership() {
               {filtered.map((link) => {
                 const isActive = !link.end_date;
                 const canDelete = link.effective_date && isToday(parseISO(link.effective_date));
+                const hasShares = !!link.share_class_id;
                 return (
                   <TableRow key={link.id}>
                     <TableCell>
@@ -154,13 +151,20 @@ export default function Ownership() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{link.owned?.name}</span>
-                        <Badge variant="outline" className="gap-1 text-xs">
-                          {link.owned?.type === "person" ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
-                          {link.owned?.type === "person" ? "Person" : "Company"}
-                        </Badge>
                       </div>
                     </TableCell>
-                    <TableCell>{Number(link.percentage).toFixed(2)}%</TableCell>
+                    <TableCell>
+                      {link.share_class ? link.share_class.class_name : (
+                        <Badge variant="outline" className="text-xs text-warning gap-1"><AlertTriangle className="h-3 w-3" /> No share data</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{link.shares_owned ? link.shares_owned.toLocaleString() : "—"}</TableCell>
+                    <TableCell><Badge variant="secondary">{Number(link.percentage).toFixed(2)}%</Badge></TableCell>
+                    <TableCell>
+                      {link.share_class ? (
+                        link.share_class.voting_rights ? <Badge className="bg-success text-success-foreground text-xs">Yes</Badge> : <Badge variant="secondary" className="text-xs">Non-voting</Badge>
+                      ) : "—"}
+                    </TableCell>
                     <TableCell>{format(parseISO(link.effective_date), "MMM dd, yyyy")}</TableCell>
                     <TableCell>
                       {isActive ? (
@@ -173,14 +177,10 @@ export default function Ownership() {
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => { setEditingLink(link); setModalOpen(true); }}>Edit</Button>
                         {isActive && !canDelete && (
-                          <Button variant="outline" size="sm" onClick={() => { setClosingLink(link); setCloseDate(format(new Date(), "yyyy-MM-dd")); setCloseDialogOpen(true); }}>
-                            Close
-                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => { setClosingLink(link); setCloseDate(format(new Date(), "yyyy-MM-dd")); setCloseDialogOpen(true); }}>Close</Button>
                         )}
                         {canDelete && (
-                          <Button variant="destructive" size="sm" onClick={() => { setDeletingLink(link); setDeleteDialogOpen(true); }}>
-                            Delete
-                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => { setDeletingLink(link); setDeleteDialogOpen(true); }}>Delete</Button>
                         )}
                       </div>
                     </TableCell>
@@ -201,7 +201,6 @@ export default function Ownership() {
         onSaved={fetchData}
       />
 
-      {/* Close Link Dialog */}
       <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -219,7 +218,6 @@ export default function Ownership() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

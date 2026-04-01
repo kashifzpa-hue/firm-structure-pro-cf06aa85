@@ -201,7 +201,9 @@ export type Database = {
           owned_entity_id: string
           owner_entity_id: string
           percentage: number
+          share_class_id: string | null
           share_count: number | null
+          shares_owned: number | null
           workspace_id: string
         }
         Insert: {
@@ -213,7 +215,9 @@ export type Database = {
           owned_entity_id: string
           owner_entity_id: string
           percentage: number
+          share_class_id?: string | null
           share_count?: number | null
+          shares_owned?: number | null
           workspace_id: string
         }
         Update: {
@@ -225,7 +229,9 @@ export type Database = {
           owned_entity_id?: string
           owner_entity_id?: string
           percentage?: number
+          share_class_id?: string | null
           share_count?: number | null
+          shares_owned?: number | null
           workspace_id?: string
         }
         Relationships: [
@@ -241,6 +247,13 @@ export type Database = {
             columns: ["owner_entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equity_links_share_class_id_fkey"
+            columns: ["share_class_id"]
+            isOneToOne: false
+            referencedRelation: "share_classes"
             referencedColumns: ["id"]
           },
           {
@@ -280,6 +293,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      share_classes: {
+        Row: {
+          class_name: string
+          company_entity_id: string
+          created_at: string
+          currency: string
+          id: string
+          notes: string | null
+          par_value_per_share: number
+          total_shares_issued: number
+          voting_rights: boolean
+          workspace_id: string
+        }
+        Insert: {
+          class_name: string
+          company_entity_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          par_value_per_share: number
+          total_shares_issued: number
+          voting_rights?: boolean
+          workspace_id: string
+        }
+        Update: {
+          class_name?: string
+          company_entity_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          par_value_per_share?: number
+          total_shares_issued?: number
+          voting_rights?: boolean
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_classes_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "share_classes_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

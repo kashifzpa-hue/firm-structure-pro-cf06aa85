@@ -1,0 +1,18 @@
+export const currencies = [
+  { code: "AED", name: "UAE Dirham", flag: "🇦🇪" },
+  { code: "USD", name: "US Dollar", flag: "🇺🇸" },
+  { code: "GBP", name: "British Pound", flag: "🇬🇧" },
+  { code: "EUR", name: "Euro", flag: "🇪🇺" },
+  { code: "SGD", name: "Singapore Dollar", flag: "🇸🇬" },
+  { code: "INR", name: "Indian Rupee", flag: "🇮🇳" },
+  { code: "SAR", name: "Saudi Riyal", flag: "🇸🇦" },
+  { code: "KWD", name: "Kuwaiti Dinar", flag: "🇰🇼" },
+  { code: "BHD", name: "Bahraini Dinar", flag: "🇧🇭" },
+  { code: "QAR", name: "Qatari Riyal", flag: "🇶🇦" },
+  { code: "OMR", name: "Omani Rial", flag: "🇴🇲" },
+  { code: "CHF", name: "Swiss Franc", flag: "🇨🇭" },
+  { code: "JPY", name: "Japanese Yen", flag: "🇯🇵" },
+  { code: "CNY", name: "Chinese Yuan", flag: "🇨🇳" },
+  { code: "AUD", name: "Australian Dollar", flag: "🇦🇺" },
+  { code: "CAD", name: "Canadian Dollar", flag: "🇨🇦" },
+];

@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
-import { Building2, FileWarning, AlertTriangle, Users, Link2, User } from "lucide-react";
+import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -18,17 +18,18 @@ export default function Dashboard() {
   const [recentLinks, setRecentLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [appointmentAlerts, setAppointmentAlerts] = useState<any[]>([]);
+  const [shareholdingGaps, setShareholdingGaps] = useState<any[]>([]);
 
   useEffect(() => {
     if (!workspaceId) return;
     const fetchData = async () => {
-      const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes] = await Promise.all([
-        supabase.from("entities").select("id, type").eq("workspace_id", workspaceId),
+      const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes, shareClassesRes, equityLinksRes] = await Promise.all([
+        supabase.from("entities").select("id, type, name").eq("workspace_id", workspaceId),
         supabase.from("documents").select("*, entities!inner(name, type)").eq("workspace_id", workspaceId),
         supabase.from("equity_links").select("id").eq("workspace_id", workspaceId).is("end_date", null),
         supabase
           .from("equity_links")
-          .select("*, owner:entities!equity_links_owner_entity_id_fkey(name, type), owned:entities!equity_links_owned_entity_id_fkey(name, type)")
+          .select("*, owner:entities!equity_links_owner_entity_id_fkey(name, type), owned:entities!equity_links_owned_entity_id_fkey(name, type), share_class:share_classes(*)")
           .eq("workspace_id", workspaceId)
           .order("created_at", { ascending: false })
           .limit(5),
@@ -37,11 +38,12 @@ export default function Dashboard() {
           .select("*, person:entities!appointments_person_entity_id_fkey(id, name), company:entities!appointments_company_entity_id_fkey(id, name)")
           .eq("workspace_id", workspaceId)
           .is("resignation_date", null),
+        supabase.from("share_classes").select("*").eq("workspace_id", workspaceId),
+        supabase.from("equity_links").select("share_class_id, shares_owned").eq("workspace_id", workspaceId).is("end_date", null),
       ]);
 
       const entities = entitiesRes.data || [];
       const docs = docsRes.data || [];
-
       const totalEntities = entities.length;
       const totalCompanies = entities.filter((e) => e.type === "company").length;
       const totalLinks = (linksCountRes.data || []).length;
@@ -66,7 +68,7 @@ export default function Dashboard() {
       setAlerts(alertDocs);
       setRecentLinks(recentLinksRes.data || []);
 
-      // Build appointment-linked alerts: find docs for persons with active appointments
+      // Appointment alerts
       const activeAppointments = appointmentsRes.data || [];
       const personIds = [...new Set(activeAppointments.map((a: any) => a.person_entity_id))];
       const apptAlerts: any[] = [];
@@ -88,6 +90,31 @@ export default function Dashboard() {
         });
       }
       setAppointmentAlerts(apptAlerts);
+
+      // Shareholding gaps
+      const allShareClasses = shareClassesRes.data || [];
+      const allEquityLinks = equityLinksRes.data || [];
+      const entityMap = Object.fromEntries(entities.map(e => [e.id, e]));
+      const gaps: any[] = [];
+      allShareClasses.forEach(sc => {
+        const allocated = allEquityLinks
+          .filter(l => l.share_class_id === sc.id)
+          .reduce((sum, l) => sum + (l.shares_owned || 0), 0);
+        if (allocated < sc.total_shares_issued) {
+          const unallocated = sc.total_shares_issued - allocated;
+          const pctGap = ((unallocated / sc.total_shares_issued) * 100).toFixed(1);
+          gaps.push({
+            companyName: entityMap[sc.company_entity_id]?.name || "Unknown",
+            companyId: sc.company_entity_id,
+            className: sc.class_name,
+            totalIssued: sc.total_shares_issued,
+            allocated,
+            unallocated,
+            pctGap,
+          });
+        }
+      });
+      setShareholdingGaps(gaps);
       setLoading(false);
     };
     fetchData();
@@ -163,6 +190,43 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
+      {/* Shareholding Gaps */}
+      {shareholdingGaps.length > 0 && (
+        <Card className="shadow-sm border-warning/30">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <PieChart className="h-5 w-5 text-warning" /> Shareholding Gaps
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company Name</TableHead>
+                  <TableHead>Share Class</TableHead>
+                  <TableHead>Total Issued</TableHead>
+                  <TableHead>Allocated</TableHead>
+                  <TableHead>Unallocated</TableHead>
+                  <TableHead>% Gap</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {shareholdingGaps.map((gap, i) => (
+                  <TableRow key={i} className="cursor-pointer" onClick={() => navigate(`/entities/${gap.companyId}`)}>
+                    <TableCell className="font-medium">{gap.companyName}</TableCell>
+                    <TableCell>{gap.className}</TableCell>
+                    <TableCell>{gap.totalIssued.toLocaleString()}</TableCell>
+                    <TableCell>{gap.allocated.toLocaleString()}</TableCell>
+                    <TableCell className="text-destructive font-medium">{gap.unallocated.toLocaleString()}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-warning">{gap.pctGap}%</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recently Added Ownership Links */}
       <Card className="shadow-sm">
         <CardHeader>
@@ -181,7 +245,9 @@ export default function Dashboard() {
                 <TableRow>
                   <TableHead>Owner</TableHead>
                   <TableHead>Owns</TableHead>
-                  <TableHead>Percentage</TableHead>
+                  <TableHead>Share Class</TableHead>
+                  <TableHead>Shares</TableHead>
+                  <TableHead>% Holding</TableHead>
                   <TableHead>Effective Date</TableHead>
                 </TableRow>
               </TableHeader>
@@ -200,13 +266,11 @@ export default function Dashboard() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{link.owned?.name}</span>
-                        <Badge variant="outline" className="text-xs gap-1">
-                          {link.owned?.type === "person" ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
-                          {link.owned?.type === "person" ? "Person" : "Company"}
-                        </Badge>
                       </div>
                     </TableCell>
-                    <TableCell>{Number(link.percentage).toFixed(2)}%</TableCell>
+                    <TableCell>{link.share_class?.class_name || "—"}</TableCell>
+                    <TableCell>{link.shares_owned ? link.shares_owned.toLocaleString() : "—"}</TableCell>
+                    <TableCell><Badge variant="secondary">{Number(link.percentage).toFixed(2)}%</Badge></TableCell>
                     <TableCell>{link.effective_date ? format(parseISO(link.effective_date), "MMM dd, yyyy") : "—"}</TableCell>
                   </TableRow>
                 ))}
