@@ -13,9 +13,9 @@ interface UnallocatedReportProps {
 }
 
 export function UnallocatedReport({ rootId, rootEntity, shareClasses, allLinks, entityMap }: UnallocatedReportProps) {
-  if (!rootId || !rootEntity) return null;
-
   const reportData = useMemo(() => {
+    if (!rootId) return [];
+
     return shareClasses.map((sc) => {
       const activeLinks = allLinks.filter(
         (l) => l.owned_entity_id === rootId && l.share_class_id === sc.id && !l.end_date
