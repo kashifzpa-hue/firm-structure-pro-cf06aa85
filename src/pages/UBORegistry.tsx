@@ -226,7 +226,7 @@ export default function UBORegistry() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Unresolved Chains</CardTitle>
             <AlertTriangle className="h-5 w-5 text-warning" />
           </CardHeader>
-          <CardContent><div className="text-3xl font-bold text-warning">{unresolvedCompanies.length}</div></CardContent>
+          <CardContent><div className="text-3xl font-bold text-warning">{unresolvedCount}</div></CardContent>
         </Card>
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
