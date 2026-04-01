@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ArrowLeft, Building2, Download, Edit, Trash2, User } from "lucide-react";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Trash2, User } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
@@ -19,21 +19,37 @@ export default function EntityDetail() {
   const { workspaceId } = useAuth();
   const [entity, setEntity] = useState<any>(null);
   const [docs, setDocs] = useState<any[]>([]);
+  const [owns, setOwns] = useState<any[]>([]);
+  const [ownedBy, setOwnedBy] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!id || !workspaceId) return;
-    const fetch = async () => {
-      const [entityRes, docsRes] = await Promise.all([
+    const fetchAll = async () => {
+      const [entityRes, docsRes, ownsRes, ownedByRes] = await Promise.all([
         supabase.from("entities").select("*").eq("id", id).single(),
         supabase.from("documents").select("*").eq("entity_id", id),
+        supabase
+          .from("equity_links")
+          .select("*, owned:entities!equity_links_owned_entity_id_fkey(id, name, type)")
+          .eq("owner_entity_id", id)
+          .eq("workspace_id", workspaceId)
+          .is("end_date", null),
+        supabase
+          .from("equity_links")
+          .select("*, owner:entities!equity_links_owner_entity_id_fkey(id, name, type)")
+          .eq("owned_entity_id", id)
+          .eq("workspace_id", workspaceId)
+          .is("end_date", null),
       ]);
       setEntity(entityRes.data);
       setDocs(docsRes.data || []);
+      setOwns(ownsRes.data || []);
+      setOwnedBy(ownedByRes.data || []);
       setLoading(false);
     };
-    fetch();
+    fetchAll();
   }, [id, workspaceId]);
 
   const handleDelete = async () => {
@@ -79,6 +95,7 @@ export default function EntityDetail() {
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="documents">Documents ({docs.length})</TabsTrigger>
+          <TabsTrigger value="ownership">Ownership</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -186,6 +203,112 @@ export default function EntityDetail() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ownership">
+          <div className="space-y-6">
+            {/* Owns */}
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Owns</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {owns.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">This entity does not own any other entities.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Company Name</TableHead>
+                        <TableHead>Percentage</TableHead>
+                        <TableHead>Effective Date</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {owns.map((link) => (
+                        <TableRow key={link.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {link.owned?.name}
+                              <Badge variant="outline" className="text-xs gap-1">
+                                {link.owned?.type === "person" ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                                {link.owned?.type === "person" ? "Person" : "Company"}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>{Number(link.percentage).toFixed(2)}%</TableCell>
+                          <TableCell>{format(parseISO(link.effective_date), "MMM dd, yyyy")}</TableCell>
+                          <TableCell>
+                            {link.owned?.type === "company" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/org-chart?root=${link.owned_entity_id}`)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-1" /> Org Chart
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Owned By */}
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Owned By</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ownedBy.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No entities own a stake in this entity.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Owner Name</TableHead>
+                        <TableHead>Percentage</TableHead>
+                        <TableHead>Effective Date</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ownedBy.map((link) => (
+                        <TableRow key={link.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {link.owner?.name}
+                              <Badge variant="outline" className="text-xs gap-1">
+                                {link.owner?.type === "person" ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                                {link.owner?.type === "person" ? "Person" : "Company"}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>{Number(link.percentage).toFixed(2)}%</TableCell>
+                          <TableCell>{format(parseISO(link.effective_date), "MMM dd, yyyy")}</TableCell>
+                          <TableCell>
+                            {entity.type === "company" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/org-chart?root=${id}`)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-1" /> Org Chart
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
