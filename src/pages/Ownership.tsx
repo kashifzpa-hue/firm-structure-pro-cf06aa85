@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Building2, User, Link2, AlertTriangle } from "lucide-react";
+import { Plus, Search, Building2, User, Link2, AlertTriangle, Wrench, CheckCircle } from "lucide-react";
 import { format, parseISO, isToday } from "date-fns";
 import { toast } from "sonner";
 import { OwnershipFormModal } from "@/components/OwnershipFormModal";
