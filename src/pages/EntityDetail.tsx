@@ -62,7 +62,7 @@ export default function EntityDetail() {
 
   const fetchAll = async () => {
     if (!id || !workspaceId) return;
-    const [entityRes, docsRes, ownsRes, ownedByRes, scRes, entitiesRes] = await Promise.all([
+    const [entityRes, docsRes, ownsRes, ownedByRes, scRes, entitiesRes, historyRes] = await Promise.all([
       supabase.from("entities").select("*").eq("id", id).single(),
       supabase.from("documents").select("*").eq("entity_id", id),
       supabase
@@ -78,7 +78,8 @@ export default function EntityDetail() {
         .eq("workspace_id", workspaceId)
         .is("end_date", null),
       supabase.from("share_classes").select("*").eq("company_entity_id", id).eq("workspace_id", workspaceId),
-      supabase.from("entities").select("id, name, type").eq("workspace_id", workspaceId).order("name"),
+      supabase.from("entities").select("id, name, type, entity_status").eq("workspace_id", workspaceId).order("name"),
+      supabase.from("entity_field_history").select("*").eq("entity_id", id).order("changed_at", { ascending: false }),
     ]);
     setEntity(entityRes.data);
     setDocs(docsRes.data || []);
@@ -86,15 +87,78 @@ export default function EntityDetail() {
     setOwnedBy(ownedByRes.data || []);
     setShareClasses(scRes.data || []);
     setEntities(entitiesRes.data || []);
+    setFieldHistory(historyRes.data || []);
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, [id, workspaceId]);
 
+  const checkDeleteDeps = async () => {
+    if (!id || !workspaceId) return;
+    const [linksOwner, linksOwned, appts, movsFrom, movsTo] = await Promise.all([
+      supabase.from("equity_links").select("id", { count: "exact", head: true }).eq("owner_entity_id", id).eq("workspace_id", workspaceId),
+      supabase.from("equity_links").select("id", { count: "exact", head: true }).eq("owned_entity_id", id).eq("workspace_id", workspaceId),
+      supabase.from("appointments").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).or(`person_entity_id.eq.${id},company_entity_id.eq.${id}`),
+      supabase.from("movements").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("from_entity_id", id),
+      supabase.from("movements").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("to_entity_id", id),
+    ]);
+    const links = (linksOwner.count || 0) + (linksOwned.count || 0);
+    const appointments = appts.count || 0;
+    const movements = (movsFrom.count || 0) + (movsTo.count || 0);
+    setDeleteDeps({ links, appointments, movements });
+    return { links, appointments, movements };
+  };
+
+  const handleDeleteClick = async () => {
+    const deps = await checkDeleteDeps();
+    if (!deps) return;
+    if (deps.links > 0 || deps.appointments > 0 || deps.movements > 0) {
+      setDeleteOpen(true); // Show blocked dialog
+    } else {
+      setDeleteOpen(true); // Show normal delete dialog
+    }
+  };
+
   const handleDelete = async () => {
     await supabase.from("entities").delete().eq("id", id);
     toast.success("Entity deleted");
     navigate("/entities");
+  };
+
+  const handleDeactivate = async () => {
+    if (!entity || !workspaceId || !deactivateReason) return;
+    setDeactivating(true);
+    
+    // Get profile id
+    const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
+    
+    const { error } = await supabase.from("entities").update({
+      entity_status: "inactive" as any,
+      deactivated_at: new Date().toISOString(),
+      deactivated_by: profile?.id || null,
+      deactivation_reason: deactivateReason === "Other" ? deactivateNotes : deactivateReason,
+    }).eq("id", id);
+    
+    if (error) { toast.error(error.message); setDeactivating(false); return; }
+    toast.success("Entity deactivated");
+    setDeactivateOpen(false);
+    setDeactivating(false);
+    setDeactivateReason("");
+    setDeactivateNotes("");
+    setDeleteOpen(false);
+    fetchAll();
+  };
+
+  const handleReactivate = async () => {
+    const { error } = await supabase.from("entities").update({
+      entity_status: "active" as any,
+      deactivated_at: null,
+      deactivated_by: null,
+      deactivation_reason: null,
+    }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Entity reactivated");
+    fetchAll();
   };
 
   const handleActivateLiveMode = async () => {
