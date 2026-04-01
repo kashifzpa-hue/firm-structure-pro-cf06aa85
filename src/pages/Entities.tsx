@@ -13,7 +13,7 @@ import { getDocumentStatus } from "@/lib/document-status";
 import { EntityImportModal } from "@/components/EntityImportModal";
 
 export default function Entities() {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
   const navigate = useNavigate();
   const [entities, setEntities] = useState<any[]>([]);
   const [search, setSearch] = useState("");
