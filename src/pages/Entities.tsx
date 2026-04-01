@@ -205,9 +205,15 @@ export default function Entities() {
             <TableBody>
               {filtered.map((entity) => {
                 const docStatus = getEntityDocStatus(entity);
+                const isInactive = entity.entity_status === "inactive";
                 return (
-                  <TableRow key={entity.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/entities/${entity.id}`)}>
-                    <TableCell className="font-medium">{entity.name}</TableCell>
+                  <TableRow key={entity.id} className={`cursor-pointer hover:bg-muted/50 ${isInactive ? "opacity-50" : ""}`} onClick={() => navigate(`/entities/${entity.id}`)}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {entity.name}
+                        {isInactive && <Badge variant="outline" className="text-xs gap-1 border-muted-foreground/30"><Ban className="h-3 w-3" /> Inactive</Badge>}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="gap-1">
                         {entity.type === "person" ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
