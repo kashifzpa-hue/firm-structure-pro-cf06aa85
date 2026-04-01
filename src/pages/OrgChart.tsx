@@ -73,6 +73,7 @@ export default function OrgChart() {
 
   const [entities, setEntities] = useState<any[]>([]);
   const [allLinks, setAllLinks] = useState<any[]>([]);
+  const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
@@ -81,12 +82,17 @@ export default function OrgChart() {
   useEffect(() => {
     if (!workspaceId) return;
     const fetchData = async () => {
-      const [entRes, linksRes] = await Promise.all([
+      const [entRes, linksRes, apptsRes] = await Promise.all([
         supabase.from("entities").select("*").eq("workspace_id", workspaceId).order("name"),
         supabase.from("equity_links").select("*").eq("workspace_id", workspaceId).is("end_date", null),
+        supabase.from("appointments").select("company_entity_id").eq("workspace_id", workspaceId).is("resignation_date", null),
       ]);
       setEntities(entRes.data || []);
       setAllLinks(linksRes.data || []);
+      // Count officers per company
+      const counts: Record<string, number> = {};
+      (apptsRes.data || []).forEach((a: any) => { counts[a.company_entity_id] = (counts[a.company_entity_id] || 0) + 1; });
+      setAppointmentCounts(counts);
     };
     fetchData();
   }, [workspaceId]);
