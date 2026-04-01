@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [appointmentAlerts, setAppointmentAlerts] = useState<any[]>([]);
   const [shareholdingGaps, setShareholdingGaps] = useState<any[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
+  const [uboAlerts, setUboAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     if (!workspaceId) return;
