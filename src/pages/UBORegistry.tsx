@@ -129,7 +129,7 @@ export default function UBORegistry() {
 
   // Filter snapshots
   const filtered = useMemo(() => {
-    return nonCircularSnapshots.filter(s => {
+    return normalSnapshots.filter(s => {
       const person = entityMap[s.person_entity_id];
       const company = entityMap[s.company_entity_id];
       if (!person || !company) return false;
@@ -144,7 +144,7 @@ export default function UBORegistry() {
       if (nationalityFilter !== "all" && person.nationality_or_jurisdiction !== nationalityFilter) return false;
       return true;
     });
-  }, [nonCircularSnapshots, search, companyFilter, thresholdOnly, minPct, nationalityFilter, entityMap]);
+  }, [normalSnapshots, search, companyFilter, thresholdOnly, minPct, nationalityFilter, entityMap]);
 
   const handleExportCSV = () => {
     const headers = ["Company", "UBO Name", "Nationality", "Date of Birth", "Passport Number", "Passport Expiry", "Economic %", "Voting %", "Layers", "Above Threshold"];
