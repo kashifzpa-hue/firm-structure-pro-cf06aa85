@@ -71,6 +71,8 @@ export default function Entities() {
     XLSX.utils.book_append_sheet(wb, ws, "Entities");
     XLSX.writeFile(wb, `CorpSync_Entities_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
+
+  const filtered = entities.filter((e) => {
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "all" || e.type === typeFilter;
     const docStatus = getEntityDocStatus(e);
