@@ -7,31 +7,35 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, User, Search } from "lucide-react";
+import { Plus, Building2, User, Search, Upload } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDocumentStatus } from "@/lib/document-status";
+import { EntityImportModal } from "@/components/EntityImportModal";
 
 export default function Entities() {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
   const navigate = useNavigate();
   const [entities, setEntities] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
+
+  const fetchEntities = async () => {
+    if (!workspaceId) return;
+    const { data } = await supabase
+      .from("entities")
+      .select("*, documents(*)")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false });
+    setEntities(data || []);
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!workspaceId) return;
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("entities")
-        .select("*, documents(*)")
-        .eq("workspace_id", workspaceId)
-        .order("created_at", { ascending: false });
-      setEntities(data || []);
-      setLoading(false);
-    };
-    fetch();
+    fetchEntities();
   }, [workspaceId]);
 
   const getEntityDocStatus = (entity: any) => {
@@ -65,9 +69,16 @@ export default function Entities() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Entities</h1>
-        <Button onClick={() => navigate("/entities/new")}>
-          <Plus className="mr-2 h-4 w-4" /> Add Entity
-        </Button>
+        <div className="flex gap-2">
+          {userRole === "admin" && (
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" /> Import Excel
+            </Button>
+          )}
+          <Button onClick={() => navigate("/entities/new")}>
+            <Plus className="mr-2 h-4 w-4" /> Add Entity
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-4">
@@ -147,6 +158,8 @@ export default function Entities() {
           </Table>
         </div>
       )}
+
+      <EntityImportModal open={importOpen} onOpenChange={setImportOpen} onImported={fetchEntities} />
     </div>
   );
 }
