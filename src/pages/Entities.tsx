@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, User, Search, Upload } from "lucide-react";
+import { Plus, Building2, User, Search, Upload, Download } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDocumentStatus } from "@/lib/document-status";
 import { EntityImportModal } from "@/components/EntityImportModal";
+import * as XLSX from "xlsx";
 
 export default function Entities() {
   const { workspaceId, userRole } = useAuth();
@@ -48,6 +49,29 @@ export default function Entities() {
     return "valid";
   };
 
+  const handleExportExcel = () => {
+    const exportData = filtered.map((e) => ({
+      "Name": e.name,
+      "Type": e.type === "person" ? "Person" : "Company",
+      "Nationality / Jurisdiction": e.nationality_or_jurisdiction || "",
+      "Date of Birth / Incorporation": e.date_of_birth_or_incorporation || "",
+      "Email": e.email || "",
+      "Phone": e.phone || "",
+      "Company Type": e.company_type || "",
+      "Registration Number": e.registration_number || "",
+      "Registered Address": e.registered_address || "",
+      "Primary Contact Name": e.primary_contact_name || "",
+      "Primary Contact Email": e.primary_contact_email || "",
+      "Notes": e.notes || "",
+      "Created": format(parseISO(e.created_at), "yyyy-MM-dd"),
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws["!cols"] = Object.keys(exportData[0] || {}).map(() => ({ wch: 22 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Entities");
+    XLSX.writeFile(wb, `CorpSync_Entities_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
+
   const filtered = entities.filter((e) => {
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "all" || e.type === typeFilter;
@@ -73,6 +97,11 @@ export default function Entities() {
           {userRole === "admin" && (
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" /> Import Excel
+            </Button>
+          )}
+          {filtered.length > 0 && (
+            <Button variant="outline" onClick={handleExportExcel}>
+              <Download className="mr-2 h-4 w-4" /> Export Excel
             </Button>
           )}
           <Button onClick={() => navigate("/entities/new")}>
