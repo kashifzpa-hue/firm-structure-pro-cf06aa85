@@ -37,7 +37,14 @@ export default function Entities() {
   const filtered = entities.filter((e) => {
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "all" || e.type === typeFilter;
-    return matchSearch && matchType;
+    const docStatus = getEntityDocStatus(e);
+    const matchStatus =
+      statusFilter === "all" ||
+      (statusFilter === "issues" && docStatus === "expired") ||
+      (statusFilter === "attention" && docStatus === "expiring_soon") ||
+      (statusFilter === "ok" && docStatus === "valid") ||
+      (statusFilter === "no_docs" && !docStatus);
+    return matchSearch && matchType && matchStatus;
   });
 
   const getEntityDocStatus = (entity: any) => {
