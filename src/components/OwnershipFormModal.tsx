@@ -295,7 +295,12 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
 
           <div>
             <Label>Effective Date *</Label>
-            <Input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} className="mt-1" />
+            <Input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} className={`mt-1 ${effectiveDateBeforeIncorporation ? "border-destructive" : ""}`} />
+            {effectiveDateBeforeIncorporation && (
+              <p className="text-sm text-destructive mt-1">
+                Effective date cannot be before the date of incorporation ({format(new Date(incorporationDate + "T00:00:00"), "MMM dd, yyyy")})
+              </p>
+            )}
           </div>
 
           <div>
