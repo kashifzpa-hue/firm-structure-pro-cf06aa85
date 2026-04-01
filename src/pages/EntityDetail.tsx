@@ -156,6 +156,7 @@ export default function EntityDetail() {
                     <TableRow>
                       <TableHead>Document Type</TableHead>
                       <TableHead>Document Number</TableHead>
+                      <TableHead>Country of Issue</TableHead>
                       <TableHead>Issue Date</TableHead>
                       <TableHead>Expiry Date</TableHead>
                       <TableHead>Status</TableHead>
@@ -167,6 +168,7 @@ export default function EntityDetail() {
                       <TableRow key={doc.id}>
                         <TableCell className="font-medium">{doc.document_type}</TableCell>
                         <TableCell>{doc.document_number || "—"}</TableCell>
+                        <TableCell>{doc.country_of_issue || "—"}</TableCell>
                         <TableCell>{doc.issue_date ? format(parseISO(doc.issue_date), "MMM dd, yyyy") : "—"}</TableCell>
                         <TableCell>{doc.expiry_date ? format(parseISO(doc.expiry_date), "MMM dd, yyyy") : "—"}</TableCell>
                         <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>

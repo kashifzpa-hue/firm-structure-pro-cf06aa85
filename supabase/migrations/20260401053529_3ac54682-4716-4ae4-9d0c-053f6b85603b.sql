@@ -1,0 +1,1 @@
+ALTER TABLE public.documents ADD COLUMN country_of_issue text;

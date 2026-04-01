@@ -8,20 +8,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, ArrowLeft, X } from "lucide-react";
 import { format } from "date-fns";
 import { countries } from "@/lib/countries";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 
-const personDocTypes = ["Passport", "Emirates ID", "Residency Visa", "Other"];
+const personDocTypes = ["National ID", "Passport", "Driving License", "Other"];
 const companyDocTypes = ["Trade License", "Certificate of Incorporation", "Memorandum of Association", "Articles of Association", "Tax Registration Certificate", "Power of Attorney", "Other"];
 const companyTypes = ["LLC", "Free Zone LLC", "Holding Company", "Offshore", "Joint Stock", "Other"];
 
 interface DocRow {
   id?: string;
   document_type: string;
+  custom_document_type: string;
   document_number: string;
+  country_of_issue: string;
   issue_date: string;
   expiry_date: string;
   file: File | null;
@@ -30,7 +33,9 @@ interface DocRow {
 
 const emptyDoc = (): DocRow => ({
   document_type: "",
+  custom_document_type: "",
   document_number: "",
+  country_of_issue: "",
   issue_date: "",
   expiry_date: "",
   file: null,
@@ -45,7 +50,7 @@ export default function EntityForm() {
   const [loading, setLoading] = useState(false);
   const [entityType, setEntityType] = useState<"person" | "company">("person");
   const [name, setName] = useState("");
-  const [nationality, setNationality] = useState("");
+  const [nationalities, setNationalities] = useState<string[]>([]);
   const [dob, setDob] = useState<Date | undefined>();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -64,7 +69,10 @@ export default function EntityForm() {
       if (!entity) { navigate("/entities"); return; }
       setEntityType(entity.type as "person" | "company");
       setName(entity.name);
-      setNationality(entity.nationality_or_jurisdiction || "");
+      // Parse stored nationalities (comma-separated)
+      if (entity.nationality_or_jurisdiction) {
+        setNationalities(entity.nationality_or_jurisdiction.split(",").map((s: string) => s.trim()).filter(Boolean));
+      }
       setDob(entity.date_of_birth_or_incorporation ? new Date(entity.date_of_birth_or_incorporation) : undefined);
       setEmail(entity.email || "");
       setPhone(entity.phone || "");
@@ -77,19 +85,34 @@ export default function EntityForm() {
 
       const { data: existingDocs } = await supabase.from("documents").select("*").eq("entity_id", id);
       if (existingDocs && existingDocs.length > 0) {
-        setDocs(existingDocs.map((d) => ({
-          id: d.id,
-          document_type: d.document_type,
-          document_number: d.document_number || "",
-          issue_date: d.issue_date || "",
-          expiry_date: d.expiry_date || "",
-          file: null,
-          file_url: d.file_url || "",
-        })));
+        setDocs(existingDocs.map((d) => {
+          const isKnownType = [...personDocTypes, ...companyDocTypes].filter(t => t !== "Other").includes(d.document_type);
+          return {
+            id: d.id,
+            document_type: isKnownType ? d.document_type : "Other",
+            custom_document_type: isKnownType ? "" : d.document_type,
+            document_number: d.document_number || "",
+            country_of_issue: (d as any).country_of_issue || "",
+            issue_date: d.issue_date || "",
+            expiry_date: d.expiry_date || "",
+            file: null,
+            file_url: d.file_url || "",
+          };
+        }));
       }
     };
     fetch();
   }, [id, isEdit, workspaceId, navigate]);
+
+  const addNationality = (country: string) => {
+    if (!nationalities.includes(country)) {
+      setNationalities([...nationalities, country]);
+    }
+  };
+
+  const removeNationality = (country: string) => {
+    setNationalities(nationalities.filter((n) => n !== country));
+  };
 
   const addDoc = () => setDocs([...docs, emptyDoc()]);
   const removeDoc = (i: number) => setDocs(docs.filter((_, idx) => idx !== i));
@@ -108,7 +131,7 @@ export default function EntityForm() {
       workspace_id: workspaceId,
       type: entityType as any,
       name,
-      nationality_or_jurisdiction: nationality || null,
+      nationality_or_jurisdiction: nationalities.length > 0 ? nationalities.join(", ") : null,
       date_of_birth_or_incorporation: dob ? format(dob, "yyyy-MM-dd") : null,
       email: email || null,
       phone: phone || null,
@@ -141,11 +164,16 @@ export default function EntityForm() {
         fileUrl = urlData.publicUrl;
       }
 
+      const resolvedDocType = doc.document_type === "Other" && doc.custom_document_type
+        ? doc.custom_document_type
+        : doc.document_type;
+
       const docData = {
         entity_id: entityId!,
         workspace_id: workspaceId,
-        document_type: doc.document_type,
+        document_type: resolvedDocType,
         document_number: doc.document_number || null,
+        country_of_issue: doc.country_of_issue || null,
         issue_date: doc.issue_date || null,
         expiry_date: doc.expiry_date || null,
         file_url: fileUrl || null,
@@ -153,7 +181,7 @@ export default function EntityForm() {
 
       if (doc.id) {
         await supabase.from("documents").update(docData).eq("id", doc.id);
-      } else if (doc.document_type) {
+      } else if (resolvedDocType) {
         await supabase.from("documents").insert(docData);
       }
     }
@@ -197,12 +225,37 @@ export default function EntityForm() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{entityType === "person" ? "Nationality" : "Jurisdiction / Country"}</Label>
-                <Select value={nationality} onValueChange={setNationality}>
-                  <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                  <SelectContent>
-                    {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                {entityType === "person" ? (
+                  <div className="space-y-2">
+                    <Select value="" onValueChange={addNationality}>
+                      <SelectTrigger><SelectValue placeholder="Add nationality" /></SelectTrigger>
+                      <SelectContent>
+                        {countries.filter((c) => !nationalities.includes(c)).map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {nationalities.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {nationalities.map((n) => (
+                          <Badge key={n} variant="secondary" className="gap-1 pr-1">
+                            {n}
+                            <button type="button" onClick={() => removeNationality(n)} className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Select value={nationalities[0] || ""} onValueChange={(v) => setNationalities([v])}>
+                    <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                    <SelectContent>
+                      {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>{entityType === "person" ? "Date of Birth" : "Date of Incorporation"}</Label>
@@ -286,18 +339,63 @@ export default function EntityForm() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Document Type</Label>
-                    <Select value={doc.document_type} onValueChange={(v) => updateDoc(i, "document_type", v)}>
+                    <Select value={doc.document_type} onValueChange={(v) => {
+                      updateDoc(i, "document_type", v);
+                      if (v !== "Other") updateDoc(i, "custom_document_type", "");
+                    }}>
                       <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                       <SelectContent>
                         {docTypeOptions.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Document Number</Label>
-                    <Input value={doc.document_number} onChange={(e) => updateDoc(i, "document_number", e.target.value)} />
-                  </div>
+                  {doc.document_type === "Other" ? (
+                    <div className="space-y-2">
+                      <Label>Custom Document Type</Label>
+                      <Input
+                        value={doc.custom_document_type}
+                        onChange={(e) => updateDoc(i, "custom_document_type", e.target.value)}
+                        placeholder="Enter document type"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>Document Number</Label>
+                      <Input value={doc.document_number} onChange={(e) => updateDoc(i, "document_number", e.target.value)} />
+                    </div>
+                  )}
                 </div>
+                {doc.document_type === "Other" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Document Number</Label>
+                      <Input value={doc.document_number} onChange={(e) => updateDoc(i, "document_number", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Country of Issue</Label>
+                      <Select value={doc.country_of_issue} onValueChange={(v) => updateDoc(i, "country_of_issue", v)}>
+                        <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                        <SelectContent>
+                          {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+                {doc.document_type !== "Other" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Country of Issue</Label>
+                      <Select value={doc.country_of_issue} onValueChange={(v) => updateDoc(i, "country_of_issue", v)}>
+                        <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                        <SelectContent>
+                          {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div />
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Issue Date</Label>
