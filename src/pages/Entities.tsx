@@ -17,6 +17,7 @@ export default function Entities() {
   const [entities, setEntities] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,7 +37,14 @@ export default function Entities() {
   const filtered = entities.filter((e) => {
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "all" || e.type === typeFilter;
-    return matchSearch && matchType;
+    const docStatus = getEntityDocStatus(e);
+    const matchStatus =
+      statusFilter === "all" ||
+      (statusFilter === "issues" && docStatus === "expired") ||
+      (statusFilter === "attention" && docStatus === "expiring_soon") ||
+      (statusFilter === "ok" && docStatus === "valid") ||
+      (statusFilter === "no_docs" && !docStatus);
+    return matchSearch && matchType && matchStatus;
   });
 
   const getEntityDocStatus = (entity: any) => {
@@ -75,6 +83,18 @@ export default function Entities() {
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="person">Person</SelectItem>
             <SelectItem value="company">Company</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="issues">Issues</SelectItem>
+            <SelectItem value="attention">Attention</SelectItem>
+            <SelectItem value="ok">OK</SelectItem>
+            <SelectItem value="no_docs">No Docs</SelectItem>
           </SelectContent>
         </Select>
       </div>
