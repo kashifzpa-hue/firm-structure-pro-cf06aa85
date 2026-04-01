@@ -19,6 +19,7 @@ const navItems = [
   { title: "Entities", url: "/entities", icon: Building2 },
   { title: "Ownership", url: "/ownership", icon: Link2 },
   { title: "Org Chart", url: "/org-chart", icon: GitBranch },
+  { title: "Ledger", url: "/ledger", icon: ScrollText },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

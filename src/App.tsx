@@ -61,6 +61,8 @@ const App = () => (
               <Route path="/documents" element={<Documents />} />
               <Route path="/ownership" element={<Ownership />} />
               <Route path="/org-chart" element={<OrgChart />} />
+              <Route path="/ledger" element={<Ledger />} />
+              <Route path="/ledger/:id" element={<MovementDetail />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
