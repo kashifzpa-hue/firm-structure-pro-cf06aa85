@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +49,10 @@ export default function EntityForm() {
   const navigate = useNavigate();
   const { workspaceId } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showBoardPrompt, setShowBoardPrompt] = useState(false);
+  const [showBoardInline, setShowBoardInline] = useState(false);
+  const [savedEntityId, setSavedEntityId] = useState<string | null>(null);
+  const [savedEntityName, setSavedEntityName] = useState("");
   const [entityType, setEntityType] = useState<"person" | "company">("person");
   const [name, setName] = useState("");
   const [nationalities, setNationalities] = useState<string[]>([]);
@@ -187,7 +192,13 @@ export default function EntityForm() {
     }
 
     toast.success(isEdit ? "Entity updated!" : "Entity created!");
-    navigate(`/entities/${entityId}`);
+    if (!isEdit && entityType === "company") {
+      setSavedEntityId(entityId!);
+      setSavedEntityName(name);
+      setShowBoardPrompt(true);
+    } else {
+      navigate(`/entities/${entityId}`);
+    }
     setLoading(false);
   };
 
@@ -423,6 +434,29 @@ export default function EntityForm() {
           <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">Cancel</Button>
         </div>
       </form>
+
+      {showBoardPrompt && savedEntityId && !showBoardInline && (
+        <Card className="shadow-sm border-primary/20">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <h3 className="text-lg font-semibold">Would you like to add Board Members and Key Management now?</h3>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={() => { setShowBoardPrompt(false); setShowBoardInline(true); }}>Yes, Add Now</Button>
+                <Button variant="outline" onClick={() => navigate(`/entities/${savedEntityId}`)}>Skip for Now</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {showBoardInline && savedEntityId && (
+        <div className="space-y-4">
+          <BoardManagementTab companyEntityId={savedEntityId} companyName={savedEntityName} />
+          <div className="flex justify-end">
+            <Button onClick={() => navigate(`/entities/${savedEntityId}`)}>Done — View Entity</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

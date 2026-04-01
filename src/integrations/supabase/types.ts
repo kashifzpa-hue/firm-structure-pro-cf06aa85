@@ -14,6 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          appointment_date: string
+          company_entity_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          person_entity_id: string
+          resignation_date: string | null
+          role_category: Database["public"]["Enums"]["appointment_role_category"]
+          role_title: string
+          workspace_id: string
+        }
+        Insert: {
+          appointment_date?: string
+          company_entity_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          person_entity_id: string
+          resignation_date?: string | null
+          role_category: Database["public"]["Enums"]["appointment_role_category"]
+          role_title: string
+          workspace_id: string
+        }
+        Update: {
+          appointment_date?: string
+          company_entity_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          person_entity_id?: string
+          resignation_date?: string | null
+          role_category?: Database["public"]["Enums"]["appointment_role_category"]
+          role_title?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_person_entity_id_fkey"
+            columns: ["person_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           country_of_issue: string | null
@@ -330,6 +391,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "viewer"
+      appointment_role_category: "board" | "management"
       entity_type: "person" | "company"
     }
     CompositeTypes: {
@@ -459,6 +521,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "viewer"],
+      appointment_role_category: ["board", "management"],
       entity_type: ["person", "company"],
     },
   },

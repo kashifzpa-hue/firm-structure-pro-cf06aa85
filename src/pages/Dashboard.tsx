@@ -17,11 +17,12 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [recentLinks, setRecentLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [appointmentAlerts, setAppointmentAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     if (!workspaceId) return;
     const fetchData = async () => {
-      const [entitiesRes, docsRes, linksCountRes, recentLinksRes] = await Promise.all([
+      const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes] = await Promise.all([
         supabase.from("entities").select("id, type").eq("workspace_id", workspaceId),
         supabase.from("documents").select("*, entities!inner(name, type)").eq("workspace_id", workspaceId),
         supabase.from("equity_links").select("id").eq("workspace_id", workspaceId).is("end_date", null),
@@ -31,6 +32,11 @@ export default function Dashboard() {
           .eq("workspace_id", workspaceId)
           .order("created_at", { ascending: false })
           .limit(5),
+        supabase
+          .from("appointments")
+          .select("*, person:entities!appointments_person_entity_id_fkey(id, name), company:entities!appointments_company_entity_id_fkey(id, name)")
+          .eq("workspace_id", workspaceId)
+          .is("resignation_date", null),
       ]);
 
       const entities = entitiesRes.data || [];
@@ -59,6 +65,29 @@ export default function Dashboard() {
       setStats({ totalEntities, expiringCount, expiredCount, totalCompanies, totalLinks });
       setAlerts(alertDocs);
       setRecentLinks(recentLinksRes.data || []);
+
+      // Build appointment-linked alerts: find docs for persons with active appointments
+      const activeAppointments = appointmentsRes.data || [];
+      const personIds = [...new Set(activeAppointments.map((a: any) => a.person_entity_id))];
+      const apptAlerts: any[] = [];
+      if (personIds.length > 0) {
+        const { data: personDocs } = await supabase
+          .from("documents")
+          .select("*, entities!inner(name, type)")
+          .eq("workspace_id", workspaceId)
+          .in("entity_id", personIds)
+          .in("document_type", ["Passport", "National ID"]);
+        (personDocs || []).forEach((doc: any) => {
+          const status = getDocumentStatus(doc.expiry_date);
+          if (status === "expired" || status === "expiring_soon") {
+            const roles = activeAppointments
+              .filter((a: any) => a.person_entity_id === doc.entity_id)
+              .map((a: any) => `${a.role_title} at ${a.company?.name || "Unknown"}`);
+            apptAlerts.push({ ...doc, status, appointmentRole: roles.join(", ") });
+          }
+        });
+      }
+      setAppointmentAlerts(apptAlerts);
       setLoading(false);
     };
     fetchData();
@@ -99,7 +128,7 @@ export default function Dashboard() {
           <CardTitle className="text-lg">Expiry Alerts</CardTitle>
         </CardHeader>
         <CardContent>
-          {alerts.length === 0 ? (
+          {alerts.length === 0 && appointmentAlerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <AlertTriangle className="h-12 w-12 mb-4 opacity-30" />
               <p className="text-lg font-medium">No expiry alerts</p>
@@ -112,16 +141,18 @@ export default function Dashboard() {
                   <TableHead>Entity Name</TableHead>
                   <TableHead>Document Type</TableHead>
                   <TableHead>Document Number</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Expiry Date</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {alerts.map((doc) => (
-                  <TableRow key={doc.id} className="cursor-pointer" onClick={() => navigate(`/entities/${doc.entity_id}`)}>
+                {[...alerts, ...appointmentAlerts].map((doc, idx) => (
+                  <TableRow key={doc.id + "-" + idx} className="cursor-pointer" onClick={() => navigate(`/entities/${doc.entity_id}`)}>
                     <TableCell className="font-medium">{(doc.entities as any)?.name}</TableCell>
                     <TableCell>{doc.document_type}</TableCell>
                     <TableCell>{doc.document_number || "—"}</TableCell>
+                    <TableCell className="text-sm">{doc.appointmentRole || "—"}</TableCell>
                     <TableCell>{doc.expiry_date ? format(parseISO(doc.expiry_date), "MMM dd, yyyy") : "—"}</TableCell>
                     <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
                   </TableRow>

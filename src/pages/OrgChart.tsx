@@ -54,6 +54,11 @@ function EntityNode({ data }: { data: any }) {
     >
       <div className="font-semibold text-sm truncate">{data.label}</div>
       <div className="text-xs opacity-80 mt-0.5">{isCompany ? data.companyType || "Company" : "Individual"}</div>
+      {isCompany && data.officerCount > 0 && (
+        <div className="text-xs opacity-70 mt-1 flex items-center justify-center gap-1">
+          <User className="h-3 w-3" /> {data.officerCount} Officer{data.officerCount !== 1 ? "s" : ""}
+        </div>
+      )}
     </div>
   );
 }
@@ -68,6 +73,7 @@ export default function OrgChart() {
 
   const [entities, setEntities] = useState<any[]>([]);
   const [allLinks, setAllLinks] = useState<any[]>([]);
+  const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
@@ -76,12 +82,17 @@ export default function OrgChart() {
   useEffect(() => {
     if (!workspaceId) return;
     const fetchData = async () => {
-      const [entRes, linksRes] = await Promise.all([
+      const [entRes, linksRes, apptsRes] = await Promise.all([
         supabase.from("entities").select("*").eq("workspace_id", workspaceId).order("name"),
         supabase.from("equity_links").select("*").eq("workspace_id", workspaceId).is("end_date", null),
+        supabase.from("appointments").select("company_entity_id").eq("workspace_id", workspaceId).is("resignation_date", null),
       ]);
       setEntities(entRes.data || []);
       setAllLinks(linksRes.data || []);
+      // Count officers per company
+      const counts: Record<string, number> = {};
+      (apptsRes.data || []).forEach((a: any) => { counts[a.company_entity_id] = (counts[a.company_entity_id] || 0) + 1; });
+      setAppointmentCounts(counts);
     };
     fetchData();
   }, [workspaceId]);
@@ -110,7 +121,7 @@ export default function OrgChart() {
         id: current,
         type: "entityNode",
         position: { x: 0, y: 0 },
-        data: { label: entity.name, type: entity.type, companyType: entity.company_type },
+        data: { label: entity.name, type: entity.type, companyType: entity.company_type, officerCount: appointmentCounts[current] || 0 },
       });
 
       // Find entities owned by current

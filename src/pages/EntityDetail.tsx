@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/StatusBadge";
+import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ArrowLeft, Building2, Download, Edit, ExternalLink, Trash2, User } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -96,6 +97,7 @@ export default function EntityDetail() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="documents">Documents ({docs.length})</TabsTrigger>
           <TabsTrigger value="ownership">Ownership</TabsTrigger>
+          {!isPerson && <TabsTrigger value="board">Board & Management</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
@@ -310,6 +312,12 @@ export default function EntityDetail() {
             </Card>
           </div>
         </TabsContent>
+
+        {!isPerson && (
+          <TabsContent value="board">
+            <BoardManagementTab companyEntityId={id!} companyName={entity.name} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
