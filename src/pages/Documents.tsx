@@ -100,6 +100,7 @@ export default function Documents() {
                   <TableCell className="font-medium">{(doc.entities as any)?.name}</TableCell>
                   <TableCell>{doc.document_type}</TableCell>
                   <TableCell>{doc.document_number || "—"}</TableCell>
+                  <TableCell>{doc.country_of_issue || "—"}</TableCell>
                   <TableCell>{doc.expiry_date ? format(parseISO(doc.expiry_date), "MMM dd, yyyy") : "—"}</TableCell>
                   <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
                   <TableCell>
