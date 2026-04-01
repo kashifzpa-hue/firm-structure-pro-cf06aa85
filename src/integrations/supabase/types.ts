@@ -130,6 +130,67 @@ export type Database = {
           },
         ]
       }
+      equity_links: {
+        Row: {
+          created_at: string
+          effective_date: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          owned_entity_id: string
+          owner_entity_id: string
+          percentage: number
+          share_count: number | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          effective_date?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          owned_entity_id: string
+          owner_entity_id: string
+          percentage: number
+          share_count?: number | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          effective_date?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          owned_entity_id?: string
+          owner_entity_id?: string
+          percentage?: number
+          share_count?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equity_links_owned_entity_id_fkey"
+            columns: ["owned_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equity_links_owner_entity_id_fkey"
+            columns: ["owner_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equity_links_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
