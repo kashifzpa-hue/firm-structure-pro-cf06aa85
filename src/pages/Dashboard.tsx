@@ -24,7 +24,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!workspaceId) return;
     const fetchData = async () => {
-      const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes, shareClassesRes, equityLinksRes] = await Promise.all([
+      const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes, shareClassesRes, equityLinksRes, draftMovRes, recentMovRes] = await Promise.all([
         supabase.from("entities").select("id, type, name").eq("workspace_id", workspaceId),
         supabase.from("documents").select("*, entities!inner(name, type)").eq("workspace_id", workspaceId),
         supabase.from("equity_links").select("id").eq("workspace_id", workspaceId).is("end_date", null),
@@ -41,6 +41,11 @@ export default function Dashboard() {
           .is("resignation_date", null),
         supabase.from("share_classes").select("*").eq("workspace_id", workspaceId),
         supabase.from("equity_links").select("share_class_id, shares_owned").eq("workspace_id", workspaceId).is("end_date", null),
+        supabase.from("movements").select("id").eq("workspace_id", workspaceId).eq("status", "draft"),
+        supabase.from("movements")
+          .select("*, company:entities!movements_company_entity_id_fkey(name), from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name)")
+          .eq("workspace_id", workspaceId).eq("status", "confirmed")
+          .order("confirmed_at", { ascending: false }).limit(5),
       ]);
 
       const entities = entitiesRes.data || [];
