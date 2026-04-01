@@ -15,7 +15,9 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
 import { OwnershipFormModal } from "@/components/OwnershipFormModal";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus } from "lucide-react";
+import { LedgerTab } from "@/components/LedgerTab";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
@@ -81,10 +83,9 @@ export default function EntityDetail() {
   const handleActivateLiveMode = async () => {
     if (!entity || !workspaceId) return;
     setActivating(true);
-    // Update captable_status to 'live'
-    const { error } = await supabase.from("entities").update({ captable_status: 'live' } as any).eq("id", id);
-    if (error) { toast.error("Failed to activate live mode"); setActivating(false); return; }
-    toast.success("Live Mode activated for " + entity.name);
+    const { error } = await supabase.rpc("activate_live_mode", { p_entity_id: id });
+    if (error) { toast.error(error.message || "Failed to activate live mode"); setActivating(false); return; }
+    toast.success("Live Mode activated for " + entity.name + ". Opening balance movements have been created.");
     setActivateModalOpen(false);
     setActivating(false);
     setActivateCheck1(false);
@@ -174,6 +175,7 @@ export default function EntityDetail() {
           <TabsTrigger value="documents">Documents ({docs.length})</TabsTrigger>
           <TabsTrigger value="ownership">Ownership</TabsTrigger>
           {!isPerson && <TabsTrigger value="board">Board & Management</TabsTrigger>}
+          {!isPerson && isLiveMode && <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1" />Ledger</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
@@ -510,6 +512,13 @@ export default function EntityDetail() {
         {!isPerson && (
           <TabsContent value="board">
             <BoardManagementTab companyEntityId={id!} companyName={entity.name} />
+          </TabsContent>
+        )}
+
+        {/* Ledger Tab with Time Machine */}
+        {!isPerson && isLiveMode && (
+          <TabsContent value="ledger">
+            <LedgerTab companyEntityId={id!} companyName={entity.name} incorporationDate={entity.date_of_birth_or_incorporation} workspaceId={workspaceId!} />
           </TabsContent>
         )}
       </Tabs>

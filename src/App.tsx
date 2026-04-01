@@ -16,6 +16,8 @@ import EntityDetail from "./pages/EntityDetail";
 import Documents from "./pages/Documents";
 import Ownership from "./pages/Ownership";
 import OrgChart from "./pages/OrgChart";
+import Ledger from "./pages/Ledger";
+import MovementDetail from "./pages/MovementDetail";
 import SettingsPage from "./pages/SettingsPage";
 import SetupWorkspace from "./pages/SetupWorkspace";
 import NotFound from "./pages/NotFound";
@@ -59,6 +61,8 @@ const App = () => (
               <Route path="/documents" element={<Documents />} />
               <Route path="/ownership" element={<Ownership />} />
               <Route path="/org-chart" element={<OrgChart />} />
+              <Route path="/ledger" element={<Ledger />} />
+              <Route path="/ledger/:id" element={<MovementDetail />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

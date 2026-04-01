@@ -1,0 +1,167 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
+
+const TYPE_COLORS: Record<string, string> = {
+  TRANSFER: "bg-primary/10 text-primary",
+  ISSUANCE: "bg-green-100 text-green-700",
+  CANCELLATION: "bg-destructive/10 text-destructive",
+  INHERITANCE: "bg-purple-100 text-purple-700",
+  GIFT: "bg-pink-100 text-pink-700",
+  COURT_ORDER: "bg-amber-100 text-amber-700",
+  CAPITAL_INCREASE: "bg-emerald-100 text-emerald-700",
+  CAPITAL_DECREASE: "bg-orange-100 text-orange-700",
+};
+
+export default function MovementDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { workspaceId } = useAuth();
+  const [movement, setMovement] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidReason, setVoidReason] = useState("");
+  const [voiding, setVoiding] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  const fetchMovement = async () => {
+    if (!id || !workspaceId) return;
+    const { data } = await supabase.from("movements")
+      .select("*, company:entities!movements_company_entity_id_fkey(id, name), share_class:share_classes(class_name, total_shares_issued), from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name), created_by_profile:profiles!movements_created_by_fkey(full_name, email)")
+      .eq("id", id).single();
+    setMovement(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchMovement(); }, [id, workspaceId]);
+
+  const handleConfirm = async () => {
+    setConfirming(true);
+    const { error } = await supabase.rpc("confirm_movement", { p_movement_id: id });
+    if (error) { toast.error(error.message); setConfirming(false); return; }
+    toast.success("Movement confirmed");
+    setConfirming(false);
+    fetchMovement();
+  };
+
+  const handleVoid = async () => {
+    if (!voidReason.trim()) return;
+    setVoiding(true);
+    const { error } = await supabase.rpc("void_movement", { p_movement_id: id, p_reason: voidReason });
+    if (error) { toast.error(error.message); setVoiding(false); return; }
+    toast.success("Movement voided");
+    setVoidOpen(false); setVoidReason(""); setVoiding(false);
+    fetchMovement();
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
+  if (!movement) return <div className="flex items-center justify-center h-64 text-muted-foreground">Movement not found.</div>;
+
+  const isFuture = new Date(movement.movement_date) > new Date();
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/ledger")}><ArrowLeft className="h-5 w-5" /></Button>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Movement Detail</h1>
+            <Badge className={TYPE_COLORS[movement.movement_type] || ""}>{movement.movement_type.replace(/_/g, " ")}</Badge>
+            <Badge className={movement.status === "confirmed" ? "bg-green-100 text-green-700" : movement.status === "voided" ? "bg-destructive/10 text-destructive" : "bg-amber-100 text-amber-700"}>
+              {movement.status}
+            </Badge>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {movement.status === "draft" && !isFuture && (
+            <Button onClick={handleConfirm} disabled={confirming} className="bg-green-600 hover:bg-green-700">
+              <CheckCircle className="mr-2 h-4 w-4" /> {confirming ? "Confirming..." : "Confirm"}
+            </Button>
+          )}
+          {movement.status === "confirmed" && (
+            <Button variant="destructive" onClick={() => setVoidOpen(true)}>
+              <XCircle className="mr-2 h-4 w-4" /> Void
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {movement.status === "voided" && (
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+            <span className="text-6xl font-bold text-destructive/30 rotate-[-15deg]">VOIDED</span>
+          </div>
+        </div>
+      )}
+
+      <Card className={`shadow-sm ${movement.status === "voided" ? "opacity-60" : ""}`}>
+        <CardHeader><CardTitle className="text-lg">Details</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            <div><dt className="text-muted-foreground">Company</dt><dd className="font-medium">{movement.company?.name}</dd></div>
+            <div><dt className="text-muted-foreground">Share Class</dt><dd className="font-medium">{movement.share_class?.class_name || "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Movement Date</dt><dd className="font-medium">{format(parseISO(movement.movement_date), "MMM dd, yyyy")}</dd></div>
+            <div><dt className="text-muted-foreground">Shares Transferred</dt><dd className="font-medium">{movement.shares_transferred.toLocaleString()}</dd></div>
+            {movement.from_entity && <div><dt className="text-muted-foreground">From</dt><dd className="font-medium">{movement.from_entity.name}</dd></div>}
+            {movement.to_entity && <div><dt className="text-muted-foreground">To</dt><dd className="font-medium">{movement.to_entity.name}</dd></div>}
+            {movement.total_consideration && (
+              <div><dt className="text-muted-foreground">Consideration</dt><dd className="font-medium">{movement.currency || ""} {movement.total_consideration.toLocaleString()}</dd></div>
+            )}
+            {movement.price_per_share && (
+              <div><dt className="text-muted-foreground">Price/Share</dt><dd className="font-medium">{movement.currency || ""} {movement.price_per_share}</dd></div>
+            )}
+            {movement.reference_number && <div><dt className="text-muted-foreground">Reference</dt><dd className="font-medium">{movement.reference_number}</dd></div>}
+            {movement.notes && <div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd className="font-medium">{movement.notes}</dd></div>}
+          </dl>
+        </CardContent>
+      </Card>
+
+      {/* Audit log */}
+      <Card className="shadow-sm">
+        <CardHeader><CardTitle className="text-lg">Audit Trail</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-muted-foreground">Created</span><span>{format(parseISO(movement.created_at), "MMM dd, yyyy HH:mm")} by {movement.created_by_profile?.full_name || movement.created_by_profile?.email || "—"}</span></div>
+            {movement.confirmed_at && <div className="flex justify-between"><span className="text-muted-foreground">Confirmed</span><span>{format(parseISO(movement.confirmed_at), "MMM dd, yyyy HH:mm")}</span></div>}
+            {movement.voided_at && (
+              <>
+                <div className="flex justify-between"><span className="text-muted-foreground">Voided</span><span>{format(parseISO(movement.voided_at), "MMM dd, yyyy HH:mm")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Void Reason</span><span className="text-destructive">{movement.void_reason}</span></div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Void Dialog */}
+      <Dialog open={voidOpen} onOpenChange={v => { setVoidOpen(v); if (!v) setVoidReason(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Void Movement</DialogTitle>
+            <DialogDescription>This will reverse all equity changes. This action is permanent.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Reason *</Label>
+            <Textarea value={voidReason} onChange={e => setVoidReason(e.target.value)} placeholder="Enter reason..." />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVoidOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleVoid} disabled={!voidReason.trim() || voiding}>
+              {voiding ? "Voiding..." : "Void Movement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

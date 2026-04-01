@@ -6,24 +6,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
-import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart } from "lucide-react";
+import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart, ScrollText } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { workspaceId } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalEntities: 0, expiringCount: 0, expiredCount: 0, totalCompanies: 0, totalLinks: 0 });
+  const [stats, setStats] = useState({ totalEntities: 0, expiringCount: 0, expiredCount: 0, totalCompanies: 0, totalLinks: 0, draftMovements: 0 });
   const [alerts, setAlerts] = useState<any[]>([]);
   const [recentLinks, setRecentLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [appointmentAlerts, setAppointmentAlerts] = useState<any[]>([]);
   const [shareholdingGaps, setShareholdingGaps] = useState<any[]>([]);
+  const [recentMovements, setRecentMovements] = useState<any[]>([]);
 
   useEffect(() => {
     if (!workspaceId) return;
     const fetchData = async () => {
-      const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes, shareClassesRes, equityLinksRes] = await Promise.all([
+      const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes, shareClassesRes, equityLinksRes, draftMovRes, recentMovRes] = await Promise.all([
         supabase.from("entities").select("id, type, name").eq("workspace_id", workspaceId),
         supabase.from("documents").select("*, entities!inner(name, type)").eq("workspace_id", workspaceId),
         supabase.from("equity_links").select("id").eq("workspace_id", workspaceId).is("end_date", null),
@@ -40,6 +41,11 @@ export default function Dashboard() {
           .is("resignation_date", null),
         supabase.from("share_classes").select("*").eq("workspace_id", workspaceId),
         supabase.from("equity_links").select("share_class_id, shares_owned").eq("workspace_id", workspaceId).is("end_date", null),
+        supabase.from("movements").select("id").eq("workspace_id", workspaceId).eq("status", "draft"),
+        supabase.from("movements")
+          .select("*, company:entities!movements_company_entity_id_fkey(name), from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name)")
+          .eq("workspace_id", workspaceId).eq("status", "confirmed")
+          .order("confirmed_at", { ascending: false }).limit(5),
       ]);
 
       const entities = entitiesRes.data || [];
@@ -64,9 +70,10 @@ export default function Dashboard() {
         return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime();
       });
 
-      setStats({ totalEntities, expiringCount, expiredCount, totalCompanies, totalLinks });
+      setStats({ totalEntities, expiringCount, expiredCount, totalCompanies, totalLinks, draftMovements: (draftMovRes.data || []).length });
       setAlerts(alertDocs);
       setRecentLinks(recentLinksRes.data || []);
+      setRecentMovements(recentMovRes.data || []);
 
       // Appointment alerts
       const activeAppointments = appointmentsRes.data || [];
@@ -130,15 +137,16 @@ export default function Dashboard() {
     { title: "Expired Documents", value: stats.expiredCount, icon: FileWarning, color: "text-destructive" },
     { title: "Total Companies", value: stats.totalCompanies, icon: Building2, color: "text-primary" },
     { title: "Ownership Links", value: stats.totalLinks, icon: Link2, color: "text-primary" },
+    { title: "Pending Drafts", value: stats.draftMovements, icon: ScrollText, color: stats.draftMovements > 0 ? "text-warning" : "text-primary", onClick: () => stats.draftMovements > 0 && navigate("/ledger?status=draft") },
   ];
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         {cards.map((card) => (
-          <Card key={card.title} className="shadow-sm">
+          <Card key={card.title} className={`shadow-sm ${(card as any).onClick ? "cursor-pointer hover:border-primary/50" : ""}`} onClick={(card as any).onClick}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
               <card.icon className={`h-5 w-5 ${card.color}`} />
@@ -279,6 +287,41 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Recent Movements */}
+      {recentMovements.length > 0 && (
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Recent Movements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>From</TableHead>
+                  <TableHead>To</TableHead>
+                  <TableHead>Shares</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentMovements.map((m: any) => (
+                  <TableRow key={m.id} className="cursor-pointer" onClick={() => navigate(`/ledger/${m.id}`)}>
+                    <TableCell>{format(parseISO(m.movement_date), "MMM dd, yyyy")}</TableCell>
+                    <TableCell className="font-medium">{m.company?.name}</TableCell>
+                    <TableCell><Badge variant="outline">{m.movement_type?.replace(/_/g, " ")}</Badge></TableCell>
+                    <TableCell>{m.from_entity?.name || "—"}</TableCell>
+                    <TableCell>{m.to_entity?.name || "—"}</TableCell>
+                    <TableCell>{m.shares_transferred?.toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
