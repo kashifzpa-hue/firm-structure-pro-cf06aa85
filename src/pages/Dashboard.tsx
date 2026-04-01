@@ -65,6 +65,29 @@ export default function Dashboard() {
       setStats({ totalEntities, expiringCount, expiredCount, totalCompanies, totalLinks });
       setAlerts(alertDocs);
       setRecentLinks(recentLinksRes.data || []);
+
+      // Build appointment-linked alerts: find docs for persons with active appointments
+      const activeAppointments = appointmentsRes.data || [];
+      const personIds = [...new Set(activeAppointments.map((a: any) => a.person_entity_id))];
+      const apptAlerts: any[] = [];
+      if (personIds.length > 0) {
+        const { data: personDocs } = await supabase
+          .from("documents")
+          .select("*, entities!inner(name, type)")
+          .eq("workspace_id", workspaceId)
+          .in("entity_id", personIds)
+          .in("document_type", ["Passport", "National ID"]);
+        (personDocs || []).forEach((doc: any) => {
+          const status = getDocumentStatus(doc.expiry_date);
+          if (status === "expired" || status === "expiring_soon") {
+            const roles = activeAppointments
+              .filter((a: any) => a.person_entity_id === doc.entity_id)
+              .map((a: any) => `${a.role_title} at ${a.company?.name || "Unknown"}`);
+            apptAlerts.push({ ...doc, status, appointmentRole: roles.join(", ") });
+          }
+        });
+      }
+      setAppointmentAlerts(apptAlerts);
       setLoading(false);
     };
     fetchData();
