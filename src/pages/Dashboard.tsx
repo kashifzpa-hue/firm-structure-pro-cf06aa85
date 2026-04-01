@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
-import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart, ScrollText } from "lucide-react";
+import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart, ScrollText, Shield } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
