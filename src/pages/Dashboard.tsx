@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [recentLinks, setRecentLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [appointmentAlerts, setAppointmentAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     if (!workspaceId) return;
