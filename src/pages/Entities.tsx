@@ -34,6 +34,16 @@ export default function Entities() {
     fetch();
   }, [workspaceId]);
 
+  const getEntityDocStatus = (entity: any) => {
+    const docs = entity.documents || [];
+    if (docs.length === 0) return null;
+    const hasExpired = docs.some((d: any) => getDocumentStatus(d.expiry_date) === "expired");
+    const hasExpiring = docs.some((d: any) => getDocumentStatus(d.expiry_date) === "expiring_soon");
+    if (hasExpired) return "expired";
+    if (hasExpiring) return "expiring_soon";
+    return "valid";
+  };
+
   const filtered = entities.filter((e) => {
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "all" || e.type === typeFilter;
@@ -46,16 +56,6 @@ export default function Entities() {
       (statusFilter === "no_docs" && !docStatus);
     return matchSearch && matchType && matchStatus;
   });
-
-  const getEntityDocStatus = (entity: any) => {
-    const docs = entity.documents || [];
-    if (docs.length === 0) return null;
-    const hasExpired = docs.some((d: any) => getDocumentStatus(d.expiry_date) === "expired");
-    const hasExpiring = docs.some((d: any) => getDocumentStatus(d.expiry_date) === "expiring_soon");
-    if (hasExpired) return "expired";
-    if (hasExpiring) return "expiring_soon";
-    return "valid";
-  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
