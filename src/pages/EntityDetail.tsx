@@ -28,8 +28,18 @@ export default function EntityDetail() {
   const [owns, setOwns] = useState<any[]>([]);
   const [ownedBy, setOwnedBy] = useState<any[]>([]);
   const [shareClasses, setShareClasses] = useState<any[]>([]);
+  const [entities, setEntities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [activateModalOpen, setActivateModalOpen] = useState(false);
+  const [activateCheck1, setActivateCheck1] = useState(false);
+  const [activateCheck2, setActivateCheck2] = useState(false);
+  const [activateCheck3, setActivateCheck3] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [ownershipModalOpen, setOwnershipModalOpen] = useState(false);
+  const [editingOwnershipLink, setEditingOwnershipLink] = useState<any>(null);
+  const [deleteOwnershipOpen, setDeleteOwnershipOpen] = useState(false);
+  const [deletingOwnershipLink, setDeletingOwnershipLink] = useState<any>(null);
 
   useEffect(() => {
     if (!id || !workspaceId) return;
