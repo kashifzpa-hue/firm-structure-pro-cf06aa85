@@ -191,7 +191,13 @@ export default function EntityForm() {
     }
 
     toast.success(isEdit ? "Entity updated!" : "Entity created!");
-    navigate(`/entities/${entityId}`);
+    if (!isEdit && entityType === "company") {
+      setSavedEntityId(entityId!);
+      setSavedEntityName(name);
+      setShowBoardPrompt(true);
+    } else {
+      navigate(`/entities/${entityId}`);
+    }
     setLoading(false);
   };
 
