@@ -174,6 +174,7 @@ export default function EntityDetail() {
           <TabsTrigger value="documents">Documents ({docs.length})</TabsTrigger>
           <TabsTrigger value="ownership">Ownership</TabsTrigger>
           {!isPerson && <TabsTrigger value="board">Board & Management</TabsTrigger>}
+          {!isPerson && isLiveMode && <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1" />Ledger</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
