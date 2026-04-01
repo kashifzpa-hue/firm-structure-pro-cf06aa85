@@ -14,16 +14,219 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          created_at: string
+          document_number: string | null
+          document_type: string
+          entity_id: string
+          expiry_date: string | null
+          file_url: string | null
+          id: string
+          issue_date: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_number?: string | null
+          document_type: string
+          entity_id: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          document_number?: string | null
+          document_type?: string
+          entity_id?: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entities: {
+        Row: {
+          company_type: string | null
+          created_at: string
+          date_of_birth_or_incorporation: string | null
+          email: string | null
+          id: string
+          name: string
+          nationality_or_jurisdiction: string | null
+          notes: string | null
+          phone: string | null
+          primary_contact_email: string | null
+          primary_contact_name: string | null
+          registered_address: string | null
+          registration_number: string | null
+          type: Database["public"]["Enums"]["entity_type"]
+          workspace_id: string
+        }
+        Insert: {
+          company_type?: string | null
+          created_at?: string
+          date_of_birth_or_incorporation?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          nationality_or_jurisdiction?: string | null
+          notes?: string | null
+          phone?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          registered_address?: string | null
+          registration_number?: string | null
+          type: Database["public"]["Enums"]["entity_type"]
+          workspace_id: string
+        }
+        Update: {
+          company_type?: string | null
+          created_at?: string
+          date_of_birth_or_incorporation?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          nationality_or_jurisdiction?: string | null
+          notes?: string | null
+          phone?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          registered_address?: string | null
+          registration_number?: string | null
+          type?: Database["public"]["Enums"]["entity_type"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_workspace_id: { Args: never; Returns: string }
+      has_workspace_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+          _workspace_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "viewer"
+      entity_type: "person" | "company"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +353,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "viewer"],
+      entity_type: ["person", "company"],
+    },
   },
 } as const
