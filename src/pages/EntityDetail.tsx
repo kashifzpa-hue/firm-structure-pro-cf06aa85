@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
@@ -18,7 +21,7 @@ import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 import { LedgerTab } from "@/components/LedgerTab";
 import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
 import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield } from "lucide-react";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -44,6 +47,18 @@ export default function EntityDetail() {
   const [editingOwnershipLink, setEditingOwnershipLink] = useState<any>(null);
   const [deleteOwnershipOpen, setDeleteOwnershipOpen] = useState(false);
   const [deletingOwnershipLink, setDeletingOwnershipLink] = useState<any>(null);
+  
+  // Delete protection
+  const [deleteDeps, setDeleteDeps] = useState<{ links: number; appointments: number; movements: number } | null>(null);
+  
+  // Deactivate
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivateReason, setDeactivateReason] = useState("");
+  const [deactivateNotes, setDeactivateNotes] = useState("");
+  const [deactivating, setDeactivating] = useState(false);
+  
+  // Field history
+  const [fieldHistory, setFieldHistory] = useState<any[]>([]);
 
   const fetchAll = async () => {
     if (!id || !workspaceId) return;
