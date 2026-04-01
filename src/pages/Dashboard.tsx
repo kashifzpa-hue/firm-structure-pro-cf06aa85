@@ -337,6 +337,43 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* UBO Alerts */}
+      {uboAlerts.length > 0 && (
+        <Card className="shadow-sm border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Shield className="h-5 w-5 text-destructive" /> UBO Alerts — Above 25% Threshold
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>UBO Name</TableHead>
+                  <TableHead>Economic %</TableHead>
+                  <TableHead>Voting %</TableHead>
+                  <TableHead>Passport Expiry</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {uboAlerts.map((u: any, i: number) => (
+                  <TableRow key={u.id || i} className="cursor-pointer" onClick={() => navigate(`/entities/${u.person_entity_id}`)}>
+                    <TableCell className="font-medium">{u.companyName || "—"}</TableCell>
+                    <TableCell>{u.personName || "—"}</TableCell>
+                    <TableCell><Badge className="bg-destructive text-destructive-foreground">{Number(u.effective_economic_pct).toFixed(2)}%</Badge></TableCell>
+                    <TableCell><Badge className="bg-destructive text-destructive-foreground">{Number(u.effective_voting_pct).toFixed(2)}%</Badge></TableCell>
+                    <TableCell>{u.passport?.expiry_date ? format(parseISO(u.passport.expiry_date), "MMM dd, yyyy") : "No passport"}</TableCell>
+                    <TableCell>{u.passport ? <StatusBadge expiryDate={u.passport.expiry_date} /> : <Badge variant="outline" className="text-warning">Missing</Badge>}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
