@@ -796,11 +796,81 @@ export default function EntityDetail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Entity</DialogTitle>
-            <DialogDescription>Are you sure? This action cannot be undone.</DialogDescription>
+            {deleteDeps && (deleteDeps.links > 0 || deleteDeps.appointments > 0 || deleteDeps.movements > 0) ? (
+              <DialogDescription>
+                This entity cannot be deleted because it is referenced in:
+                <ul className="list-disc ml-6 mt-2 space-y-1">
+                  {deleteDeps.links > 0 && <li>{deleteDeps.links} ownership link(s)</li>}
+                  {deleteDeps.appointments > 0 && <li>{deleteDeps.appointments} board/management appointment(s)</li>}
+                  {deleteDeps.movements > 0 && <li>{deleteDeps.movements} movement(s)</li>}
+                </ul>
+                <span className="block mt-2">You can deactivate it instead.</span>
+              </DialogDescription>
+            ) : (
+              <DialogDescription>Are you sure? This action cannot be undone.</DialogDescription>
+            )}
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            {deleteDeps && (deleteDeps.links > 0 || deleteDeps.appointments > 0 || deleteDeps.movements > 0) ? (
+              <Button variant="outline" className="border-warning text-warning" onClick={() => { setDeleteOpen(false); setDeactivateOpen(true); }}>
+                <Ban className="mr-2 h-4 w-4" /> Deactivate Instead
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate Entity Modal */}
+      <Dialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deactivate {entity?.name}</DialogTitle>
+            <DialogDescription>
+              Deactivating will mark this entity as inactive. It will still appear in historical records but won't be selectable for new links or movements.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason *</label>
+              <Select value={deactivateReason} onValueChange={setDeactivateReason}>
+                <SelectTrigger><SelectValue placeholder="Select reason" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Company Dissolved">Company Dissolved</SelectItem>
+                  <SelectItem value="Individual Deceased">Individual Deceased</SelectItem>
+                  <SelectItem value="Individual Resigned from All Roles">Individual Resigned from All Roles</SelectItem>
+                  <SelectItem value="Duplicate — Replaced by Another Entity">Duplicate — Replaced by Another Entity</SelectItem>
+                  <SelectItem value="Other">Other (specify below)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {deactivateReason === "Other" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Specify reason *</label>
+                <Textarea value={deactivateNotes} onChange={(e) => setDeactivateNotes(e.target.value)} placeholder="Enter reason..." />
+              </div>
+            )}
+            {/* Active links warning */}
+            {(owns.length > 0 || ownedBy.length > 0) && (
+              <Alert className="border-warning/50 bg-warning/5">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-sm">
+                  This entity still has <strong>{owns.length + ownedBy.length}</strong> active ownership link(s). Deactivating will not automatically close these. Please review and close them manually.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeactivateOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleDeactivate}
+              disabled={!deactivateReason || (deactivateReason === "Other" && !deactivateNotes.trim()) || deactivating}
+              className="bg-warning text-warning-foreground hover:bg-warning/90"
+            >
+              {deactivating ? "Deactivating..." : "Deactivate Entity"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
