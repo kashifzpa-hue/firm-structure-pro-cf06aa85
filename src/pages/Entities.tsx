@@ -49,7 +49,22 @@ export default function Entities() {
     return "valid";
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    // Fetch share classes for all company entities
+    const companyIds = filtered.filter(e => e.type === "company").map(e => e.id);
+    let shareClasses: any[] = [];
+    if (companyIds.length > 0 && workspaceId) {
+      const { data } = await supabase
+        .from("share_classes")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .in("company_entity_id", companyIds);
+      shareClasses = data || [];
+    }
+
+    // Build entity name lookup
+    const entityNameMap = new Map(filtered.map(e => [e.id, e.name]));
+
     const exportData = filtered.map((e) => ({
       "Name": e.name,
       "Type": e.type === "person" ? "Person" : "Company",
@@ -65,10 +80,29 @@ export default function Entities() {
       "Notes": e.notes || "",
       "Created": format(parseISO(e.created_at), "yyyy-MM-dd"),
     }));
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    ws["!cols"] = Object.keys(exportData[0] || {}).map(() => ({ wch: 22 }));
+
+    const shareClassData = shareClasses.map((sc) => ({
+      "Company Name": entityNameMap.get(sc.company_entity_id) || "",
+      "Class Name": sc.class_name,
+      "Total Shares Issued": sc.total_shares_issued,
+      "Par Value Per Share": sc.par_value_per_share,
+      "Currency": sc.currency,
+      "Voting Rights": sc.voting_rights ? "Yes" : "No",
+      "Notes": sc.notes || "",
+    }));
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Entities");
+
+    const ws1 = XLSX.utils.json_to_sheet(exportData);
+    ws1["!cols"] = Object.keys(exportData[0] || {}).map(() => ({ wch: 22 }));
+    XLSX.utils.book_append_sheet(wb, ws1, "Entities");
+
+    if (shareClassData.length > 0) {
+      const ws2 = XLSX.utils.json_to_sheet(shareClassData);
+      ws2["!cols"] = Object.keys(shareClassData[0]).map(() => ({ wch: 22 }));
+      XLSX.utils.book_append_sheet(wb, ws2, "Share Classes");
+    }
+
     XLSX.writeFile(wb, `CorpSync_Entities_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
