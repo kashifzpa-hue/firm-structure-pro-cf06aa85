@@ -144,9 +144,9 @@ export default function Dashboard() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         {cards.map((card) => (
-          <Card key={card.title} className="shadow-sm">
+          <Card key={card.title} className={`shadow-sm ${(card as any).onClick ? "cursor-pointer hover:border-primary/50" : ""}`} onClick={(card as any).onClick}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
               <card.icon className={`h-5 w-5 ${card.color}`} />
