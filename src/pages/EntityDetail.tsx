@@ -156,6 +156,7 @@ export default function EntityDetail() {
                     <TableRow>
                       <TableHead>Document Type</TableHead>
                       <TableHead>Document Number</TableHead>
+                      <TableHead>Country of Issue</TableHead>
                       <TableHead>Issue Date</TableHead>
                       <TableHead>Expiry Date</TableHead>
                       <TableHead>Status</TableHead>
