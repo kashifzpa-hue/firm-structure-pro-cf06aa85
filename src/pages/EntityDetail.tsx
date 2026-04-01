@@ -41,35 +41,36 @@ export default function EntityDetail() {
   const [deleteOwnershipOpen, setDeleteOwnershipOpen] = useState(false);
   const [deletingOwnershipLink, setDeletingOwnershipLink] = useState<any>(null);
 
-  useEffect(() => {
+  const fetchAll = async () => {
     if (!id || !workspaceId) return;
-    const fetchAll = async () => {
-      const [entityRes, docsRes, ownsRes, ownedByRes, scRes] = await Promise.all([
-        supabase.from("entities").select("*").eq("id", id).single(),
-        supabase.from("documents").select("*").eq("entity_id", id),
-        supabase
-          .from("equity_links")
-          .select("*, owned:entities!equity_links_owned_entity_id_fkey(id, name, type), share_class:share_classes(*)")
-          .eq("owner_entity_id", id)
-          .eq("workspace_id", workspaceId)
-          .is("end_date", null),
-        supabase
-          .from("equity_links")
-          .select("*, owner:entities!equity_links_owner_entity_id_fkey(id, name, type), share_class:share_classes(*)")
-          .eq("owned_entity_id", id)
-          .eq("workspace_id", workspaceId)
-          .is("end_date", null),
-        supabase.from("share_classes").select("*").eq("company_entity_id", id).eq("workspace_id", workspaceId),
-      ]);
-      setEntity(entityRes.data);
-      setDocs(docsRes.data || []);
-      setOwns(ownsRes.data || []);
-      setOwnedBy(ownedByRes.data || []);
-      setShareClasses(scRes.data || []);
-      setLoading(false);
-    };
-    fetchAll();
-  }, [id, workspaceId]);
+    const [entityRes, docsRes, ownsRes, ownedByRes, scRes, entitiesRes] = await Promise.all([
+      supabase.from("entities").select("*").eq("id", id).single(),
+      supabase.from("documents").select("*").eq("entity_id", id),
+      supabase
+        .from("equity_links")
+        .select("*, owned:entities!equity_links_owned_entity_id_fkey(id, name, type), share_class:share_classes(*)")
+        .eq("owner_entity_id", id)
+        .eq("workspace_id", workspaceId)
+        .is("end_date", null),
+      supabase
+        .from("equity_links")
+        .select("*, owner:entities!equity_links_owner_entity_id_fkey(id, name, type), share_class:share_classes(*)")
+        .eq("owned_entity_id", id)
+        .eq("workspace_id", workspaceId)
+        .is("end_date", null),
+      supabase.from("share_classes").select("*").eq("company_entity_id", id).eq("workspace_id", workspaceId),
+      supabase.from("entities").select("id, name, type").eq("workspace_id", workspaceId).order("name"),
+    ]);
+    setEntity(entityRes.data);
+    setDocs(docsRes.data || []);
+    setOwns(ownsRes.data || []);
+    setOwnedBy(ownedByRes.data || []);
+    setShareClasses(scRes.data || []);
+    setEntities(entitiesRes.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAll(); }, [id, workspaceId]);
 
   const handleDelete = async () => {
     await supabase.from("entities").delete().eq("id", id);
