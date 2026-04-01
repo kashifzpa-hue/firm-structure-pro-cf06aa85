@@ -16,7 +16,9 @@ import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
 import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 import { LedgerTab } from "@/components/LedgerTab";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText } from "lucide-react";
+import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
+import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -176,6 +178,8 @@ export default function EntityDetail() {
           <TabsTrigger value="ownership">Ownership</TabsTrigger>
           {!isPerson && <TabsTrigger value="board">Board & Management</TabsTrigger>}
           {!isPerson && isLiveMode && <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1" />Ledger</TabsTrigger>}
+          {!isPerson && <TabsTrigger value="ubo"><Shield className="h-4 w-4 mr-1" />UBO</TabsTrigger>}
+          {isPerson && <TabsTrigger value="ubo-exposure"><Shield className="h-4 w-4 mr-1" />UBO Exposure</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
@@ -519,6 +523,20 @@ export default function EntityDetail() {
         {!isPerson && isLiveMode && (
           <TabsContent value="ledger">
             <LedgerTab companyEntityId={id!} companyName={entity.name} incorporationDate={entity.date_of_birth_or_incorporation} workspaceId={workspaceId!} />
+          </TabsContent>
+        )}
+
+        {/* UBO Tab for companies */}
+        {!isPerson && (
+          <TabsContent value="ubo">
+            <CompanyUBOTab companyEntityId={id!} companyName={entity.name} ownedBy={ownedBy} owns={owns} />
+          </TabsContent>
+        )}
+
+        {/* UBO Exposure Tab for persons */}
+        {isPerson && (
+          <TabsContent value="ubo-exposure">
+            <PersonUBOTab personEntityId={id!} personName={entity.name} />
           </TabsContent>
         )}
       </Tabs>

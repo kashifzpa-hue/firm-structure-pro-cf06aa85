@@ -514,6 +514,73 @@ export type Database = {
           },
         ]
       }
+      ubo_snapshots: {
+        Row: {
+          calculated_at: string
+          circular_detected: boolean
+          company_entity_id: string
+          effective_economic_pct: number
+          effective_voting_pct: number
+          id: string
+          is_above_threshold: boolean
+          ownership_chain: Json
+          person_entity_id: string
+          snapshot_date: string | null
+          snapshot_type: Database["public"]["Enums"]["ubo_snapshot_type"]
+          workspace_id: string
+        }
+        Insert: {
+          calculated_at?: string
+          circular_detected?: boolean
+          company_entity_id: string
+          effective_economic_pct?: number
+          effective_voting_pct?: number
+          id?: string
+          is_above_threshold?: boolean
+          ownership_chain?: Json
+          person_entity_id: string
+          snapshot_date?: string | null
+          snapshot_type?: Database["public"]["Enums"]["ubo_snapshot_type"]
+          workspace_id: string
+        }
+        Update: {
+          calculated_at?: string
+          circular_detected?: boolean
+          company_entity_id?: string
+          effective_economic_pct?: number
+          effective_voting_pct?: number
+          id?: string
+          is_above_threshold?: boolean
+          ownership_chain?: Json
+          person_entity_id?: string
+          snapshot_date?: string | null
+          snapshot_type?: Database["public"]["Enums"]["ubo_snapshot_type"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ubo_snapshots_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ubo_snapshots_person_entity_id_fkey"
+            columns: ["person_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ubo_snapshots_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -606,6 +673,7 @@ export type Database = {
     Functions: {
       accept_invitation: { Args: { _email: string }; Returns: string }
       activate_live_mode: { Args: { p_entity_id: string }; Returns: undefined }
+      calculate_ubo: { Args: { p_company_entity_id: string }; Returns: Json }
       confirm_movement: { Args: { p_movement_id: string }; Returns: undefined }
       create_workspace: { Args: { _name: string }; Returns: string }
       get_user_workspace_id: { Args: never; Returns: string }
@@ -647,6 +715,7 @@ export type Database = {
         | "COURT_ORDER"
         | "CAPITAL_INCREASE"
         | "CAPITAL_DECREASE"
+      ubo_snapshot_type: "live" | "historical"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -800,6 +869,7 @@ export const Constants = {
         "CAPITAL_INCREASE",
         "CAPITAL_DECREASE",
       ],
+      ubo_snapshot_type: ["live", "historical"],
     },
   },
 } as const

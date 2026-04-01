@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
-import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart, ScrollText } from "lucide-react";
+import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart, ScrollText, Shield } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [appointmentAlerts, setAppointmentAlerts] = useState<any[]>([]);
   const [shareholdingGaps, setShareholdingGaps] = useState<any[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
+  const [uboAlerts, setUboAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -122,6 +123,20 @@ export default function Dashboard() {
         }
       });
       setShareholdingGaps(gaps);
+
+      // UBO Alerts — above threshold with passport data
+      const { data: uboData } = await supabase.from("ubo_snapshots").select("*").eq("workspace_id", workspaceId).eq("snapshot_type", "live").eq("is_above_threshold", true);
+      if (uboData && uboData.length > 0) {
+        const personIdsUbo = [...new Set(uboData.map((u: any) => u.person_entity_id))];
+        const { data: uboDocs } = await supabase.from("documents").select("*").eq("workspace_id", workspaceId).in("entity_id", personIdsUbo).eq("document_type", "Passport");
+        const uboEntityMap = Object.fromEntries(entities.map(e => [e.id, e]));
+        const alerts = uboData.map((u: any) => {
+          const passport = (uboDocs || []).find((d: any) => d.entity_id === u.person_entity_id);
+          return { ...u, personName: uboEntityMap[u.person_entity_id]?.name, companyName: uboEntityMap[u.company_entity_id]?.name, passport };
+        });
+        setUboAlerts(alerts);
+      }
+
       setLoading(false);
     };
     fetchData();
@@ -315,6 +330,43 @@ export default function Dashboard() {
                     <TableCell>{m.from_entity?.name || "—"}</TableCell>
                     <TableCell>{m.to_entity?.name || "—"}</TableCell>
                     <TableCell>{m.shares_transferred?.toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* UBO Alerts */}
+      {uboAlerts.length > 0 && (
+        <Card className="shadow-sm border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Shield className="h-5 w-5 text-destructive" /> UBO Alerts — Above 25% Threshold
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>UBO Name</TableHead>
+                  <TableHead>Economic %</TableHead>
+                  <TableHead>Voting %</TableHead>
+                  <TableHead>Passport Expiry</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {uboAlerts.map((u: any, i: number) => (
+                  <TableRow key={u.id || i} className="cursor-pointer" onClick={() => navigate(`/entities/${u.person_entity_id}`)}>
+                    <TableCell className="font-medium">{u.companyName || "—"}</TableCell>
+                    <TableCell>{u.personName || "—"}</TableCell>
+                    <TableCell><Badge className="bg-destructive text-destructive-foreground">{Number(u.effective_economic_pct).toFixed(2)}%</Badge></TableCell>
+                    <TableCell><Badge className="bg-destructive text-destructive-foreground">{Number(u.effective_voting_pct).toFixed(2)}%</Badge></TableCell>
+                    <TableCell>{u.passport?.expiry_date ? format(parseISO(u.passport.expiry_date), "MMM dd, yyyy") : "No passport"}</TableCell>
+                    <TableCell>{u.passport ? <StatusBadge expiryDate={u.passport.expiry_date} /> : <Badge variant="outline" className="text-warning">Missing</Badge>}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
