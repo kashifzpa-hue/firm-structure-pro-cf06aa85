@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, FileText, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +17,8 @@ import {
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Entities", url: "/entities", icon: Building2 },
+  { title: "Ownership", url: "/ownership", icon: Link2 },
+  { title: "Org Chart", url: "/org-chart", icon: GitBranch },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
