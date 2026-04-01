@@ -273,14 +273,33 @@ export default function EntityDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate(`/entities/${id}/edit`)}>
-            <Edit className="mr-2 h-4 w-4" /> Edit
-          </Button>
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+          {!isInactive && (
+            <Button variant="outline" onClick={() => navigate(`/entities/${id}/edit`)}>
+              <Edit className="mr-2 h-4 w-4" /> Edit
+            </Button>
+          )}
+          {isInactive && (
+            <Button variant="outline" onClick={handleReactivate}>
+              <CheckCircle className="mr-2 h-4 w-4" /> Reactivate
+            </Button>
+          )}
+          <Button variant="destructive" onClick={handleDeleteClick}>
             <Trash2 className="mr-2 h-4 w-4" /> Delete
           </Button>
         </div>
       </div>
+
+      {/* Inactive Banner */}
+      {isInactive && (
+        <Alert className="border-destructive/50 bg-destructive/5">
+          <Ban className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-destructive">
+            <strong>⚠ This entity is inactive</strong>
+            {entity.deactivated_at && <> as of {format(parseISO(entity.deactivated_at), "MMM dd, yyyy")}</>}.
+            {entity.deactivation_reason && <> Reason: {entity.deactivation_reason}</>}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="profile">
         <TabsList>
