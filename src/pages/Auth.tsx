@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 export default function Auth() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -31,7 +30,7 @@ export default function Auth() {
     if (error) {
       toast.error(error.message);
     } else {
-      navigate("/dashboard");
+      window.location.href = "/dashboard";
     }
   };
 
@@ -67,7 +66,8 @@ export default function Auth() {
 
       setLoading(false);
       toast.success("Account created successfully!");
-      navigate("/dashboard");
+      // Full page reload to ensure AuthContext picks up workspace
+      window.location.href = "/dashboard";
     } else {
       setLoading(false);
       toast.success("Please check your email to confirm your account.");
@@ -99,15 +99,20 @@ export default function Auth() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
-                    <Input id="login-email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
+                    <Input id="login-email" name="email" type="email" autoComplete="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Password</Label>
-                    <Input id="login-password" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+                    <Input id="login-password" name="password" type="password" autoComplete="current-password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Signing in..." : "Sign In"}
                   </Button>
+                  <div className="text-center">
+                    <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                      Forgot your password?
+                    </Link>
+                  </div>
                 </CardContent>
               </form>
             </TabsContent>
@@ -117,19 +122,19 @@ export default function Auth() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
-                    <Input id="signup-name" value={signupName} onChange={(e) => setSignupName(e.target.value)} required />
+                    <Input id="signup-name" name="name" autoComplete="name" value={signupName} onChange={(e) => setSignupName(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
-                    <Input id="signup-email" type="email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
+                    <Input id="signup-email" name="email" type="email" autoComplete="email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
-                    <Input id="signup-password" type="password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={6} />
+                    <Input id="signup-password" name="new-password" type="password" autoComplete="new-password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={6} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="workspace-name">Workspace Name</Label>
-                    <Input id="workspace-name" placeholder="e.g., Your Law Firm Name" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} required />
+                    <Input id="workspace-name" name="organization" placeholder="e.g., Your Law Firm Name" autoComplete="organization" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} required />
                     <p className="text-xs text-muted-foreground">This will be your organization's workspace.</p>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>

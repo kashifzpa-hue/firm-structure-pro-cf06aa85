@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,10 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 
 export default function SetupWorkspace() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user, workspaceId, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // If user already has a workspace, redirect immediately
+  useEffect(() => {
+    if (!authLoading && workspaceId) {
+      window.location.href = "/dashboard";
+    }
+  }, [authLoading, workspaceId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +35,10 @@ export default function SetupWorkspace() {
     toast.success("Workspace created!");
     window.location.href = "/dashboard";
   };
+
+  if (authLoading || workspaceId) {
+    return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
