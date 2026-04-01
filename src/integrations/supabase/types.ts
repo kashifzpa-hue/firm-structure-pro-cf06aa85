@@ -594,10 +594,12 @@ export type Database = {
       ubo_snapshots: {
         Row: {
           calculated_at: string
+          calculation_error: boolean
           circular_detected: boolean
           company_entity_id: string
           effective_economic_pct: number
           effective_voting_pct: number
+          error_reason: string | null
           id: string
           is_above_threshold: boolean
           ownership_chain: Json
@@ -610,10 +612,12 @@ export type Database = {
         }
         Insert: {
           calculated_at?: string
+          calculation_error?: boolean
           circular_detected?: boolean
           company_entity_id: string
           effective_economic_pct?: number
           effective_voting_pct?: number
+          error_reason?: string | null
           id?: string
           is_above_threshold?: boolean
           ownership_chain?: Json
@@ -626,10 +630,12 @@ export type Database = {
         }
         Update: {
           calculated_at?: string
+          calculation_error?: boolean
           circular_detected?: boolean
           company_entity_id?: string
           effective_economic_pct?: number
           effective_voting_pct?: number
+          error_reason?: string | null
           id?: string
           is_above_threshold?: boolean
           ownership_chain?: Json
