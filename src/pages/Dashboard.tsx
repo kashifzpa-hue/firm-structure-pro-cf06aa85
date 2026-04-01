@@ -70,9 +70,10 @@ export default function Dashboard() {
         return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime();
       });
 
-      setStats({ totalEntities, expiringCount, expiredCount, totalCompanies, totalLinks });
+      setStats({ totalEntities, expiringCount, expiredCount, totalCompanies, totalLinks, draftMovements: (draftMovRes.data || []).length });
       setAlerts(alertDocs);
       setRecentLinks(recentLinksRes.data || []);
+      setRecentMovements(recentMovRes.data || []);
 
       // Appointment alerts
       const activeAppointments = appointmentsRes.data || [];
