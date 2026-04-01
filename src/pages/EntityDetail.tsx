@@ -178,7 +178,8 @@ export default function EntityDetail() {
           <TabsTrigger value="ownership">Ownership</TabsTrigger>
           {!isPerson && <TabsTrigger value="board">Board & Management</TabsTrigger>}
           {!isPerson && isLiveMode && <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1" />Ledger</TabsTrigger>}
-        </TabsList>
+          {!isPerson && <TabsTrigger value="ubo"><Shield className="h-4 w-4 mr-1" />UBO</TabsTrigger>}
+          {isPerson && <TabsTrigger value="ubo-exposure"><Shield className="h-4 w-4 mr-1" />UBO Exposure</TabsTrigger>}
 
         <TabsContent value="profile">
           <div className="space-y-6">
