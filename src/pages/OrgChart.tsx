@@ -121,7 +121,7 @@ export default function OrgChart() {
         id: current,
         type: "entityNode",
         position: { x: 0, y: 0 },
-        data: { label: entity.name, type: entity.type, companyType: entity.company_type },
+        data: { label: entity.name, type: entity.type, companyType: entity.company_type, officerCount: appointmentCounts[current] || 0 },
       });
 
       // Find entities owned by current
