@@ -118,7 +118,9 @@ export default function Entities() {
       (statusFilter === "attention" && docStatus === "expiring_soon") ||
       (statusFilter === "ok" && docStatus === "valid") ||
       (statusFilter === "no_docs" && !docStatus);
-    return matchSearch && matchType && matchStatus;
+    // Hide inactive unless toggled
+    const matchActive = showInactive || e.entity_status !== "inactive";
+    return matchSearch && matchType && matchStatus && matchActive;
   });
 
   if (loading) {
