@@ -191,6 +191,38 @@ export default function EntityDetail() {
   const isPerson = entity.type === "person";
   const isSetupMode = entity.captable_status !== "live";
   const isLiveMode = entity.captable_status === "live";
+  const isInactive = entity.entity_status === "inactive";
+
+  // Field history helper
+  const getFieldHistory = (fieldName: string) => fieldHistory.filter(h => h.field_name === fieldName);
+  const hasFieldHistory = (fieldName: string) => getFieldHistory(fieldName).length > 0;
+
+  const FieldHistoryPopover = ({ fieldName, label }: { fieldName: string; label: string }) => {
+    const history = getFieldHistory(fieldName);
+    if (history.length === 0) return null;
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline ml-2">
+            <History className="h-3 w-3" /> Edit History
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 max-h-60 overflow-y-auto">
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm">Edit History: {label}</h4>
+            {history.map((h: any) => (
+              <div key={h.id} className="border rounded p-2 text-xs space-y-1">
+                <div><span className="text-muted-foreground">From:</span> {h.old_value || "—"}</div>
+                <div><span className="text-muted-foreground">To:</span> {h.new_value || "—"}</div>
+                <div><span className="text-muted-foreground">Changed:</span> {format(parseISO(h.changed_at), "MMM dd, yyyy HH:mm")}</div>
+                {h.change_reason && <div><span className="text-muted-foreground">Reason:</span> {h.change_reason}</div>}
+              </div>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
   // Group ownedBy links by share class for shareholding summary
   const ownedByGrouped: Record<string, any[]> = {};
