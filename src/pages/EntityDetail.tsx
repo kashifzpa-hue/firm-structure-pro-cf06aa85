@@ -524,6 +524,20 @@ export default function EntityDetail() {
             <LedgerTab companyEntityId={id!} companyName={entity.name} incorporationDate={entity.date_of_birth_or_incorporation} workspaceId={workspaceId!} />
           </TabsContent>
         )}
+
+        {/* UBO Tab for companies */}
+        {!isPerson && (
+          <TabsContent value="ubo">
+            <CompanyUBOTab companyEntityId={id!} companyName={entity.name} ownedBy={ownedBy} owns={owns} />
+          </TabsContent>
+        )}
+
+        {/* UBO Exposure Tab for persons */}
+        {isPerson && (
+          <TabsContent value="ubo-exposure">
+            <PersonUBOTab personEntityId={id!} personName={entity.name} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Ownership Form Modal for Setup Mode */}
