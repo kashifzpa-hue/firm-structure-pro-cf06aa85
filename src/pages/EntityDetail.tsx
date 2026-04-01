@@ -312,6 +312,12 @@ export default function EntityDetail() {
             </Card>
           </div>
         </TabsContent>
+
+        {!isPerson && (
+          <TabsContent value="board">
+            <BoardManagementTab companyEntityId={id!} companyName={entity.name} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
