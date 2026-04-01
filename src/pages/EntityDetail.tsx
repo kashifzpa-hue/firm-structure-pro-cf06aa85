@@ -81,10 +81,9 @@ export default function EntityDetail() {
   const handleActivateLiveMode = async () => {
     if (!entity || !workspaceId) return;
     setActivating(true);
-    // Update captable_status to 'live'
-    const { error } = await supabase.from("entities").update({ captable_status: 'live' } as any).eq("id", id);
-    if (error) { toast.error("Failed to activate live mode"); setActivating(false); return; }
-    toast.success("Live Mode activated for " + entity.name);
+    const { error } = await supabase.rpc("activate_live_mode", { p_entity_id: id });
+    if (error) { toast.error(error.message || "Failed to activate live mode"); setActivating(false); return; }
+    toast.success("Live Mode activated for " + entity.name + ". Opening balance movements have been created.");
     setActivateModalOpen(false);
     setActivating(false);
     setActivateCheck1(false);
