@@ -11,6 +11,7 @@ import { Plus, Building2, User, Search, Upload, Download } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDocumentStatus } from "@/lib/document-status";
 import { EntityImportModal } from "@/components/EntityImportModal";
+import * as XLSX from "xlsx";
 
 export default function Entities() {
   const { workspaceId, userRole } = useAuth();
