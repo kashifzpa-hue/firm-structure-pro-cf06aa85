@@ -78,6 +78,7 @@ export default function EntityForm() {
     const fetch = async () => {
       const { data: entity } = await supabase.from("entities").select("*").eq("id", id).single();
       if (!entity) { navigate("/entities"); return; }
+      setOriginalEntity(entity);
       setEntityType(entity.type as "person" | "company");
       setName(entity.name);
       if (entity.nationality_or_jurisdiction) {
@@ -92,6 +93,14 @@ export default function EntityForm() {
       setContactName(entity.primary_contact_name || "");
       setContactEmail(entity.primary_contact_email || "");
       setNotes(entity.notes || "");
+
+      // Check if entity is linked
+      const [linksOwner, linksOwned, appts] = await Promise.all([
+        supabase.from("equity_links").select("id", { count: "exact", head: true }).eq("owner_entity_id", id).eq("workspace_id", workspaceId),
+        supabase.from("equity_links").select("id", { count: "exact", head: true }).eq("owned_entity_id", id).eq("workspace_id", workspaceId),
+        supabase.from("appointments").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).or(`person_entity_id.eq.${id},company_entity_id.eq.${id}`),
+      ]);
+      setIsLinked(((linksOwner.count || 0) + (linksOwned.count || 0) + (appts.count || 0)) > 0);
 
       const { data: existingDocs } = await supabase.from("documents").select("*").eq("entity_id", id);
       if (existingDocs && existingDocs.length > 0) {
