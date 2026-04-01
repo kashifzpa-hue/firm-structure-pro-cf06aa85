@@ -318,15 +318,24 @@ export default function EntityDetail() {
               <CardContent className="pt-6">
                 <dl className="grid grid-cols-2 gap-4">
                   <div>
-                    <dt className="text-sm text-muted-foreground">{isPerson ? "Full Legal Name" : "Company Legal Name"}</dt>
+                    <dt className="text-sm text-muted-foreground flex items-center">
+                      {isPerson ? "Full Legal Name" : "Company Legal Name"}
+                      <FieldHistoryPopover fieldName="name" label={isPerson ? "Full Legal Name" : "Company Legal Name"} />
+                    </dt>
                     <dd className="font-medium">{entity.name}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm text-muted-foreground">{isPerson ? "Nationality" : "Jurisdiction"}</dt>
+                    <dt className="text-sm text-muted-foreground flex items-center">
+                      {isPerson ? "Nationality" : "Jurisdiction"}
+                      <FieldHistoryPopover fieldName="nationality_or_jurisdiction" label={isPerson ? "Nationality" : "Jurisdiction"} />
+                    </dt>
                     <dd className="font-medium">{entity.nationality_or_jurisdiction || "—"}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm text-muted-foreground">{isPerson ? "Date of Birth" : "Date of Incorporation"}</dt>
+                    <dt className="text-sm text-muted-foreground flex items-center">
+                      {isPerson ? "Date of Birth" : "Date of Incorporation"}
+                      <FieldHistoryPopover fieldName="date_of_birth_or_incorporation" label={isPerson ? "Date of Birth" : "Date of Incorporation"} />
+                    </dt>
                     <dd className="font-medium">{entity.date_of_birth_or_incorporation ? format(parseISO(entity.date_of_birth_or_incorporation), "MMM dd, yyyy") : "—"}</dd>
                   </div>
                   {isPerson ? (
