@@ -16,6 +16,8 @@ import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
 import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 import { LedgerTab } from "@/components/LedgerTab";
+import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
+import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
 import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
