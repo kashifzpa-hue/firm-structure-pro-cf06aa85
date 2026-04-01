@@ -13,12 +13,13 @@ import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
   const { workspaceId } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalEntities: 0, expiringCount: 0, expiredCount: 0, totalCompanies: 0, totalLinks: 0 });
+  const [stats, setStats] = useState({ totalEntities: 0, expiringCount: 0, expiredCount: 0, totalCompanies: 0, totalLinks: 0, draftMovements: 0 });
   const [alerts, setAlerts] = useState<any[]>([]);
   const [recentLinks, setRecentLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [appointmentAlerts, setAppointmentAlerts] = useState<any[]>([]);
   const [shareholdingGaps, setShareholdingGaps] = useState<any[]>([]);
+  const [recentMovements, setRecentMovements] = useState<any[]>([]);
 
   useEffect(() => {
     if (!workspaceId) return;
