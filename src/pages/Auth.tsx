@@ -36,11 +36,8 @@ export default function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!workspaceName.trim()) {
-      toast.error("Please enter a workspace name");
-      return;
-    }
     setLoading(true);
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: signupEmail,
       password: signupPassword,
@@ -56,8 +53,27 @@ export default function Auth() {
     }
 
     if (authData.user && authData.session) {
-      const { error: wsError } = await supabase.rpc("create_workspace", { _name: workspaceName } as any);
+      // Check if the user has a pending invitation
+      const { data: inviteResult } = await supabase.rpc("accept_invitation", {
+        _email: signupEmail.toLowerCase(),
+      } as any);
 
+      if (inviteResult) {
+        // User was invited — they've been auto-joined to the workspace
+        setLoading(false);
+        toast.success("Account created! You've been added to the workspace.");
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      // No invitation — create a new workspace
+      if (!workspaceName.trim()) {
+        setLoading(false);
+        toast.error("Please enter a workspace name to create a new workspace.");
+        return;
+      }
+
+      const { error: wsError } = await supabase.rpc("create_workspace", { _name: workspaceName } as any);
       if (wsError) {
         setLoading(false);
         toast.error("Failed to create workspace: " + wsError.message);
@@ -66,7 +82,6 @@ export default function Auth() {
 
       setLoading(false);
       toast.success("Account created successfully!");
-      // Full page reload to ensure AuthContext picks up workspace
       window.location.href = "/dashboard";
     } else {
       setLoading(false);
@@ -134,8 +149,10 @@ export default function Auth() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="workspace-name">Workspace Name</Label>
-                    <Input id="workspace-name" name="organization" placeholder="e.g., Your Law Firm Name" autoComplete="organization" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} required />
-                    <p className="text-xs text-muted-foreground">This will be your organization's workspace.</p>
+                    <Input id="workspace-name" name="organization" placeholder="e.g., Your Law Firm Name (leave blank if invited)" autoComplete="organization" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} />
+                    <p className="text-xs text-muted-foreground">
+                      If you've been invited to a workspace, leave this blank. Otherwise, enter your organization's name to create a new workspace.
+                    </p>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Creating account..." : "Create Account"}
