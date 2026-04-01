@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BoardManagementTab } from "@/components/BoardManagementTab";
+import { ShareCapitalSection } from "@/components/ShareCapitalSection";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,8 +50,7 @@ export default function EntityForm() {
   const navigate = useNavigate();
   const { workspaceId } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [showBoardPrompt, setShowBoardPrompt] = useState(false);
-  const [showBoardInline, setShowBoardInline] = useState(false);
+  const [companyStep, setCompanyStep] = useState(1); // 1=details, 2=share capital, 3=board
   const [savedEntityId, setSavedEntityId] = useState<string | null>(null);
   const [savedEntityName, setSavedEntityName] = useState("");
   const [entityType, setEntityType] = useState<"person" | "company">("person");
@@ -74,7 +74,6 @@ export default function EntityForm() {
       if (!entity) { navigate("/entities"); return; }
       setEntityType(entity.type as "person" | "company");
       setName(entity.name);
-      // Parse stored nationalities (comma-separated)
       if (entity.nationality_or_jurisdiction) {
         setNationalities(entity.nationality_or_jurisdiction.split(",").map((s: string) => s.trim()).filter(Boolean));
       }
@@ -110,15 +109,9 @@ export default function EntityForm() {
   }, [id, isEdit, workspaceId, navigate]);
 
   const addNationality = (country: string) => {
-    if (!nationalities.includes(country)) {
-      setNationalities([...nationalities, country]);
-    }
+    if (!nationalities.includes(country)) setNationalities([...nationalities, country]);
   };
-
-  const removeNationality = (country: string) => {
-    setNationalities(nationalities.filter((n) => n !== country));
-  };
-
+  const removeNationality = (country: string) => setNationalities(nationalities.filter((n) => n !== country));
   const addDoc = () => setDocs([...docs, emptyDoc()]);
   const removeDoc = (i: number) => setDocs(docs.filter((_, idx) => idx !== i));
   const updateDoc = (i: number, field: keyof DocRow, value: any) => {
@@ -169,10 +162,7 @@ export default function EntityForm() {
         fileUrl = urlData.publicUrl;
       }
 
-      const resolvedDocType = doc.document_type === "Other" && doc.custom_document_type
-        ? doc.custom_document_type
-        : doc.document_type;
-
+      const resolvedDocType = doc.document_type === "Other" && doc.custom_document_type ? doc.custom_document_type : doc.document_type;
       const docData = {
         entity_id: entityId!,
         workspace_id: workspaceId,
@@ -195,7 +185,7 @@ export default function EntityForm() {
     if (!isEdit && entityType === "company") {
       setSavedEntityId(entityId!);
       setSavedEntityName(name);
-      setShowBoardPrompt(true);
+      setCompanyStep(2);
     } else {
       navigate(`/entities/${entityId}`);
     }
@@ -203,6 +193,9 @@ export default function EntityForm() {
   };
 
   const docTypeOptions = entityType === "person" ? personDocTypes : companyDocTypes;
+
+  // Company creation steps
+  const isCompanyCreationFlow = !isEdit && entityType === "company" && savedEntityId;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -213,246 +206,263 @@ export default function EntityForm() {
         <h1 className="text-2xl font-bold tracking-tight">{isEdit ? "Edit Entity" : "Add Entity"}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {!isEdit && (
+      {/* Progress indicator for company creation */}
+      {isCompanyCreationFlow && (
+        <div className="flex items-center gap-2 text-sm">
+          {[
+            { step: 1, label: "Company Details" },
+            { step: 2, label: "Share Capital" },
+            { step: 3, label: "Board & Management" },
+          ].map((s, i) => (
+            <div key={s.step} className="flex items-center gap-2">
+              {i > 0 && <span className="text-muted-foreground">→</span>}
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${companyStep === s.step ? "bg-primary text-primary-foreground" : companyStep > s.step ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"}`}>
+                {s.step}. {s.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Step 1: Entity form */}
+      {(!isCompanyCreationFlow || companyStep === 1) && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {!isEdit && (
+            <Card className="shadow-sm">
+              <CardHeader><CardTitle className="text-base">Entity Type</CardTitle></CardHeader>
+              <CardContent>
+                <div className="flex gap-4">
+                  <Button type="button" variant={entityType === "person" ? "default" : "outline"} onClick={() => setEntityType("person")} className="flex-1">Individual (Person)</Button>
+                  <Button type="button" variant={entityType === "company" ? "default" : "outline"} onClick={() => setEntityType("company")} className="flex-1">Corporate (Company)</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="shadow-sm">
-            <CardHeader><CardTitle className="text-base">Entity Type</CardTitle></CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <Button type="button" variant={entityType === "person" ? "default" : "outline"} onClick={() => setEntityType("person")} className="flex-1">Individual (Person)</Button>
-                <Button type="button" variant={entityType === "company" ? "default" : "outline"} onClick={() => setEntityType("company")} className="flex-1">Corporate (Company)</Button>
+            <CardHeader><CardTitle className="text-base">{entityType === "person" ? "Personal Information" : "Company Information"}</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>{entityType === "person" ? "Full Legal Name" : "Company Legal Name"}</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{entityType === "person" ? "Nationality" : "Jurisdiction / Country"}</Label>
+                  {entityType === "person" ? (
+                    <div className="space-y-2">
+                      <Select value="" onValueChange={addNationality}>
+                        <SelectTrigger><SelectValue placeholder="Add nationality" /></SelectTrigger>
+                        <SelectContent>
+                          {countries.filter((c) => !nationalities.includes(c)).map((c) => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {nationalities.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {nationalities.map((n) => (
+                            <Badge key={n} variant="secondary" className="gap-1 pr-1">
+                              {n}
+                              <button type="button" onClick={() => removeNationality(n)} className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Select value={nationalities[0] || ""} onValueChange={(v) => setNationalities([v])}>
+                      <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                      <SelectContent>
+                        {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>{entityType === "person" ? "Date of Birth" : "Date of Incorporation"}</Label>
+                  <Input type="date" value={dob ? format(dob, "yyyy-MM-dd") : ""} onChange={(e) => setDob(e.target.value ? new Date(e.target.value + "T00:00:00") : undefined)} />
+                </div>
+              </div>
+
+              {entityType === "person" ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone</Label>
+                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Company Type</Label>
+                      <Select value={companyType} onValueChange={setCompanyType}>
+                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                        <SelectContent>
+                          {companyTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Registration Number</Label>
+                      <Input value={regNumber} onChange={(e) => setRegNumber(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Registered Address</Label>
+                    <Textarea value={regAddress} onChange={(e) => setRegAddress(e.target.value)} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Primary Contact Name</Label>
+                      <Input value={contactName} onChange={(e) => setContactName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Primary Contact Email</Label>
+                      <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
               </div>
             </CardContent>
           </Card>
-        )}
 
-        <Card className="shadow-sm">
-          <CardHeader><CardTitle className="text-base">{entityType === "person" ? "Personal Information" : "Company Information"}</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>{entityType === "person" ? "Full Legal Name" : "Company Legal Name"}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{entityType === "person" ? "Nationality" : "Jurisdiction / Country"}</Label>
-                {entityType === "person" ? (
-                  <div className="space-y-2">
-                    <Select value="" onValueChange={addNationality}>
-                      <SelectTrigger><SelectValue placeholder="Add nationality" /></SelectTrigger>
-                      <SelectContent>
-                        {countries.filter((c) => !nationalities.includes(c)).map((c) => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {nationalities.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {nationalities.map((n) => (
-                          <Badge key={n} variant="secondary" className="gap-1 pr-1">
-                            {n}
-                            <button type="button" onClick={() => removeNationality(n)} className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5">
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Documents</CardTitle>
+              <Button type="button" variant="outline" size="sm" onClick={addDoc}>
+                <Plus className="mr-1 h-4 w-4" /> Add Document
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {docs.map((doc, i) => (
+                <div key={i} className="rounded-lg border p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Document {i + 1}</span>
+                    <div className="flex items-center gap-2">
+                      {doc.expiry_date && <StatusBadge expiryDate={doc.expiry_date} />}
+                      {docs.length > 1 && (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeDoc(i)} className="h-8 w-8 text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Document Type</Label>
+                      <Select value={doc.document_type} onValueChange={(v) => {
+                        updateDoc(i, "document_type", v);
+                        if (v !== "Other") updateDoc(i, "custom_document_type", "");
+                      }}>
+                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                        <SelectContent>
+                          {docTypeOptions.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {doc.document_type === "Other" ? (
+                      <div className="space-y-2">
+                        <Label>Custom Document Type</Label>
+                        <Input value={doc.custom_document_type} onChange={(e) => updateDoc(i, "custom_document_type", e.target.value)} placeholder="Enter document type" />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label>Document Number</Label>
+                        <Input value={doc.document_number} onChange={(e) => updateDoc(i, "document_number", e.target.value)} />
                       </div>
                     )}
                   </div>
-                ) : (
-                  <Select value={nationalities[0] || ""} onValueChange={(v) => setNationalities([v])}>
-                    <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                    <SelectContent>
-                      {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>{entityType === "person" ? "Date of Birth" : "Date of Incorporation"}</Label>
-                <Input type="date" value={dob ? format(dob, "yyyy-MM-dd") : ""} onChange={(e) => setDob(e.target.value ? new Date(e.target.value + "T00:00:00") : undefined)} />
-              </div>
-            </div>
-
-            {entityType === "person" ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Phone</Label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Company Type</Label>
-                    <Select value={companyType} onValueChange={setCompanyType}>
-                      <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                      <SelectContent>
-                        {companyTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Registration Number</Label>
-                    <Input value={regNumber} onChange={(e) => setRegNumber(e.target.value)} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Registered Address</Label>
-                  <Textarea value={regAddress} onChange={(e) => setRegAddress(e.target.value)} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Primary Contact Name</Label>
-                    <Input value={contactName} onChange={(e) => setContactName(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Primary Contact Email</Label>
-                    <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Documents</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addDoc}>
-              <Plus className="mr-1 h-4 w-4" /> Add Document
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {docs.map((doc, i) => (
-              <div key={i} className="rounded-lg border p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Document {i + 1}</span>
-                  <div className="flex items-center gap-2">
-                    {doc.expiry_date && <StatusBadge expiryDate={doc.expiry_date} />}
-                    {docs.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeDoc(i)} className="h-8 w-8 text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Document Type</Label>
-                    <Select value={doc.document_type} onValueChange={(v) => {
-                      updateDoc(i, "document_type", v);
-                      if (v !== "Other") updateDoc(i, "custom_document_type", "");
-                    }}>
-                      <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                      <SelectContent>
-                        {docTypeOptions.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {doc.document_type === "Other" ? (
-                    <div className="space-y-2">
-                      <Label>Custom Document Type</Label>
-                      <Input
-                        value={doc.custom_document_type}
-                        onChange={(e) => updateDoc(i, "custom_document_type", e.target.value)}
-                        placeholder="Enter document type"
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label>Document Number</Label>
-                      <Input value={doc.document_number} onChange={(e) => updateDoc(i, "document_number", e.target.value)} />
+                  {doc.document_type === "Other" && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Document Number</Label>
+                        <Input value={doc.document_number} onChange={(e) => updateDoc(i, "document_number", e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Country of Issue</Label>
+                        <Select value={doc.country_of_issue} onValueChange={(v) => updateDoc(i, "country_of_issue", v)}>
+                          <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                          <SelectContent>
+                            {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   )}
-                </div>
-                {doc.document_type === "Other" && (
+                  {doc.document_type !== "Other" && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Country of Issue</Label>
+                        <Select value={doc.country_of_issue} onValueChange={(v) => updateDoc(i, "country_of_issue", v)}>
+                          <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                          <SelectContent>
+                            {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div />
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Document Number</Label>
-                      <Input value={doc.document_number} onChange={(e) => updateDoc(i, "document_number", e.target.value)} />
+                      <Label>Issue Date</Label>
+                      <Input type="date" value={doc.issue_date} onChange={(e) => updateDoc(i, "issue_date", e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Country of Issue</Label>
-                      <Select value={doc.country_of_issue} onValueChange={(v) => updateDoc(i, "country_of_issue", v)}>
-                        <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                        <SelectContent>
-                          {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Label>Expiry Date</Label>
+                      <Input type="date" value={doc.expiry_date} onChange={(e) => updateDoc(i, "expiry_date", e.target.value)} />
                     </div>
                   </div>
-                )}
-                {doc.document_type !== "Other" && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Country of Issue</Label>
-                      <Select value={doc.country_of_issue} onValueChange={(v) => updateDoc(i, "country_of_issue", v)}>
-                        <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                        <SelectContent>
-                          {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div />
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Issue Date</Label>
-                    <Input type="date" value={doc.issue_date} onChange={(e) => updateDoc(i, "issue_date", e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Expiry Date</Label>
-                    <Input type="date" value={doc.expiry_date} onChange={(e) => updateDoc(i, "expiry_date", e.target.value)} />
+                    <Label>Upload File (PDF or Image)</Label>
+                    <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" onChange={(e) => updateDoc(i, "file", e.target.files?.[0] || null)} />
+                    {doc.file_url && !doc.file && <p className="text-xs text-muted-foreground">Existing file attached</p>}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Upload File (PDF or Image)</Label>
-                  <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" onChange={(e) => updateDoc(i, "file", e.target.files?.[0] || null)} />
-                  {doc.file_url && !doc.file && <p className="text-xs text-muted-foreground">Existing file attached</p>}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+            </CardContent>
+          </Card>
 
-        <div className="flex gap-4">
-          <Button type="submit" disabled={loading} className="flex-1">
-            {loading ? "Saving..." : isEdit ? "Update Entity" : "Create Entity"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">Cancel</Button>
-        </div>
-      </form>
-
-      {showBoardPrompt && savedEntityId && !showBoardInline && (
-        <Card className="shadow-sm border-primary/20">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <h3 className="text-lg font-semibold">Would you like to add Board Members and Key Management now?</h3>
-              <div className="flex gap-4 justify-center">
-                <Button onClick={() => { setShowBoardPrompt(false); setShowBoardInline(true); }}>Yes, Add Now</Button>
-                <Button variant="outline" onClick={() => navigate(`/entities/${savedEntityId}`)}>Skip for Now</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="flex gap-4">
+            <Button type="submit" disabled={loading} className="flex-1">
+              {loading ? "Saving..." : isEdit ? "Update Entity" : "Create Entity"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">Cancel</Button>
+          </div>
+        </form>
       )}
 
-      {showBoardInline && savedEntityId && (
+      {/* Step 2: Share Capital */}
+      {isCompanyCreationFlow && companyStep === 2 && (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">Set up the share capital structure for <strong>{savedEntityName}</strong>. You can always add or edit this later.</p>
+          <ShareCapitalSection companyEntityId={savedEntityId} companyName={savedEntityName} />
+          <div className="flex gap-4 justify-end">
+            <Button variant="outline" onClick={() => setCompanyStep(3)}>Skip for Now</Button>
+            <Button onClick={() => setCompanyStep(3)}>Next: Board & Management</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Board & Management */}
+      {isCompanyCreationFlow && companyStep === 3 && (
         <div className="space-y-4">
           <BoardManagementTab companyEntityId={savedEntityId} companyName={savedEntityName} />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-4">
+            <Button variant="outline" onClick={() => navigate(`/entities/${savedEntityId}`)}>Skip for Now</Button>
             <Button onClick={() => navigate(`/entities/${savedEntityId}`)}>Done — View Entity</Button>
           </div>
         </div>
