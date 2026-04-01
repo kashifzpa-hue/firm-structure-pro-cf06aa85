@@ -125,7 +125,7 @@ export default function Dashboard() {
       setShareholdingGaps(gaps);
 
       // UBO Alerts — above threshold with passport data
-      const { data: uboData } = await supabase.from("ubo_snapshots").select("*").eq("workspace_id", workspaceId).eq("snapshot_type", "live").eq("is_above_threshold", true);
+      const { data: uboData } = await supabase.from("ubo_snapshots").select("*").eq("workspace_id", workspaceId).eq("snapshot_type", "live").eq("is_above_threshold", true).eq("calculation_error", false);
       if (uboData && uboData.length > 0) {
         const personIdsUbo = [...new Set(uboData.map((u: any) => u.person_entity_id))];
         const { data: uboDocs } = await supabase.from("documents").select("*").eq("workspace_id", workspaceId).in("entity_id", personIdsUbo).eq("document_type", "Passport");
