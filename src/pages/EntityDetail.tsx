@@ -352,11 +352,17 @@ export default function EntityDetail() {
                   ) : (
                     <>
                       <div>
-                        <dt className="text-sm text-muted-foreground">Company Type</dt>
+                        <dt className="text-sm text-muted-foreground flex items-center">
+                          Company Type
+                          <FieldHistoryPopover fieldName="company_type" label="Company Type" />
+                        </dt>
                         <dd className="font-medium">{entity.company_type || "—"}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm text-muted-foreground">Registration Number</dt>
+                        <dt className="text-sm text-muted-foreground flex items-center">
+                          Registration Number
+                          <FieldHistoryPopover fieldName="registration_number" label="Registration Number" />
+                        </dt>
                         <dd className="font-medium">{entity.registration_number || "—"}</dd>
                       </div>
                       <div className="col-span-2">
