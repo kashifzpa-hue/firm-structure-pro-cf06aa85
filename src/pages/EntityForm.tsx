@@ -503,8 +503,18 @@ export default function EntityForm() {
             </CardContent>
           </Card>
 
+          {/* Reason prompt for identity field changes on linked entities */}
+          {isEdit && isLinked && showReasonPrompt && (
+            <Card className="shadow-sm border-warning/50">
+              <CardContent className="pt-4 space-y-2">
+                <p className="text-sm font-medium text-warning">Identity field(s) changed on a linked entity. Please provide a reason:</p>
+                <Textarea value={changeReason} onChange={(e) => setChangeReason(e.target.value)} placeholder="e.g. Company rebranded, Name correction..." />
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex gap-4">
-            <Button type="submit" disabled={loading} className="flex-1">
+            <Button type="submit" disabled={loading || (showReasonPrompt && !changeReason.trim())} className="flex-1">
               {loading ? "Saving..." : isEdit ? "Update Entity" : "Create Entity"}
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">Cancel</Button>
