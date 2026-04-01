@@ -209,17 +209,7 @@ export default function EntityForm() {
               </div>
               <div className="space-y-2">
                 <Label>{entityType === "person" ? "Date of Birth" : "Date of Incorporation"}</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dob && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dob ? format(dob, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={dob} onSelect={setDob} initialFocus className="p-3 pointer-events-auto" />
-                  </PopoverContent>
-                </Popover>
+                <Input type="date" value={dob ? format(dob, "yyyy-MM-dd") : ""} onChange={(e) => setDob(e.target.value ? new Date(e.target.value + "T00:00:00") : undefined)} />
               </div>
             </div>
 
