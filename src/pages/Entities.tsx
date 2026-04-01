@@ -69,9 +69,16 @@ export default function Entities() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Entities</h1>
-        <Button onClick={() => navigate("/entities/new")}>
-          <Plus className="mr-2 h-4 w-4" /> Add Entity
-        </Button>
+        <div className="flex gap-2">
+          {userRole === "admin" && (
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" /> Import Excel
+            </Button>
+          )}
+          <Button onClick={() => navigate("/entities/new")}>
+            <Plus className="mr-2 h-4 w-4" /> Add Entity
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-4">
