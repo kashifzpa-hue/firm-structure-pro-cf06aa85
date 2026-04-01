@@ -14,6 +14,8 @@ import Entities from "./pages/Entities";
 import EntityForm from "./pages/EntityForm";
 import EntityDetail from "./pages/EntityDetail";
 import Documents from "./pages/Documents";
+import Ownership from "./pages/Ownership";
+import OrgChart from "./pages/OrgChart";
 import SettingsPage from "./pages/SettingsPage";
 import SetupWorkspace from "./pages/SetupWorkspace";
 import NotFound from "./pages/NotFound";
