@@ -23,6 +23,7 @@ export default function Entities() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   const fetchEntities = async () => {
     if (!workspaceId) return;
