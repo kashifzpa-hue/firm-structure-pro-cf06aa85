@@ -78,10 +78,37 @@ export default function EntityDetail() {
     navigate("/entities");
   };
 
+  const handleActivateLiveMode = async () => {
+    if (!entity || !workspaceId) return;
+    setActivating(true);
+    // Update captable_status to 'live'
+    const { error } = await supabase.from("entities").update({ captable_status: 'live' } as any).eq("id", id);
+    if (error) { toast.error("Failed to activate live mode"); setActivating(false); return; }
+    toast.success("Live Mode activated for " + entity.name);
+    setActivateModalOpen(false);
+    setActivating(false);
+    setActivateCheck1(false);
+    setActivateCheck2(false);
+    setActivateCheck3(false);
+    fetchAll();
+  };
+
+  const handleDeleteOwnership = async () => {
+    if (!deletingOwnershipLink) return;
+    const { error } = await supabase.from("equity_links").delete().eq("id", deletingOwnershipLink.id);
+    if (error) { toast.error("Failed to delete"); return; }
+    toast.success("Shareholding removed");
+    setDeleteOwnershipOpen(false);
+    setDeletingOwnershipLink(null);
+    fetchAll();
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
   if (!entity) return <div className="flex items-center justify-center h-64 text-muted-foreground">Entity not found.</div>;
 
   const isPerson = entity.type === "person";
+  const isSetupMode = entity.captable_status !== "live";
+  const isLiveMode = entity.captable_status === "live";
 
   // Group ownedBy links by share class for shareholding summary
   const ownedByGrouped: Record<string, any[]> = {};
