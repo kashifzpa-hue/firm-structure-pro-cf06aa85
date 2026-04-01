@@ -14,6 +14,7 @@ import { toast } from "sonner";
 interface Props {
   companyEntityId: string;
   companyName: string;
+  isLiveMode?: boolean;
 }
 
 export function ShareCapitalSection({ companyEntityId, companyName }: Props) {
