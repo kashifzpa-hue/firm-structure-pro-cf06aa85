@@ -8,10 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Trash2, User, AlertTriangle } from "lucide-react";
+import { OwnershipFormModal } from "@/components/OwnershipFormModal";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
