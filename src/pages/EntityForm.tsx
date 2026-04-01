@@ -433,6 +433,36 @@ export default function EntityForm() {
           <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">Cancel</Button>
         </div>
       </form>
+
+      {showBoardPrompt && savedEntityId && (
+        <div className="space-y-6">
+          <Card className="shadow-sm border-primary/20">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <h3 className="text-lg font-semibold">Would you like to add Board Members and Key Management now?</h3>
+                <div className="flex gap-4 justify-center">
+                  <Button onClick={() => setShowBoardPrompt(false)}>Yes, Add Now</Button>
+                  <Button variant="outline" onClick={() => navigate(`/entities/${savedEntityId}`)}>Skip for Now</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          {!showBoardPrompt ? null : (
+            <div>
+              {/* Show inline once "Yes" is clicked — but we just hide the prompt and show the tab */}
+            </div>
+          )}
+        </div>
+      )}
+
+      {showBoardPrompt === false && savedEntityId && (
+        <div className="space-y-4">
+          <BoardManagementTab companyEntityId={savedEntityId} companyName={savedEntityName} />
+          <div className="flex justify-end">
+            <Button onClick={() => navigate(`/entities/${savedEntityId}`)}>Done — View Entity</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
