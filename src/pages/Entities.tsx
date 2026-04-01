@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, User, Search } from "lucide-react";
+import { Plus, Building2, User, Search, Upload } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDocumentStatus } from "@/lib/document-status";
+import { EntityImportModal } from "@/components/EntityImportModal";
 
 export default function Entities() {
   const { workspaceId } = useAuth();
