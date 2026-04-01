@@ -60,8 +60,9 @@ export function CompanyUBOTab({ companyEntityId, companyName, ownedBy, owns }: C
     fetchData();
   };
 
-  const nonCircular = snapshots.filter(s => !s.circular_detected);
+  const nonCircular = snapshots.filter(s => !s.circular_detected && !s.unresolved_chain && s.person_entity_id);
   const circular = snapshots.filter(s => s.circular_detected);
+  const unresolvedChains = snapshots.filter(s => s.unresolved_chain);
 
   const getPctBadge = (pct: number) => {
     if (pct >= 25) return <Badge className="bg-destructive text-destructive-foreground">{pct.toFixed(2)}%</Badge>;
