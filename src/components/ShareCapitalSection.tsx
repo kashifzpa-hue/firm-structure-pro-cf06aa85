@@ -17,7 +17,7 @@ interface Props {
   isLiveMode?: boolean;
 }
 
-export function ShareCapitalSection({ companyEntityId, companyName }: Props) {
+export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode = false }: Props) {
   const { workspaceId } = useAuth();
   const [shareClasses, setShareClasses] = useState<any[]>([]);
   const [allocations, setAllocations] = useState<Record<string, number>>({});
