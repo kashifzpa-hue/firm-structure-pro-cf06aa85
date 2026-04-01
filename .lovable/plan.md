@@ -1,108 +1,86 @@
 
 
-# Movement Ledger — Final Implementation Plan
+# UBO Edge Case Fixes — Revised Plan
 
-## Overview
-Build the Movement Ledger as the single source of truth for all equity changes in Live Mode companies. This is a large feature spanning database, backend RPCs, and multiple new UI pages/components.
+## Summary
+
+Three corrections to the UBO engine: database-level auto-recalculation triggers, workspace-wide unresolved chain detection, and a clean `terminal_entity_id` column for unresolved records.
 
 ---
 
 ## Step 1: Database Migration
 
-One migration creating:
+A single migration that:
 
-**3 Enums:** `movement_type` (TRANSFER, ISSUANCE, CANCELLATION, INHERITANCE, GIFT, COURT_ORDER, CAPITAL_INCREASE, CAPITAL_DECREASE), `movement_status` (draft, confirmed, voided), `movement_document_type` (9 values)
+### 1a. Schema Changes to `ubo_snapshots`
+- Add `unresolved_chain BOOLEAN NOT NULL DEFAULT false`
+- Add `terminal_entity_id UUID NULLABLE` (references entities.id)
+- Make `person_entity_id` nullable (currently NOT NULL — must allow NULL for unresolved records)
 
-**Table: `movements`** — id, workspace_id, company_entity_id (FK→entities), share_class_id (FK→share_classes), movement_type, from_entity_id (FK→entities, nullable), to_entity_id (FK→entities, nullable), shares_transferred (int >0), price_per_share (numeric, nullable), currency (text, nullable), total_consideration (numeric, nullable), movement_date (date), reference_number (text, nullable), notes (text, nullable), status (default 'draft'), created_by (FK→profiles.id), created_at, confirmed_at, voided_at, void_reason. RLS by workspace_id.
+### 1b. Update `calculate_ubo` RPC
 
-**Table: `movement_documents`** — id, movement_id (FK→movements), workspace_id, document_type, file_url, uploaded_at, notes. RLS by workspace_id.
+After the existing person-aggregation INSERT, add unresolved chain detection:
 
-**RPC: `confirm_movement(p_movement_id uuid)`** — SECURITY DEFINER, single transaction:
-1. Validate movement is draft and belongs to user's workspace
-2. For TRANSFER/INHERITANCE/GIFT/COURT_ORDER: reduce seller's `equity_links.shares_owned`, increase/create buyer's equity_link, auto-close (set end_date) if shares reach 0
-3. For ISSUANCE: create/update buyer equity_link
-4. For CANCELLATION: reduce holder's shares, auto-close if 0
-5. For CAPITAL_INCREASE/DECREASE: update `share_classes.total_shares_issued`
-6. **Recalculate percentages** for ALL equity_links of that company+share_class: `percentage = (shares_owned::numeric / total_shares_issued) * 100`
-7. Set status='confirmed', confirmed_at=now()
+1. From the recursive CTE results, find terminal nodes where `owner_type = 'company'` and that company has NO equity_links pointing into it (no owners)
+2. For each such terminal company, find ALL companies in the workspace whose ownership chains pass through it (not just the target company being calculated)
+3. Insert unresolved records into `ubo_snapshots` with:
+   - `person_entity_id = NULL`
+   - `terminal_entity_id = <the ownerless company>`
+   - `unresolved_chain = true`
+   - `effective_economic_pct = 0`, `effective_voting_pct = 0`
+   - Chain showing the path that dead-ends
 
-**RPC: `void_movement(p_movement_id uuid, p_reason text)`** — SECURITY DEFINER, single transaction:
-1. Validate movement is confirmed
-2. Check for **subsequent movements**: any confirmed movement where `from_entity_id = original.to_entity_id` AND `movement_date > original.movement_date` AND same `company_entity_id` AND same `share_class_id`. If found, block with error.
-3. Reverse all equity link changes (opposite of confirm)
-4. **Recalculate percentages** for all affected equity_links
-5. Set status='voided', voided_at=now(), void_reason=p_reason
+4. For workspace-wide propagation: query all companies that have ownership paths passing through the terminal company (using a reverse traversal of equity_links downward) and insert unresolved records for each of them too.
 
-**RPC: `activate_live_mode(p_entity_id uuid)`** — SECURITY DEFINER, single transaction:
-1. Set `entities.captable_status = 'live'`
-2. For each active equity_link of that company, create a confirmed ISSUANCE movement with notes "Opening balance — imported from Setup Mode on [date] by [user]"
+### 1c. Auto-Recalculation Trigger Functions
 
----
+Create a trigger function `trigger_ubo_recalculate()` that calls `calculate_ubo` for the affected company. Then attach triggers:
 
-## Step 2: Navigation & Routes
+**On `equity_links`** (AFTER INSERT, UPDATE, DELETE):
+- Extract `owned_entity_id` (the company affected)
+- Also find all companies below it in the ownership chain (subsidiaries) via a downward traversal
+- Call `calculate_ubo` for each affected company
 
-- **AppSidebar.tsx**: Add "Ledger" with `ScrollText` icon after "Org Chart"
-- **App.tsx**: Add `/ledger` → Ledger page, `/ledger/:id` → MovementDetail page
+**On `movements`** (AFTER UPDATE — when `confirmed_at` or `voided_at` changes from NULL to non-NULL):
+- Extract `company_entity_id`
+- Call `calculate_ubo` for that company and its subsidiaries
 
----
+**On `share_classes`** (AFTER UPDATE — when `voting_rights` changes):
+- Extract `company_entity_id`
+- Call `calculate_ubo` for that company
 
-## Step 3: Ledger List Page
-
-**New file: `src/pages/Ledger.tsx`**
-
-- Table sorted by movement_date DESC
-- Columns: Date, Company, Type (color badge), Share Class, From, To, Shares, Consideration, Status badge, Actions
-- Filters: search text, company dropdown, movement type multi-select, status (All/Draft/Confirmed/Voided), date range
-- "Export to CSV" — exports **only filtered rows** with columns: Date, Company, Movement Type, Share Class, From, To, Shares Transferred, Price Per Share, Currency, Total Consideration, Reference Number, Status
-- "Record Movement" button → opens wizard
-- Actions: View (always), Edit (draft), Void (confirmed), Delete (draft)
+All triggers use `SECURITY DEFINER` and handle errors gracefully (log and continue, don't block the triggering operation).
 
 ---
 
-## Step 4: Record Movement Wizard
+## Step 2: Update Frontend — UBO Registry Unresolved Panel
 
-**New files:** `src/components/MovementWizard.tsx` + 4 step sub-components in `src/components/movement/`
+**File: `src/pages/UBORegistry.tsx`**
 
-**Step 1 — Details:** Company selector (only Live Mode companies with share classes), movement type card selector, movement date (future warning), reference number (duplicate warning: amber if same ref exists for same company)
+- Update the "Unresolved Chains" summary card to count `ubo_snapshots` where `unresolved_chain = true` (distinct by `company_entity_id`)
+- Add an "Unresolved Chains" panel below the main table listing:
+  - Company Name (the company missing UBO resolution)
+  - Terminal Entity (the company with no owners — from `terminal_entity_id`)
+  - "Fix" button linking to the terminal entity's ownership tab
+- Filter unresolved records out of the main UBO table (they have `person_entity_id = NULL`)
 
-**Step 2 — Parties & Shares:** Dynamic per movement type with live validation. For CAPITAL_INCREASE/DECREASE: show before/after percentage table for all existing shareholders (dilution preview).
+**File: `src/components/ubo/CompanyUBOTab.tsx`**
 
-**Step 3 — Consideration:** Optional toggle, price per share, currency, computed total.
-
-**Step 4 — Documents & Confirm:** Document uploads to `documents` storage bucket, summary panel. "Save as Draft" / "Confirm Movement" (calls `confirm_movement` RPC). Out-of-order warning with acknowledgement checkbox if earlier drafts exist for same company+share_class. Future-dated movements: draft only.
-
----
-
-## Step 5: Movement Detail Page
-
-**New file: `src/pages/MovementDetail.tsx`**
-
-- Full read-only detail view with header (type badge, company, date, status)
-- "Shareholding Impact" before/after table (green/red rows)
-- Documents section with download links
-- Audit log sidebar (created/confirmed/voided timestamps)
-- Voided: red "VOIDED" stamp overlay at 50% opacity
-- Draft: banner with confirm action
+- Query for unresolved snapshots where `company_entity_id` matches AND `unresolved_chain = true`
+- Display amber warning if any exist: "Unresolved ownership chain — [Terminal Company] has no owners linked."
 
 ---
 
-## Step 6: Entity Detail Updates
+## Step 3: Update PersonUBOTab for nullable person_entity_id
 
-**Modified: `src/pages/EntityDetail.tsx`**
-
-- Add **"Ledger" tab** for companies — movements filtered to that company
-- Add **"Cap Table as of Date"** time machine with date picker. Replays confirmed movements up to selected date. If date < incorporation date → empty state message.
-- Add **"Transaction History"** sub-section in Ownership tab for all entities
-- Update `handleActivateLiveMode` to call `activate_live_mode` RPC instead of direct update
+**File: `src/components/ubo/PersonUBOTab.tsx`** — No changes needed; it already filters by `person_entity_id = personEntityId` which won't match NULL records.
 
 ---
 
-## Step 7: Dashboard Updates
+## Technical Notes
 
-**Modified: `src/pages/Dashboard.tsx`**
-
-- "Pending Drafts" summary card (amber, count of draft movements, click → Ledger filtered to Draft)
-- "Recent Movements" section: last 5 confirmed movements
+- The trigger approach means `calculate_ubo` runs inside the same transaction as the equity_link/movement change. For performance, if workspaces grow large, we may need to make triggers async via `pg_notify` + a listener. For now, synchronous is fine given max 10-layer depth and typical workspace sizes.
+- The workspace-wide unresolved propagation is handled inside `calculate_ubo` itself, not in the trigger — the trigger just calls `calculate_ubo` for the directly affected company, and the RPC handles finding downstream impacts.
 
 ---
 
@@ -110,16 +88,7 @@ One migration creating:
 
 | Action | File |
 |--------|------|
-| Create | `src/pages/Ledger.tsx` |
-| Create | `src/pages/MovementDetail.tsx` |
-| Create | `src/components/MovementWizard.tsx` |
-| Create | `src/components/movement/Step1Details.tsx` |
-| Create | `src/components/movement/Step2Parties.tsx` |
-| Create | `src/components/movement/Step3Consideration.tsx` |
-| Create | `src/components/movement/Step4Confirm.tsx` |
-| Modify | `src/components/AppSidebar.tsx` |
-| Modify | `src/App.tsx` |
-| Modify | `src/pages/Dashboard.tsx` |
-| Modify | `src/pages/EntityDetail.tsx` |
-| Migration | 1 SQL: enums + 2 tables + RLS + 3 RPCs |
+| Migration | `ubo_snapshots` schema + updated `calculate_ubo` RPC + 3 trigger functions + 3 triggers |
+| Modify | `src/pages/UBORegistry.tsx` — unresolved chains panel using `terminal_entity_id` |
+| Modify | `src/components/ubo/CompanyUBOTab.tsx` — unresolved chain warning display |
 
