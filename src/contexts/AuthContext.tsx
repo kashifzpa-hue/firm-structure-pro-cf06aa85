@@ -51,23 +51,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let initialLoad = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
-        setTimeout(() => fetchWorkspaceAndRole(session.user.id), 0);
+        fetchWorkspaceAndRole(session.user.id).finally(() => {
+          if (initialLoad) {
+            initialLoad = false;
+            setLoading(false);
+          }
+        });
       } else {
         setWorkspaceId(null);
         setUserRole(null);
+        if (initialLoad) {
+          initialLoad = false;
+        }
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        fetchWorkspaceAndRole(session.user.id);
+        fetchWorkspaceAndRole(session.user.id).finally(() => {
+          setLoading(false);
+          initialLoad = false;
+        });
+      } else {
+        setLoading(false);
+        initialLoad = false;
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
