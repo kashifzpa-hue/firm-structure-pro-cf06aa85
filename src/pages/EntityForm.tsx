@@ -50,6 +50,7 @@ export default function EntityForm() {
   const { workspaceId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showBoardPrompt, setShowBoardPrompt] = useState(false);
+  const [showBoardInline, setShowBoardInline] = useState(false);
   const [savedEntityId, setSavedEntityId] = useState<string | null>(null);
   const [savedEntityName, setSavedEntityName] = useState("");
   const [entityType, setEntityType] = useState<"person" | "company">("person");
