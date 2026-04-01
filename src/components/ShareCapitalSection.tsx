@@ -81,9 +81,11 @@ export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode =
             </p>
           )}
         </div>
-        <Button size="sm" onClick={() => { setEditingClass(null); setModalOpen(true); }}>
-          <Plus className="mr-1 h-4 w-4" /> Add Share Class
-        </Button>
+        {!isLiveMode && (
+          <Button size="sm" onClick={() => { setEditingClass(null); setModalOpen(true); }}>
+            <Plus className="mr-1 h-4 w-4" /> Add Share Class
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {shareClasses.length === 0 ? (
