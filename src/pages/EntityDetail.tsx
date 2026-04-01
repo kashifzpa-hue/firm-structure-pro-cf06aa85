@@ -97,6 +97,7 @@ export default function EntityDetail() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="documents">Documents ({docs.length})</TabsTrigger>
           <TabsTrigger value="ownership">Ownership</TabsTrigger>
+          {!isPerson && <TabsTrigger value="board">Board & Management</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
