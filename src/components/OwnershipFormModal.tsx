@@ -87,6 +87,10 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
   const percentage = selectedClass && selectedClass.total_shares_issued > 0 ? (sharesNum / selectedClass.total_shares_issued) * 100 : 0;
   const exceeds = sharesNum > available;
 
+  const ownedEntity = entities.find(e => e.id === ownedId);
+  const incorporationDate = ownedEntity?.date_of_birth_or_incorporation || null;
+  const effectiveDateBeforeIncorporation = incorporationDate && effectiveDate ? effectiveDate < incorporationDate : false;
+
   const hasShareClasses = shareClasses.length > 0;
   const ownedEntityName = entities.find(e => e.id === ownedId)?.name || "";
 
