@@ -123,6 +123,20 @@ export default function Dashboard() {
         }
       });
       setShareholdingGaps(gaps);
+
+      // UBO Alerts — above threshold with passport data
+      const { data: uboData } = await supabase.from("ubo_snapshots").select("*").eq("workspace_id", workspaceId).eq("snapshot_type", "live").eq("is_above_threshold", true);
+      if (uboData && uboData.length > 0) {
+        const personIdsUbo = [...new Set(uboData.map((u: any) => u.person_entity_id))];
+        const { data: uboDocs } = await supabase.from("documents").select("*").eq("workspace_id", workspaceId).in("entity_id", personIdsUbo).eq("document_type", "Passport");
+        const uboEntityMap = Object.fromEntries(entities.map(e => [e.id, e]));
+        const alerts = uboData.map((u: any) => {
+          const passport = (uboDocs || []).find((d: any) => d.entity_id === u.person_entity_id);
+          return { ...u, personName: uboEntityMap[u.person_entity_id]?.name, companyName: uboEntityMap[u.company_entity_id]?.name, passport };
+        });
+        setUboAlerts(alerts);
+      }
+
       setLoading(false);
     };
     fetchData();
