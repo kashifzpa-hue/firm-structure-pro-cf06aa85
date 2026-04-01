@@ -287,6 +287,41 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Recent Movements */}
+      {recentMovements.length > 0 && (
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Recent Movements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>From</TableHead>
+                  <TableHead>To</TableHead>
+                  <TableHead>Shares</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentMovements.map((m: any) => (
+                  <TableRow key={m.id} className="cursor-pointer" onClick={() => navigate(`/ledger/${m.id}`)}>
+                    <TableCell>{format(parseISO(m.movement_date), "MMM dd, yyyy")}</TableCell>
+                    <TableCell className="font-medium">{m.company?.name}</TableCell>
+                    <TableCell><Badge variant="outline">{m.movement_type?.replace(/_/g, " ")}</Badge></TableCell>
+                    <TableCell>{m.from_entity?.name || "—"}</TableCell>
+                    <TableCell>{m.to_entity?.name || "—"}</TableCell>
+                    <TableCell>{m.shares_transferred?.toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
