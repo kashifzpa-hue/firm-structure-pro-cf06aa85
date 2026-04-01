@@ -137,6 +137,7 @@ export default function Dashboard() {
     { title: "Expired Documents", value: stats.expiredCount, icon: FileWarning, color: "text-destructive" },
     { title: "Total Companies", value: stats.totalCompanies, icon: Building2, color: "text-primary" },
     { title: "Ownership Links", value: stats.totalLinks, icon: Link2, color: "text-primary" },
+    { title: "Pending Drafts", value: stats.draftMovements, icon: ScrollText, color: stats.draftMovements > 0 ? "text-warning" : "text-primary", onClick: () => stats.draftMovements > 0 && navigate("/ledger?status=draft") },
   ];
 
   return (
