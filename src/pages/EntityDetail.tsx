@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/StatusBadge";
+import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ArrowLeft, Building2, Download, Edit, ExternalLink, Trash2, User } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
