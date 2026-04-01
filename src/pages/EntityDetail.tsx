@@ -513,6 +513,13 @@ export default function EntityDetail() {
             <BoardManagementTab companyEntityId={id!} companyName={entity.name} />
           </TabsContent>
         )}
+
+        {/* Ledger Tab with Time Machine */}
+        {!isPerson && isLiveMode && (
+          <TabsContent value="ledger">
+            <LedgerTab companyEntityId={id!} companyName={entity.name} incorporationDate={entity.date_of_birth_or_incorporation} workspaceId={workspaceId!} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Ownership Form Modal for Setup Mode */}
