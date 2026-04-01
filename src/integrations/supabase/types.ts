@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       documents: {
         Row: {
+          country_of_issue: string | null
           created_at: string
           document_number: string | null
           document_type: string
@@ -27,6 +28,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          country_of_issue?: string | null
           created_at?: string
           document_number?: string | null
           document_type: string
@@ -38,6 +40,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          country_of_issue?: string | null
           created_at?: string
           document_number?: string | null
           document_type?: string
