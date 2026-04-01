@@ -22,7 +22,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!workspaceId) return;
     const fetchData = async () => {
-      const [entitiesRes, docsRes, linksCountRes, recentLinksRes] = await Promise.all([
+      const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes] = await Promise.all([
         supabase.from("entities").select("id, type").eq("workspace_id", workspaceId),
         supabase.from("documents").select("*, entities!inner(name, type)").eq("workspace_id", workspaceId),
         supabase.from("equity_links").select("id").eq("workspace_id", workspaceId).is("end_date", null),
@@ -32,6 +32,11 @@ export default function Dashboard() {
           .eq("workspace_id", workspaceId)
           .order("created_at", { ascending: false })
           .limit(5),
+        supabase
+          .from("appointments")
+          .select("*, person:entities!appointments_person_entity_id_fkey(id, name), company:entities!appointments_company_entity_id_fkey(id, name)")
+          .eq("workspace_id", workspaceId)
+          .is("resignation_date", null),
       ]);
 
       const entities = entitiesRes.data || [];
