@@ -99,25 +99,37 @@ export default function UBORegistry() {
     return Array.from(set).sort();
   }, [persons]);
 
-  const nonCircularSnapshots = useMemo(() => snapshots.filter(s => !s.circular_detected), [snapshots]);
+  const normalSnapshots = useMemo(() => snapshots.filter(s => !s.circular_detected && !s.unresolved_chain && s.person_entity_id), [snapshots]);
   const circularSnapshots = useMemo(() => snapshots.filter(s => s.circular_detected), [snapshots]);
+  const unresolvedSnapshots = useMemo(() => snapshots.filter(s => s.unresolved_chain), [snapshots]);
 
-  // Unresolved: companies with no person UBOs found
-  const companiesWithUBO = useMemo(() => new Set(nonCircularSnapshots.map(s => s.company_entity_id)), [nonCircularSnapshots]);
-  const unresolvedCompanies = useMemo(() => {
-    // Companies that have been calculated but have no UBO results, 
-    // or companies that haven't been calculated at all but have equity links
-    return companies.filter(c => !companiesWithUBO.has(c.id));
-  }, [companies, companiesWithUBO]);
+  // Deduplicate unresolved by company+terminal
+  const unresolvedEntries = useMemo(() => {
+    const map = new Map<string, { companyId: string; companyName: string; terminalId: string; terminalName: string }>();
+    unresolvedSnapshots.forEach(s => {
+      const key = `${s.company_entity_id}_${s.terminal_entity_id}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          companyId: s.company_entity_id,
+          companyName: entityMap[s.company_entity_id]?.name || "Unknown",
+          terminalId: s.terminal_entity_id,
+          terminalName: entityMap[s.terminal_entity_id]?.name || "Unknown",
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [unresolvedSnapshots, entityMap]);
 
   // Summary stats
-  const totalUBOs = useMemo(() => new Set(nonCircularSnapshots.map(s => s.person_entity_id)).size, [nonCircularSnapshots]);
-  const aboveThreshold = useMemo(() => nonCircularSnapshots.filter(s => s.is_above_threshold).length, [nonCircularSnapshots]);
+  const companiesWithUBO = useMemo(() => new Set(normalSnapshots.map(s => s.company_entity_id)), [normalSnapshots]);
+  const totalUBOs = useMemo(() => new Set(normalSnapshots.map(s => s.person_entity_id)).size, [normalSnapshots]);
+  const aboveThreshold = useMemo(() => normalSnapshots.filter(s => s.is_above_threshold).length, [normalSnapshots]);
   const companiesCalculated = useMemo(() => companiesWithUBO.size, [companiesWithUBO]);
+  const unresolvedCount = useMemo(() => new Set(unresolvedSnapshots.map(s => s.company_entity_id)).size, [unresolvedSnapshots]);
 
   // Filter snapshots
   const filtered = useMemo(() => {
-    return nonCircularSnapshots.filter(s => {
+    return normalSnapshots.filter(s => {
       const person = entityMap[s.person_entity_id];
       const company = entityMap[s.company_entity_id];
       if (!person || !company) return false;
@@ -132,7 +144,7 @@ export default function UBORegistry() {
       if (nationalityFilter !== "all" && person.nationality_or_jurisdiction !== nationalityFilter) return false;
       return true;
     });
-  }, [nonCircularSnapshots, search, companyFilter, thresholdOnly, minPct, nationalityFilter, entityMap]);
+  }, [normalSnapshots, search, companyFilter, thresholdOnly, minPct, nationalityFilter, entityMap]);
 
   const handleExportCSV = () => {
     const headers = ["Company", "UBO Name", "Nationality", "Date of Birth", "Passport Number", "Passport Expiry", "Economic %", "Voting %", "Layers", "Above Threshold"];
@@ -214,7 +226,7 @@ export default function UBORegistry() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Unresolved Chains</CardTitle>
             <AlertTriangle className="h-5 w-5 text-warning" />
           </CardHeader>
-          <CardContent><div className="text-3xl font-bold text-warning">{unresolvedCompanies.length}</div></CardContent>
+          <CardContent><div className="text-3xl font-bold text-warning">{unresolvedCount}</div></CardContent>
         </Card>
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -369,32 +381,40 @@ export default function UBORegistry() {
       )}
 
       {/* Unresolved Chains */}
-      {unresolvedCompanies.length > 0 && (
+      {unresolvedEntries.length > 0 && (
         <Card className="shadow-sm border-warning/30">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-warning" /> Unresolved Chains
+              <Link2 className="h-5 w-5 text-warning" /> Unresolved Chains ({unresolvedEntries.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Issue</TableHead>
+                  <TableHead>Company Affected</TableHead>
+                  <TableHead>Terminal Entity (No Owners)</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {unresolvedCompanies.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      No natural person found at the top of the ownership chain. Add ownership links to complete the UBO chain.
+                {unresolvedEntries.map((entry, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">
+                      <button className="text-primary hover:underline" onClick={() => navigate(`/entities/${entry.companyId}`)}>
+                        {entry.companyName}
+                      </button>
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/entities/${c.id}`)}>
-                        Fix →
+                      <div className="flex items-center gap-1 text-warning">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span className="text-sm">{entry.terminalName}</span>
+                        <span className="text-xs text-muted-foreground ml-1">— has no owners linked</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/entities/${entry.terminalId}`)}>
+                        Fix Ownership →
                       </Button>
                     </TableCell>
                   </TableRow>

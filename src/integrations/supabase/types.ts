@@ -601,9 +601,11 @@ export type Database = {
           id: string
           is_above_threshold: boolean
           ownership_chain: Json
-          person_entity_id: string
+          person_entity_id: string | null
           snapshot_date: string | null
           snapshot_type: Database["public"]["Enums"]["ubo_snapshot_type"]
+          terminal_entity_id: string | null
+          unresolved_chain: boolean
           workspace_id: string
         }
         Insert: {
@@ -615,9 +617,11 @@ export type Database = {
           id?: string
           is_above_threshold?: boolean
           ownership_chain?: Json
-          person_entity_id: string
+          person_entity_id?: string | null
           snapshot_date?: string | null
           snapshot_type?: Database["public"]["Enums"]["ubo_snapshot_type"]
+          terminal_entity_id?: string | null
+          unresolved_chain?: boolean
           workspace_id: string
         }
         Update: {
@@ -629,9 +633,11 @@ export type Database = {
           id?: string
           is_above_threshold?: boolean
           ownership_chain?: Json
-          person_entity_id?: string
+          person_entity_id?: string | null
           snapshot_date?: string | null
           snapshot_type?: Database["public"]["Enums"]["ubo_snapshot_type"]
+          terminal_entity_id?: string | null
+          unresolved_chain?: boolean
           workspace_id?: string
         }
         Relationships: [
@@ -645,6 +651,13 @@ export type Database = {
           {
             foreignKeyName: "ubo_snapshots_person_entity_id_fkey"
             columns: ["person_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ubo_snapshots_terminal_entity_id_fkey"
+            columns: ["terminal_entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
             referencedColumns: ["id"]
@@ -761,6 +774,10 @@ export type Database = {
           _workspace_id: string
         }
         Returns: boolean
+      }
+      trigger_ubo_recalculate_for_company: {
+        Args: { p_company_id: string }
+        Returns: undefined
       }
       void_movement: {
         Args: { p_movement_id: string; p_reason: string }

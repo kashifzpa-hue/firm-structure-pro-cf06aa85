@@ -60,8 +60,9 @@ export function CompanyUBOTab({ companyEntityId, companyName, ownedBy, owns }: C
     fetchData();
   };
 
-  const nonCircular = snapshots.filter(s => !s.circular_detected);
+  const nonCircular = snapshots.filter(s => !s.circular_detected && !s.unresolved_chain && s.person_entity_id);
   const circular = snapshots.filter(s => s.circular_detected);
+  const unresolvedChains = snapshots.filter(s => s.unresolved_chain);
 
   const getPctBadge = (pct: number) => {
     if (pct >= 25) return <Badge className="bg-destructive text-destructive-foreground">{pct.toFixed(2)}%</Badge>;
@@ -81,6 +82,19 @@ export function CompanyUBOTab({ companyEntityId, companyName, ownedBy, owns }: C
           <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertDescription className="text-warning">
             <strong>⚠ Circular Ownership Detected</strong> — UBO calculation cannot be completed for circular chains. Please review ownership links.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Unresolved chain warning */}
+      {unresolvedChains.length > 0 && (
+        <Alert className="border-warning/50 bg-warning/5">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-warning">
+            <strong>⚠ Unresolved Ownership Chain</strong> — {unresolvedChains.map(u => {
+              const terminalName = entities[u.terminal_entity_id]?.name || "Unknown company";
+              return terminalName;
+            }).filter((v, i, a) => a.indexOf(v) === i).join(", ")} {unresolvedChains.length === 1 ? "has" : "have"} no owners linked. UBO calculation is incomplete for affected chains.
           </AlertDescription>
         </Alert>
       )}
