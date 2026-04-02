@@ -156,12 +156,14 @@ function KYCHealthGridInner() {
                       endAngle={-45}
                       barSize={8}
                     >
+                      <PolarAngleAxis type="number" domain={[0, 100]} tick={false} angleAxisId={0} />
                       <RadialBar
                         dataKey="value"
                         cornerRadius={4}
                         background={{ fill: "hsl(var(--border))" }}
                         isAnimationActive
                         animationDuration={1000}
+                        angleAxisId={0}
                       />
                     </RadialBarChart>
                   </ResponsiveContainer>
