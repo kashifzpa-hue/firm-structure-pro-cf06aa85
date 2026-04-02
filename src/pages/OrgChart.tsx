@@ -231,7 +231,7 @@ export default function OrgChart() {
       visitedNodes.add(rootId);
 
       const ownershipsByEntity: Record<string, { targetName: string; percentage: number }[]> = {};
-      filteredLinks.forEach((link) => {
+      uniqueLinks.forEach((link) => {
         if (!ownershipsByEntity[link.owner_entity_id]) ownershipsByEntity[link.owner_entity_id] = [];
         const target = entityMap[link.owned_entity_id];
         if (target) {
