@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye } from "lucide-react";
+import { Eye, TableProperties, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
+import { MovementTimeline } from "@/components/MovementTimeline";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LedgerTabProps {
   companyEntityId: string;
@@ -110,6 +112,17 @@ export function LedgerTab({ companyEntityId, companyName, incorporationDate, wor
 
   return (
     <div className="space-y-6">
+      {/* View Toggle */}
+      <Tabs defaultValue="table">
+        <TabsList>
+          <TabsTrigger value="table" className="gap-1.5"><TableProperties className="h-3.5 w-3.5" /> Table View</TabsTrigger>
+          <TabsTrigger value="timeline" className="gap-1.5"><Clock className="h-3.5 w-3.5" /> Timeline View</TabsTrigger>
+        </TabsList>
+        <TabsContent value="timeline" className="mt-4">
+          <MovementTimeline movements={movements} companyName={companyName} />
+        </TabsContent>
+        <TabsContent value="table" className="mt-4">
+          <div className="space-y-6">
       {/* Time Machine */}
       <Card className="shadow-sm">
         <CardHeader><CardTitle className="text-lg">Cap Table as of Date</CardTitle></CardHeader>
@@ -197,6 +210,9 @@ export function LedgerTab({ companyEntityId, companyName, incorporationDate, wor
           )}
         </CardContent>
       </Card>
+    </div>
+    </TabsContent>
+    </Tabs>
     </div>
   );
 }

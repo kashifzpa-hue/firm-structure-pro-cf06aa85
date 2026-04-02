@@ -22,6 +22,7 @@ import { LedgerTab } from "@/components/LedgerTab";
 import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
 import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
 import { BankingTab } from "@/components/banking/BankingTab";
+import { CapTableWaterfall } from "@/components/CapTableWaterfall";
 import { useBankingEnabled } from "@/hooks/use-banking-enabled";
 import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -493,6 +494,15 @@ export default function EntityDetail() {
                   <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
                 </Button>
               </div>
+            )}
+
+            {/* Cap Table Waterfall */}
+            {!isPerson && ownedBy.length > 0 && (
+              <CapTableWaterfall
+                shareClasses={shareClasses}
+                ownedBy={ownedBy}
+                onAddOwnership={isSetupMode ? () => { setEditingOwnershipLink(null); setOwnershipModalOpen(true); } : undefined}
+              />
             )}
 
             {/* Owns */}
