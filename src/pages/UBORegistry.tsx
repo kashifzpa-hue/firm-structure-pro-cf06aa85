@@ -43,7 +43,7 @@ export default function UBORegistry() {
     if (!workspaceId) return;
     const [snapshotsRes, companiesRes, personsRes, docsRes] = await Promise.all([
       supabase.from("ubo_snapshots").select("*").eq("workspace_id", workspaceId).eq("snapshot_type", "live"),
-      supabase.from("entities").select("id, name, type, nationality_or_jurisdiction").eq("workspace_id", workspaceId).eq("type", "company"),
+      supabase.from("entities").select("id, name, type, nationality_or_jurisdiction, company_type").eq("workspace_id", workspaceId).eq("type", "company"),
       supabase.from("entities").select("id, name, type, nationality_or_jurisdiction, date_of_birth_or_incorporation").eq("workspace_id", workspaceId).eq("type", "person"),
       supabase.from("documents").select("*").eq("workspace_id", workspaceId).in("document_type", ["Passport", "National ID"]),
     ]);
