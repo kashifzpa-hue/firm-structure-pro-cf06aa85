@@ -293,7 +293,7 @@ export default function OrgChart() {
           }
         });
 
-        const ownerLinks = filteredLinks.filter((l) => l.owned_entity_id === current);
+        const ownerLinks = uniqueLinks.filter((l) => l.owned_entity_id === current);
         ownerLinks.forEach((link) => {
           if (!visitedNodes.has(link.owner_entity_id)) {
             visitedNodes.add(link.owner_entity_id);
