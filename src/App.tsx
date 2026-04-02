@@ -73,6 +73,9 @@ const App = () => (
               <Route path="/reports" element={<Reports />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/bank-accounts" element={<BankAccounts />} />
+              <Route path="/bank-accounts/:id" element={<BankAccountDetail />} />
+              <Route path="/signatory-register" element={<SignatoryRegister />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

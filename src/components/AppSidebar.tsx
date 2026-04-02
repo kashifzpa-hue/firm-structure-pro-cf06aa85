@@ -73,6 +73,36 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Banking Section */}
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">Banking</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {bankingEnabled ? bankingItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )) : (
+                <SidebarMenuItem>
+                  <SidebarMenuButton className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/40 cursor-not-allowed">
+                    <Lock className="h-5 w-5 shrink-0" />
+                    {!collapsed && <span>Banking Module</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="bg-sidebar">
