@@ -94,12 +94,7 @@ export function MovementWizard({ open, onOpenChange, onSaved, editingMovement }:
 
   const canGoNext = () => {
     if (step === 0) return data.company_entity_id && data.movement_type && data.share_class_id && data.movement_date;
-    if (step === 1) {
-      if (data.shares_transferred <= 0) return false;
-      // CAPITAL_DECREASE with unallocated doesn't need from_entity_id
-      if (data.movement_type === "CAPITAL_DECREASE") return true;
-      return true;
-    }
+    if (step === 1) return data.shares_transferred > 0;
     return true;
   };
 
