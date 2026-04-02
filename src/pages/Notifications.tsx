@@ -39,7 +39,7 @@ export default function Notifications() {
       .order("created_at", { ascending: false })
       .limit(200);
 
-    if (typeFilter !== "all") query = query.eq("notification_type", typeFilter);
+    if (typeFilter !== "all") query = query.eq("notification_type", typeFilter as any);
     if (statusFilter === "unread") query = query.eq("is_read", false);
     if (statusFilter === "read") query = query.eq("is_read", true);
 
