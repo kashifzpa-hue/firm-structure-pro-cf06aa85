@@ -228,6 +228,29 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Banking Overview */}
+      {bankingEnabled && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Banking Overview</h2>
+          <div className="grid gap-4 md:grid-cols-4">
+            {[
+              { title: "Bank Accounts", value: bankingStats.accounts, icon: Landmark, color: "text-primary", link: "/bank-accounts" },
+              { title: "Active Signatories", value: bankingStats.signatories, icon: PenLine, color: "text-primary", link: "/bank-accounts" },
+              { title: "Expiring Authority (30d)", value: bankingStats.expiring, icon: Clock, color: "text-warning", link: "/signatory-register?expiry=30" },
+              { title: "Awaiting Bank Ack", value: bankingStats.pendingAck, icon: Hourglass, color: "text-muted-foreground", link: "/signatory-register?ack=pending" },
+            ].map(card => (
+              <Card key={card.title} className="shadow-sm cursor-pointer hover:border-primary/50" onClick={() => navigate(card.link)}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
+                  <card.icon className={`h-5 w-5 ${card.color}`} />
+                </CardHeader>
+                <CardContent><div className="text-3xl font-bold">{card.value}</div></CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Expiry Alerts</CardTitle>
