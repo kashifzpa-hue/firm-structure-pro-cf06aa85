@@ -1,12 +1,14 @@
-import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell } from "lucide-react";
+import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBankingEnabled } from "@/hooks/use-banking-enabled";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -26,11 +28,17 @@ const navItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
+const bankingItems = [
+  { title: "Bank Accounts", url: "/bank-accounts", icon: Landmark },
+  { title: "Signatory Register", url: "/signatory-register", icon: PenLine },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut } = useAuth();
+  const { bankingEnabled } = useBankingEnabled();
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -62,6 +70,36 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Banking Section */}
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">Banking</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {bankingEnabled ? bankingItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )) : (
+                <SidebarMenuItem>
+                  <SidebarMenuButton className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/40 cursor-not-allowed">
+                    <Lock className="h-5 w-5 shrink-0" />
+                    {!collapsed && <span>Banking Module</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

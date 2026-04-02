@@ -125,6 +125,190 @@ export type Database = {
           },
         ]
       }
+      bank_account_documents: {
+        Row: {
+          bank_account_id: string
+          description: string | null
+          document_type: string
+          file_url: string | null
+          id: string
+          notes: string | null
+          uploaded_at: string
+          workspace_id: string
+        }
+        Insert: {
+          bank_account_id: string
+          description?: string | null
+          document_type: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          uploaded_at?: string
+          workspace_id: string
+        }
+        Update: {
+          bank_account_id?: string
+          description?: string | null
+          document_type?: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          uploaded_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_account_documents_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_account_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_accounts: {
+        Row: {
+          account_number: string
+          account_status: Database["public"]["Enums"]["bank_account_status"]
+          account_type: Database["public"]["Enums"]["bank_account_type"]
+          bank_name: string
+          bank_name_custom: string | null
+          branch_code: string | null
+          branch_name: string | null
+          closing_date: string | null
+          company_entity_id: string
+          created_at: string
+          currency: string
+          iban: string | null
+          id: string
+          notes: string | null
+          opening_date: string | null
+          relationship_manager: string | null
+          rm_email: string | null
+          rm_phone: string | null
+          swift_code: string | null
+          workspace_id: string
+        }
+        Insert: {
+          account_number: string
+          account_status?: Database["public"]["Enums"]["bank_account_status"]
+          account_type?: Database["public"]["Enums"]["bank_account_type"]
+          bank_name: string
+          bank_name_custom?: string | null
+          branch_code?: string | null
+          branch_name?: string | null
+          closing_date?: string | null
+          company_entity_id: string
+          created_at?: string
+          currency?: string
+          iban?: string | null
+          id?: string
+          notes?: string | null
+          opening_date?: string | null
+          relationship_manager?: string | null
+          rm_email?: string | null
+          rm_phone?: string | null
+          swift_code?: string | null
+          workspace_id: string
+        }
+        Update: {
+          account_number?: string
+          account_status?: Database["public"]["Enums"]["bank_account_status"]
+          account_type?: Database["public"]["Enums"]["bank_account_type"]
+          bank_name?: string
+          bank_name_custom?: string | null
+          branch_code?: string | null
+          branch_name?: string | null
+          closing_date?: string | null
+          company_entity_id?: string
+          created_at?: string
+          currency?: string
+          iban?: string | null
+          id?: string
+          notes?: string | null
+          opening_date?: string | null
+          relationship_manager?: string | null
+          rm_email?: string | null
+          rm_phone?: string | null
+          swift_code?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_accounts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banking_activity_log: {
+        Row: {
+          action_type: string
+          bank_account_id: string
+          created_at: string
+          details: string
+          done_by: string | null
+          id: string
+          workspace_id: string
+        }
+        Insert: {
+          action_type: string
+          bank_account_id: string
+          created_at?: string
+          details: string
+          done_by?: string | null
+          id?: string
+          workspace_id: string
+        }
+        Update: {
+          action_type?: string
+          bank_account_id?: string
+          created_at?: string
+          details?: string
+          done_by?: string | null
+          id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banking_activity_log_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banking_activity_log_done_by_fkey"
+            columns: ["done_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banking_activity_log_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           country_of_issue: string | null
@@ -725,6 +909,241 @@ export type Database = {
           },
         ]
       }
+      signatories: {
+        Row: {
+          authorised_for: string[]
+          bank_account_id: string
+          bank_acknowledged_date: string | null
+          board_resolution_doc: string | null
+          board_resolution_ref: string | null
+          created_at: string
+          designation: string
+          effective_date: string
+          expiry_date: string | null
+          id: string
+          individual_limit: number | null
+          individual_limit_currency: string | null
+          notes: string | null
+          person_entity_id: string
+          revocation_date: string | null
+          revocation_reason: string | null
+          signatory_group_id: string | null
+          signature_image_url: string | null
+          signature_original_url: string | null
+          status: Database["public"]["Enums"]["signatory_status"]
+          title: string | null
+          workspace_id: string
+        }
+        Insert: {
+          authorised_for?: string[]
+          bank_account_id: string
+          bank_acknowledged_date?: string | null
+          board_resolution_doc?: string | null
+          board_resolution_ref?: string | null
+          created_at?: string
+          designation: string
+          effective_date?: string
+          expiry_date?: string | null
+          id?: string
+          individual_limit?: number | null
+          individual_limit_currency?: string | null
+          notes?: string | null
+          person_entity_id: string
+          revocation_date?: string | null
+          revocation_reason?: string | null
+          signatory_group_id?: string | null
+          signature_image_url?: string | null
+          signature_original_url?: string | null
+          status?: Database["public"]["Enums"]["signatory_status"]
+          title?: string | null
+          workspace_id: string
+        }
+        Update: {
+          authorised_for?: string[]
+          bank_account_id?: string
+          bank_acknowledged_date?: string | null
+          board_resolution_doc?: string | null
+          board_resolution_ref?: string | null
+          created_at?: string
+          designation?: string
+          effective_date?: string
+          expiry_date?: string | null
+          id?: string
+          individual_limit?: number | null
+          individual_limit_currency?: string | null
+          notes?: string | null
+          person_entity_id?: string
+          revocation_date?: string | null
+          revocation_reason?: string | null
+          signatory_group_id?: string | null
+          signature_image_url?: string | null
+          signature_original_url?: string | null
+          status?: Database["public"]["Enums"]["signatory_status"]
+          title?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signatories_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signatories_person_entity_id_fkey"
+            columns: ["person_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signatories_signatory_group_id_fkey"
+            columns: ["signatory_group_id"]
+            isOneToOne: false
+            referencedRelation: "signatory_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signatories_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signatory_groups: {
+        Row: {
+          bank_account_id: string
+          created_at: string
+          description: string | null
+          display_order: number
+          group_label: string
+          id: string
+          workspace_id: string
+        }
+        Insert: {
+          bank_account_id: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          group_label: string
+          id?: string
+          workspace_id: string
+        }
+        Update: {
+          bank_account_id?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          group_label?: string
+          id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signatory_groups_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signatory_groups_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signing_matrix_rules: {
+        Row: {
+          applies_to: string[]
+          bank_account_id: string
+          created_at: string
+          daily_limit: number | null
+          display_order: number
+          group_a_id: string | null
+          group_b_id: string | null
+          id: string
+          limit_currency: string
+          min_signatories_from_a: number
+          min_signatories_from_b: number | null
+          notes: string | null
+          rule_name: string
+          rule_type: Database["public"]["Enums"]["signing_rule_type"]
+          transaction_limit: number | null
+          workspace_id: string
+        }
+        Insert: {
+          applies_to?: string[]
+          bank_account_id: string
+          created_at?: string
+          daily_limit?: number | null
+          display_order?: number
+          group_a_id?: string | null
+          group_b_id?: string | null
+          id?: string
+          limit_currency?: string
+          min_signatories_from_a?: number
+          min_signatories_from_b?: number | null
+          notes?: string | null
+          rule_name: string
+          rule_type: Database["public"]["Enums"]["signing_rule_type"]
+          transaction_limit?: number | null
+          workspace_id: string
+        }
+        Update: {
+          applies_to?: string[]
+          bank_account_id?: string
+          created_at?: string
+          daily_limit?: number | null
+          display_order?: number
+          group_a_id?: string | null
+          group_b_id?: string | null
+          id?: string
+          limit_currency?: string
+          min_signatories_from_a?: number
+          min_signatories_from_b?: number | null
+          notes?: string | null
+          rule_name?: string
+          rule_type?: Database["public"]["Enums"]["signing_rule_type"]
+          transaction_limit?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signing_matrix_rules_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signing_matrix_rules_group_a_id_fkey"
+            columns: ["group_a_id"]
+            isOneToOne: false
+            referencedRelation: "signatory_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signing_matrix_rules_group_b_id_fkey"
+            columns: ["group_b_id"]
+            isOneToOne: false
+            referencedRelation: "signatory_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signing_matrix_rules_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ubo_snapshots: {
         Row: {
           calculated_at: string
@@ -880,16 +1299,19 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          banking_enabled: boolean
           created_at: string
           id: string
           name: string
         }
         Insert: {
+          banking_enabled?: boolean
           created_at?: string
           id?: string
           name: string
         }
         Update: {
+          banking_enabled?: boolean
           created_at?: string
           id?: string
           name?: string
@@ -927,6 +1349,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "viewer"
       appointment_role_category: "board" | "management"
+      bank_account_status: "active" | "dormant" | "closed"
+      bank_account_type:
+        | "current"
+        | "savings"
+        | "call_deposit"
+        | "trade_finance"
       captable_status: "setup" | "live"
       entity_status: "active" | "inactive" | "archived"
       entity_type: "person" | "company"
@@ -960,6 +1388,10 @@ export type Database = {
         | "LIVE_MODE_ACTIVATED"
         | "ENTITY_DEACTIVATED"
         | "SYSTEM_ALERT"
+        | "SIGNATORY_EXPIRING"
+        | "BANK_ACK_PENDING"
+      signatory_status: "active" | "suspended" | "revoked"
+      signing_rule_type: "solo" | "joint_same_group" | "joint_cross_group"
       ubo_snapshot_type: "live" | "historical"
     }
     CompositeTypes: {
@@ -1090,6 +1522,13 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "viewer"],
       appointment_role_category: ["board", "management"],
+      bank_account_status: ["active", "dormant", "closed"],
+      bank_account_type: [
+        "current",
+        "savings",
+        "call_deposit",
+        "trade_finance",
+      ],
       captable_status: ["setup", "live"],
       entity_status: ["active", "inactive", "archived"],
       entity_type: ["person", "company"],
@@ -1125,7 +1564,11 @@ export const Constants = {
         "LIVE_MODE_ACTIVATED",
         "ENTITY_DEACTIVATED",
         "SYSTEM_ALERT",
+        "SIGNATORY_EXPIRING",
+        "BANK_ACK_PENDING",
       ],
+      signatory_status: ["active", "suspended", "revoked"],
+      signing_rule_type: ["solo", "joint_same_group", "joint_cross_group"],
       ubo_snapshot_type: ["live", "historical"],
     },
   },

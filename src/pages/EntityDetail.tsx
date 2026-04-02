@@ -21,7 +21,9 @@ import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 import { LedgerTab } from "@/components/LedgerTab";
 import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
 import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown } from "lucide-react";
+import { BankingTab } from "@/components/banking/BankingTab";
+import { useBankingEnabled } from "@/hooks/use-banking-enabled";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
@@ -31,6 +33,7 @@ export default function EntityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { workspaceId } = useAuth();
+  const { bankingEnabled } = useBankingEnabled();
   const [entity, setEntity] = useState<any>(null);
   const [docs, setDocs] = useState<any[]>([]);
   const [owns, setOwns] = useState<any[]>([]);
@@ -326,6 +329,7 @@ export default function EntityDetail() {
           {!isPerson && isLiveMode && <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1" />Ledger</TabsTrigger>}
           {!isPerson && <TabsTrigger value="ubo"><Shield className="h-4 w-4 mr-1" />UBO</TabsTrigger>}
           {isPerson && <TabsTrigger value="ubo-exposure"><Shield className="h-4 w-4 mr-1" />UBO Exposure</TabsTrigger>}
+          {!isPerson && bankingEnabled && <TabsTrigger value="banking"><Landmark className="h-4 w-4 mr-1" />Banking</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
@@ -698,6 +702,13 @@ export default function EntityDetail() {
         {isPerson && (
           <TabsContent value="ubo-exposure">
             <PersonUBOTab personEntityId={id!} personName={entity.name} />
+          </TabsContent>
+        )}
+
+        {/* Banking Tab */}
+        {!isPerson && bankingEnabled && (
+          <TabsContent value="banking">
+            <BankingTab entityId={id!} />
           </TabsContent>
         )}
       </Tabs>
