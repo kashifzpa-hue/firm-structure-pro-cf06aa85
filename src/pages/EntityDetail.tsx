@@ -22,6 +22,7 @@ import { LedgerTab } from "@/components/LedgerTab";
 import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
 import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
 import { BankingTab } from "@/components/banking/BankingTab";
+import { CapTableWaterfall } from "@/components/CapTableWaterfall";
 import { useBankingEnabled } from "@/hooks/use-banking-enabled";
 import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
