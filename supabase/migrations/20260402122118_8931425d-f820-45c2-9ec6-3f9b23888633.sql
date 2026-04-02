@@ -1,0 +1,2 @@
+ALTER TABLE public.equity_links DROP CONSTRAINT equity_links_percentage_check;
+ALTER TABLE public.equity_links ADD CONSTRAINT equity_links_percentage_check CHECK (percentage >= 0 AND percentage <= 100);
