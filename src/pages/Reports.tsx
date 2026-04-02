@@ -558,6 +558,50 @@ export default function Reports() {
     setGenerating(false);
   };
 
+  // ========== BANK SIGNATORY ==========
+  const loadBankAccounts = async (companyId: string) => {
+    if (!workspaceId || !companyId) return;
+    const { data } = await supabase.from("bank_accounts").select("id, bank_name, account_number").eq("company_entity_id", companyId).eq("workspace_id", workspaceId);
+    setBankAccounts(data || []);
+  };
+
+  const generateBankSignatory = async () => {
+    if (!bsBankAccountId || !workspaceId) return;
+    setGenerating(true);
+    try {
+      const company = companies.find(c => c.id === bsCompanyId);
+      const [baRes, groupsRes, sigsRes, rulesRes] = await Promise.all([
+        supabase.from("bank_accounts").select("*").eq("id", bsBankAccountId).single(),
+        supabase.from("signatory_groups").select("*").eq("bank_account_id", bsBankAccountId).eq("workspace_id", workspaceId).order("display_order"),
+        supabase.from("signatories").select("*, person:entities!signatories_person_entity_id_fkey(name)").eq("bank_account_id", bsBankAccountId).eq("workspace_id", workspaceId).eq("status", "active"),
+        supabase.from("signing_matrix_rules").select("*").eq("bank_account_id", bsBankAccountId).eq("workspace_id", workspaceId).order("display_order"),
+      ]);
+      const sigs = (sigsRes.data || []).map((s: any) => ({ ...s, person_name: s.person?.name }));
+      const personIds = sigs.map((s: any) => s.person_entity_id).filter(Boolean);
+      let passportMap: Record<string, any> = {};
+      if (personIds.length > 0) {
+        const { data: passports } = await supabase.from("documents").select("*").eq("workspace_id", workspaceId).in("entity_id", personIds).eq("document_type", "Passport");
+        (passports || []).forEach((p: any) => { passportMap[p.entity_id] = p; });
+      }
+      const doc = (
+        <BankSignatoryPdf data={{
+          company, bankAccount: baRes.data, signatories: sigs,
+          groups: groupsRes.data || [], matrixRules: rulesRes.data || [],
+          reportDate: bsReportDate, preparedBy: bsPreparedBy, purpose: bsPurpose, passportMap,
+        }} />
+      );
+      const ba = baRes.data;
+      const filename = `BankSignatory_${sanitizeFilename(company?.name || "Company")}_${sanitizeFilename(ba?.bank_name || "Bank")}_${formatDateForFilename(bsReportDate)}.pdf`;
+      setPreviewDoc(doc);
+      setPreviewFilename(filename);
+      setPreviewOpen(true);
+      setOpenModal(null);
+    } catch (e: any) {
+      toast.error("Failed to generate report: " + (e.message || "Unknown error"));
+    }
+    setGenerating(false);
+  };
+
   const DatePicker = ({ date, onChange }: { date: Date; onChange: (d: Date) => void }) => (
     <Popover>
       <PopoverTrigger asChild>
