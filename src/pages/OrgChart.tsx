@@ -309,8 +309,24 @@ export default function OrgChart() {
       // Build deduplicated edges
       const graphEdges: Edge[] = [];
       edgeMap.forEach((val, key) => {
-        const maxPct = Math.max(...val.links.map((l: any) => Number(l.percentage)));
+        const edgeLabelLinks = Array.from(
+          new Map(
+            val.links.map((link: any) => [
+              link.id,
+              {
+                id: link.id,
+                sharesOwned: link.shares_owned,
+                percentage: Number(link.percentage),
+                shareClassName: link.share_class_id ? (shareClassMap[link.share_class_id]?.class_name ?? "Equity") : "Equity",
+                votingRights: link.share_class_id ? (shareClassMap[link.share_class_id]?.voting_rights ?? true) : true,
+              },
+            ])
+          ).values()
+        );
+
+        const maxPct = Math.max(...edgeLabelLinks.map((link) => link.percentage));
         const color = maxPct > 50 ? "#16A34A" : maxPct >= 25 ? "#D97706" : "#94A3B8";
+
         graphEdges.push({
           id: key,
           source: val.source,
@@ -318,12 +334,7 @@ export default function OrgChart() {
           type: "custom",
           markerEnd: { type: "arrowclosed" as any, color },
           data: {
-            links: val.links.map((l: any) => ({
-              shareClassName: l.share_class_id ? shareClassMap[l.share_class_id]?.class_name : null,
-              sharesOwned: l.shares_owned,
-              percentage: Number(l.percentage),
-              votingRights: l.share_class_id ? (shareClassMap[l.share_class_id]?.voting_rights ?? true) : true,
-            })),
+            links: edgeLabelLinks,
             showLabels: visibility.edgeLabels,
             maxPct,
           },
@@ -436,9 +447,9 @@ export default function OrgChart() {
           <Controls showInteractive={false} />
           {showMinimap && (
             <MiniMap
+              style={{ backgroundColor: "#F8FAFC" }}
               nodeColor={(node) => (node.type === "personNode" ? "#3B82F6" : "#0F172A")}
               maskColor="rgba(0,0,0,0.1)"
-              style={{ border: "1px solid hsl(var(--border))", backgroundColor: "#F8FAFC" }}
             />
           )}
           <Panel position="top-left">

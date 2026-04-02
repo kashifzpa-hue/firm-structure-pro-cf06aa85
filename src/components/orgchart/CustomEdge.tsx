@@ -5,6 +5,7 @@ import {
 } from "@xyflow/react";
 
 interface LinkData {
+  id: string;
   shareClassName: string;
   sharesOwned: number | null;
   percentage: number;
@@ -77,39 +78,20 @@ export function CustomEdge({
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
               pointerEvents: "all",
             }}
-            className="bg-background border rounded-md px-2 py-1.5 shadow-sm text-[10px] space-y-0.5 max-w-[180px] nodrag nopan"
+            className="bg-background border rounded-md px-2 py-1.5 shadow-sm text-[10px] space-y-1 max-w-[180px] nodrag nopan"
           >
-            {edgeData.links.map((link, i) => (
-              <div key={i} className="flex items-center gap-1 flex-wrap">
-                <span className="font-medium text-foreground">
-                  {link.shareClassName || "Equity"}
-                </span>
-                {link.sharesOwned != null && (
-                  <span className="text-muted-foreground">
-                    {link.sharesOwned.toLocaleString()} sh
-                  </span>
-                )}
-                <span className="font-semibold" style={{ color }}>
-                  {link.percentage.toFixed(2)}%
-                </span>
-                <span
-                  className="px-0.5 rounded text-[8px]"
-                  style={{
-                    backgroundColor: link.votingRights
-                      ? "rgba(34,197,94,0.15)"
-                      : "rgba(148,163,184,0.15)",
-                    color: link.votingRights ? "#16A34A" : "#94A3B8",
-                  }}
-                >
-                  {link.votingRights ? "🗳" : "—"}
-                </span>
+            {edgeData.links.map((link) => (
+              <div key={link.id} className="space-y-0.5">
+                <div className="flex items-center gap-1 text-foreground">
+                  <span className="text-[9px] leading-none" style={{ color }}>●</span>
+                  <span className="font-medium">{link.shareClassName || "Equity"}</span>
+                </div>
+                <div className="pl-3 text-muted-foreground">
+                  {link.sharesOwned != null ? `${link.sharesOwned.toLocaleString()} sh · ` : ""}
+                  {link.percentage.toFixed(2)}% · {link.votingRights ? "Vote" : "Non-vote"}
+                </div>
               </div>
             ))}
-            {edgeData.links.length > 1 && (
-              <div className="border-t pt-0.5 mt-0.5 text-muted-foreground font-medium">
-                Total economic: {edgeData.links.reduce((s, l) => s + l.percentage, 0).toFixed(2)}%
-              </div>
-            )}
           </div>
         </EdgeLabelRenderer>
       )}
