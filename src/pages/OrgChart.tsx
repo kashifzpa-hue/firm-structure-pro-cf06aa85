@@ -221,6 +221,9 @@ export default function OrgChart() {
     (badgesOn: boolean) => {
       if (!rootId || !filteredLinks.length) return null;
 
+      // Deduplicate links by ID to prevent double-counting
+      const uniqueLinks = Array.from(new Map(filteredLinks.map((l) => [l.id, l])).values());
+
       const visitedNodes = new Set<string>();
       const graphNodes: Node[] = [];
       const edgeMap = new Map<string, { links: any[]; source: string; target: string }>();
@@ -228,7 +231,7 @@ export default function OrgChart() {
       visitedNodes.add(rootId);
 
       const ownershipsByEntity: Record<string, { targetName: string; percentage: number }[]> = {};
-      filteredLinks.forEach((link) => {
+      uniqueLinks.forEach((link) => {
         if (!ownershipsByEntity[link.owner_entity_id]) ownershipsByEntity[link.owner_entity_id] = [];
         const target = entityMap[link.owned_entity_id];
         if (target) {
@@ -279,7 +282,7 @@ export default function OrgChart() {
         });
 
         // Collect links for edge dedup
-        const ownedLinks = filteredLinks.filter((l) => l.owner_entity_id === current);
+        const ownedLinks = uniqueLinks.filter((l) => l.owner_entity_id === current);
         ownedLinks.forEach((link) => {
           const pairKey = `${link.owner_entity_id}__${link.owned_entity_id}`;
           if (!edgeMap.has(pairKey)) edgeMap.set(pairKey, { links: [], source: link.owner_entity_id, target: link.owned_entity_id });
@@ -290,7 +293,7 @@ export default function OrgChart() {
           }
         });
 
-        const ownerLinks = filteredLinks.filter((l) => l.owned_entity_id === current);
+        const ownerLinks = uniqueLinks.filter((l) => l.owned_entity_id === current);
         ownerLinks.forEach((link) => {
           if (!visitedNodes.has(link.owner_entity_id)) {
             visitedNodes.add(link.owner_entity_id);
@@ -435,7 +438,7 @@ export default function OrgChart() {
             <MiniMap
               nodeColor={(node) => (node.type === "personNode" ? "#3B82F6" : "#0F172A")}
               maskColor="rgba(0,0,0,0.1)"
-              style={{ border: "1px solid hsl(var(--border))" }}
+              style={{ border: "1px solid hsl(var(--border))", backgroundColor: "#F8FAFC" }}
             />
           )}
           <Panel position="top-left">
