@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -26,23 +26,45 @@ interface Props {
 export function SignatoryForm({ open, onClose, onSaved, bankAccountId, groups, persons, editData }: Props) {
   const { workspaceId } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [personId, setPersonId] = useState(editData?.person_entity_id || "");
-  const [groupId, setGroupId] = useState(editData?.signatory_group_id || "");
-  const [designation, setDesignation] = useState(editData?.designation || "");
-  const [authorisedFor, setAuthorisedFor] = useState<string[]>(editData?.authorised_for || []);
-  const [individualLimit, setIndividualLimit] = useState(editData?.individual_limit?.toString() || "");
-  const [limitCurrency, setLimitCurrency] = useState(editData?.individual_limit_currency || "AED");
-  const [effectiveDate, setEffectiveDate] = useState(editData?.effective_date || new Date().toISOString().split("T")[0]);
-  const [expiryDate, setExpiryDate] = useState(editData?.expiry_date || "");
-  const [boardResRef, setBoardResRef] = useState(editData?.board_resolution_ref || "");
-  const [bankAckDate, setBankAckDate] = useState(editData?.bank_acknowledged_date || "");
-  const [notes, setNotes] = useState(editData?.notes || "");
+  const [personId, setPersonId] = useState("");
+  const [groupId, setGroupId] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [authorisedFor, setAuthorisedFor] = useState<string[]>([]);
+  const [individualLimit, setIndividualLimit] = useState("");
+  const [limitCurrency, setLimitCurrency] = useState("AED");
+  const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split("T")[0]);
+  const [expiryDate, setExpiryDate] = useState("");
+  const [boardResRef, setBoardResRef] = useState("");
+  const [bankAckDate, setBankAckDate] = useState("");
+  const [notes, setNotes] = useState("");
 
   // Signature upload state
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [processedUrl, setProcessedUrl] = useState(editData?.signature_image_url || "");
+  const [processedUrl, setProcessedUrl] = useState("");
   const [sigConfirmed, setSigConfirmed] = useState(false);
+
+  // Reset form when dialog opens or editData changes
+  useEffect(() => {
+    if (open) {
+      setPersonId(editData?.person_entity_id || "");
+      setGroupId(editData?.signatory_group_id || "");
+      setDesignation(editData?.designation || "");
+      setAuthorisedFor(editData?.authorised_for || []);
+      setIndividualLimit(editData?.individual_limit?.toString() || "");
+      setLimitCurrency(editData?.individual_limit_currency || "AED");
+      setEffectiveDate(editData?.effective_date || new Date().toISOString().split("T")[0]);
+      setExpiryDate(editData?.expiry_date || "");
+      setBoardResRef(editData?.board_resolution_ref || "");
+      setBankAckDate(editData?.bank_acknowledged_date || "");
+      setNotes(editData?.notes || "");
+      setSignatureFile(null);
+      setProcessedUrl(editData?.signature_image_url || "");
+      setSigConfirmed(false);
+      setSaving(false);
+      setUploading(false);
+    }
+  }, [open, editData]);
 
   const selectedPerson = persons.find(p => p.id === personId);
   const isInactive = selectedPerson?.entity_status === "inactive";
