@@ -102,6 +102,7 @@ export default function Reports() {
     }
   }, [searchParams, companies]);
 
+  const openReport = (key: string, preselectedCompanyId?: string) => {
     if (preselectedCompanyId) {
       setCorpCompanyId(preselectedCompanyId);
       setCapCompanyId(preselectedCompanyId);
