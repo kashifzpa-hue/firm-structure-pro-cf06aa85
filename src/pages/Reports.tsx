@@ -85,7 +85,23 @@ export default function Reports() {
     load();
   }, [workspaceId]);
 
-  const openReport = (key: string, preselectedCompanyId?: string) => {
+  // Auto-open modal from URL params (e.g. from EntityDetail quick reports)
+  useEffect(() => {
+    const type = searchParams.get("type");
+    const company = searchParams.get("company");
+    if (type && companies.length > 0) {
+      if (company) {
+        setCorpCompanyId(company);
+        setCapCompanyId(company);
+        setUboCompanyId(company);
+        setKycCompanyId(company);
+        setKycScope("company");
+      }
+      setOpenModal(type);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, companies]);
+
     if (preselectedCompanyId) {
       setCorpCompanyId(preselectedCompanyId);
       setCapCompanyId(preselectedCompanyId);
