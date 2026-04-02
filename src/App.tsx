@@ -19,6 +19,7 @@ import OrgChart from "./pages/OrgChart";
 import Ledger from "./pages/Ledger";
 import MovementDetail from "./pages/MovementDetail";
 import UBORegistry from "./pages/UBORegistry";
+import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
 import SetupWorkspace from "./pages/SetupWorkspace";
 import NotFound from "./pages/NotFound";
