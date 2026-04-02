@@ -13,6 +13,8 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { supabase } from "@/integrations/supabase/client";
+import { format, parseISO } from "date-fns";
 
 /* ─── Custom Node: UBO Person (top of chain) ─── */
 const UBOPersonNode = memo(({ data }: NodeProps) => {
@@ -133,18 +135,58 @@ interface UBOChainVisualizerProps {
   snapshot: any;
   personName: string;
   companyName: string;
+  entityMap?: Record<string, any>;
 }
 
-export function UBOChainVisualizer({ snapshot, personName, companyName }: UBOChainVisualizerProps) {
+export function UBOChainVisualizer({ snapshot, personName, companyName, entityMap = {} }: UBOChainVisualizerProps) {
   const chain: any[] = Array.isArray(snapshot.ownership_chain) ? snapshot.ownership_chain : [];
   const econPct = Number(snapshot.effective_economic_pct);
   const votePct = Number(snapshot.effective_voting_pct);
   const econDiffers = Math.abs(econPct - votePct) > 0.001;
 
+  // Fetch equity link details for edge labels (shares + class name)
+  const [linkDetails, setLinkDetails] = useState<Record<string, { shares: number; className: string }>>({});
+  useEffect(() => {
+    if (chain.length < 2) return;
+    const pairs = chain
+      .filter((_, i) => i < chain.length - 1)
+      .map((step, i) => ({ owner: step.entity_id, owned: chain[i + 1].entity_id }));
+    
+    const ownerIds = pairs.map(p => p.owner);
+    const ownedIds = pairs.map(p => p.owned);
+    
+    supabase
+      .from("equity_links")
+      .select("owner_entity_id, owned_entity_id, shares_owned, share_class:share_classes(class_name)")
+      .in("owner_entity_id", ownerIds)
+      .in("owned_entity_id", ownedIds)
+      .is("end_date", null)
+      .then(({ data }) => {
+        const map: Record<string, { shares: number; className: string }> = {};
+        (data || []).forEach((link: any) => {
+          const key = `${link.owner_entity_id}_${link.owned_entity_id}`;
+          const existing = map[key];
+          const shares = link.shares_owned || 0;
+          const className = link.share_class?.class_name || "";
+          if (existing) {
+            existing.shares += shares;
+            if (className && !existing.className) existing.className = className;
+          } else {
+            map[key] = { shares, className };
+          }
+        });
+        setLinkDetails(map);
+      });
+  }, [chain]);
+
   // Build multiplication formulas
   const pctSteps = chain.filter(c => c.owns_pct_in_next != null).map(c => Number(c.owns_pct_in_next));
-  const econFormula = pctSteps.map(p => `${p.toFixed(0)}%`).join(" × ") + ` = ${econPct.toFixed(2)}%`;
-  const voteFormula = pctSteps.map(p => `${p.toFixed(0)}%`).join(" × ") + ` = ${votePct.toFixed(2)}%`;
+  const econFormula = pctSteps.length > 1
+    ? pctSteps.map(p => `${p.toFixed(0)}%`).join(" × ") + ` = ${econPct.toFixed(2)}%`
+    : `${econPct.toFixed(2)}%`;
+  const voteFormula = pctSteps.length > 1
+    ? pctSteps.map(p => `${p.toFixed(0)}%`).join(" × ") + ` = ${votePct.toFixed(2)}%`
+    : `${votePct.toFixed(2)}%`;
 
   // Fade-in animation state
   const [visibleCount, setVisibleCount] = useState(0);
@@ -171,9 +213,19 @@ export function UBOChainVisualizer({ snapshot, personName, companyName }: UBOCha
       if (isPerson && isFirst) nodeType = "uboPersonNode";
       else if (isTarget) nodeType = "uboTargetNode";
 
-      const subtitle = isPerson
-        ? [step.nationality, step.dob].filter(Boolean).join(" · ")
-        : [step.company_type, step.jurisdiction].filter(Boolean).join(" · ");
+      // Enrich from entityMap
+      const entity = entityMap[step.entity_id];
+      let subtitle = "";
+      if (isPerson) {
+        const nationality = entity?.nationality_or_jurisdiction || step.nationality || "";
+        const dob = entity?.date_of_birth_or_incorporation;
+        const dobStr = dob ? `Born ${format(parseISO(dob), "dd MMM yyyy")}` : "";
+        subtitle = [nationality, dobStr].filter(Boolean).join(" · ");
+      } else {
+        const companyType = entity?.company_type || step.company_type || "";
+        const jurisdiction = entity?.nationality_or_jurisdiction || step.jurisdiction || "";
+        subtitle = [companyType, jurisdiction].filter(Boolean).join(" · ");
+      }
 
       n.push({
         id: step.entity_id,
@@ -195,15 +247,22 @@ export function UBOChainVisualizer({ snapshot, personName, companyName }: UBOCha
       if (i < chain.length - 1) {
         const pct = Number(step.owns_pct_in_next || 0);
         const color = edgeColor(pct);
+        
+        // Build multi-line edge label
+        const linkKey = `${step.entity_id}_${chain[i + 1].entity_id}`;
+        const detail = linkDetails[linkKey];
+        const labelLines: string[] = [];
+        if (detail?.shares) labelLines.push(`${detail.shares.toLocaleString()} shares`);
+        if (detail?.className) labelLines.push(detail.className);
+        labelLines.push(`${pct.toFixed(1)}%`);
+        
         e.push({
           id: `e-${i}`,
           source: step.entity_id,
           target: chain[i + 1].entity_id,
           type: "smoothstep",
           animated: true,
-          label: step.owns_pct_in_next != null
-            ? `${Number(step.owns_pct_in_next).toFixed(1)}%${step.share_class_name ? `\n${step.share_class_name}` : ""}`
-            : "",
+          label: labelLines.join("\n"),
           style: {
             stroke: color,
             strokeWidth: 2,
@@ -228,7 +287,7 @@ export function UBOChainVisualizer({ snapshot, personName, companyName }: UBOCha
     });
 
     return { nodes: n, edges: e };
-  }, [chain, visibleCount, econPct, votePct, snapshot.is_above_threshold]);
+  }, [chain, visibleCount, econPct, votePct, snapshot.is_above_threshold, entityMap, linkDetails]);
 
   const onInit = useCallback((instance: any) => {
     setTimeout(() => instance.fitView({ padding: 0.2 }), 100);
