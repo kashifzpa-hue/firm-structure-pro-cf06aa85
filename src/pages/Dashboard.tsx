@@ -252,6 +252,9 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* KYC Health Grid */}
+      <KYCHealthGrid />
+
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Expiry Alerts</CardTitle>
