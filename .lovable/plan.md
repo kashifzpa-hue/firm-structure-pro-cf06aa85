@@ -1,177 +1,92 @@
-
-
-# Phase 9 — Banking Module Build Plan
+# Org Chart Visual Enhancement — Build Plan
 
 ## Summary
+7 enhancements to the Org Chart: animated edges, rich edge labels, enhanced company/person nodes with integrated capital badges, layout/visibility controls with dynamic node width recalculation, and minimap. No database changes needed.
 
-Build a premium Banking Module gated by `banking_enabled` on the workspaces table. Includes bank accounts, signatories with secure signature processing, signing matrix rules, activity logging, a signatory register, reports integration, alerts integration, and dashboard updates. All 5 corrections from the user are incorporated.
+## Files to Create
 
----
+### 1. `src/components/orgchart/CompanyNode.tsx`
+Two-column flex layout inside a single node container:
+- **Left column** (flex-grow): Name, status dot (green/amber/red from doc status), company_type + jurisdiction, registration_number (visibility-gated), incorporation date (visibility-gated), officer count, subsidiary count
+- **Right column** (fixed 160px, conditionally rendered based on `data.visibility.capitalBadges`): Capital badge — list of share classes with colored dots, shares count, par value, currency, voting tag, allocation status. Collapsible via chevron (default expanded ≤3 classes). If no share classes: "No share capital recorded"
+- Node container: 280px min-width (left only) or 440px (with badge), dark navy `#0F172A`, white text
+- Status dot computed from `data.docStatus` prop
 
-## Step 1: Database Migration
+### 2. `src/components/orgchart/PersonNode.tsx`
+- 260px width, gradient `#3B82F6` → `#2563EB`
+- Shows: name, nationality, status dot, primary appointment (most senior role from `data.primaryRole`), direct holdings list (max 3, then "+X more")
+- Holdings from `data.ownerships`, gated by `data.visibility.personHoldings`
 
-Single migration creating:
+### 3. `src/components/orgchart/CapitalBadge.tsx`
+- Extracted component rendered inside CompanyNode's right column
+- Per share class: colored dot (green=Ordinary, amber=Preference, blue=Class A, orange=Class B), name, shares count, par value, currency, `[Vote]`/`[Non-vote]` tag, allocation status (✓ Fully allocated / ⚠ X% allocated / ○ Unallocated)
+- Collapsible via chevron; default expanded ≤3 classes, collapsed >3
 
-### Schema changes
-- Add `banking_enabled BOOLEAN DEFAULT false` to `workspaces`
-- Set `banking_enabled = true` for the current workspace
+### 4. `src/components/orgchart/CustomEdge.tsx`
+- Custom edge using `getBezierPath` from `@xyflow/react`
+- Animated `strokeDasharray="5,5"` with CSS keyframes (`dashflow`, 1.5s)
+- Color: >50% → `#16A34A`, 25-50% → `#D97706`, <25% → `#94A3B8`
+- Thickness: >50% → 3, 25-50% → 2, <25% → 1.5
+- Hover glow via `filter: drop-shadow`
+- Rich label via `<EdgeLabelRenderer>`: white card showing per-link share class icon, shares count, class name, percentage, voting badge
+- Edge deduplication: receives `data.links[]` — stacked label if multiple classes, with "Total economic: X%"
+- Label visibility gated by `data.showLabels`
 
-### New tables (all with RLS by `workspace_id = get_user_workspace_id()`)
+### 5. `src/components/orgchart/ChartControls.tsx`
+- Layout dropdown: TB (default), LR, Radial ("Beta" tooltip; silent TB fallback)
+- Show/Hide dropdown with checkboxes:
+  - Capital Badges (on) — triggers layout recalc
+  - Edge Labels (on)
+  - Person Holdings (on)
+  - Officer Counts (on)
+  - Registration Numbers (off)
+  - Incorporation Dates (off)
+- Props: `layoutDirection`, `onLayoutChange`, `visibility`, `onVisibilityChange`, `showMinimap`, `onMinimapToggle`, `onExportPng`
 
-1. **bank_accounts** — company bank account records with masked account numbers, UAE bank presets, RM contact info
-2. **signatory_groups** — named groups per bank account (Group A, Group B, etc.)
-3. **signatories** — person-entity linked authorities with limits, authorisation scope, signature URLs, board resolution refs, status (active/suspended/revoked)
-4. **signing_matrix_rules** — combination rules (solo/joint_same_group/joint_cross_group) with transaction and daily limits
-5. **bank_account_documents** — bank-related document uploads
-6. **banking_activity_log** — audit trail for all banking module actions
+### 6. CSS in `src/index.css`
+```css
+@keyframes dashflow {
+  to { stroke-dashoffset: -20; }
+}
+```
 
-### New enums
-- `bank_account_type`: current, savings, call_deposit, trade_finance
-- `bank_account_status`: active, dormant, closed
-- `signatory_status`: active, suspended, revoked
-- `signing_rule_type`: solo, joint_same_group, joint_cross_group
+## Files to Modify
 
-### New notification types
-- Add `SIGNATORY_EXPIRING` and `BANK_ACK_PENDING` to the `notification_type` enum
+### 7. `src/pages/OrgChart.tsx` — Major refactor
 
-### Storage buckets
-- `signatures` bucket (private, NOT public) for processed images only
-- Original signatures stored in a separate non-public path within the same bucket, protected by RLS + edge function 403
+**New state:**
+- `layoutDirection: 'TB' | 'LR'` (default `'TB'`)
+- `visibility: { capitalBadges: true, edgeLabels: true, personHoldings: true, officerCounts: true, regNumbers: false, incDates: false }`
+- `showMinimap: boolean` (default `true`)
+- `docStatusMap: Record<string, 'green'|'amber'|'red'>`
+- `appointmentMap: Record<string, {role: string, company: string}>`
 
-### RLS policies
-- All tables: workspace-scoped SELECT/INSERT/UPDATE/DELETE for authenticated users
-- Storage: only processed paths accessible; original paths blocked
+**Data fetching additions** (batch in existing `Promise.all`):
+- Documents: `SELECT id, entity_id, expiry_date FROM documents WHERE workspace_id = ?` — compute per-entity doc status (red if any expired, amber if expiring ≤60 days, green otherwise)
+- Appointments: expand to include `role_title, role_category, person_entity_id, company_entity_id` — pick most senior active role per person
 
----
+**Node type registration:** Replace `entityNode` with `companyNode` and `personNode`
 
-## Step 2: Edge Function — apply-signature-overlay
+**Edge deduplication:** Group `filteredLinks` by `owner_entity_id + owned_entity_id` → one custom edge per pair, all links in `data.links[]`. Max percentage determines color/thickness.
 
-`supabase/functions/apply-signature-overlay/index.ts`
+**CRITICAL — Dynamic layout recalculation:**
+- `getLayoutedElements` accepts `rankdir` and per-node dimensions
+- Company node width: `visibility.capitalBadges ? 440 : 280`, height: 150
+- Person node width: 260, height: 140
+- `nodesep: 100`, `ranksep: 140`
+- **`useEffect` watches `layoutDirection` AND `visibility.capitalBadges`** — when either changes, re-runs `getLayoutedElements` with correct node dimensions for current state. Other visibility toggles (reg numbers, inc dates, etc.) only hide/show content within existing dimensions — NO layout recalc.
+- For radial layout: try circular positioning, catch errors → fall back to TB silently
 
-- Accepts uploaded signature image (base64 or form-data)
-- Stores original to `signatures/original/{workspace_id}/{signatory_id}` (private)
-- Processes image: resize 600×200, greyscale, crosshatch overlay (navy 35% opacity, 12px spacing, 45°/135°), "CORPSYNC RECORD ONLY" watermark
-- Stores processed to `signatures/processed/{workspace_id}/{signatory_id}`
-- Returns processed URL only
-- **Correction #2**: Explicitly returns 403 for ANY request path containing `signatures/original/` regardless of auth status
+**PNG export:** Use `getNodesBounds` from `@xyflow/react` after layout to compute proper bounding box including full node widths. Pass to `toPng`.
 
----
+**MiniMap:** Add `<MiniMap>` from `@xyflow/react` with toggle. Node colors: person `#3B82F6`, company `#0F172A`.
 
-## Step 3: Reusable Activity Logger
+**Visibility flags:** Passed to node `data` props. Nodes conditionally render sections based on flags.
 
-`src/lib/banking-utils.ts`
+## Technical Notes
 
-- `logBankingActivity(bankAccountId, actionType, details, doneBy)` helper
-- Inserts into `banking_activity_log` table
-- Called at the end of every successful mutation in the banking module (signatory add/edit/revoke, matrix rule CRUD, account update, document upload, group create/rename)
-- **Correction #5**: Every mutation endpoint calls this function
-
----
-
-## Step 4: Banking Pages & Components
-
-### New pages
-1. **`src/pages/BankAccounts.tsx`** — Master list with summary cards (total accounts, active, companies with banking, signatories expiring). Table with masked account numbers. Filters by company, bank, status, currency. "Add Bank Account" modal with UAE bank presets dropdown.
-
-2. **`src/pages/BankAccountDetail.tsx`** — 5 tabs:
-   - Tab 1: Account Details (read-only + edit)
-   - Tab 2: Signatories (grouped by signatory_group, cards with processed signature images, "Reference record only" label)
-   - Tab 3: Signing Matrix (table of rules + Add Rule modal)
-   - Tab 4: Documents (bank-related doc uploads)
-   - Tab 5: Activity Log (chronological audit trail from `banking_activity_log`)
-
-3. **`src/pages/SignatoryRegister.tsx`** — Cross-workspace signatory view with summary cards, expiry tracking, CSV export
-
-### New components
-- `src/components/banking/BankAccountForm.tsx` — Add/edit bank account modal
-- `src/components/banking/SignatoryForm.tsx` — 3-step add signatory modal (select person → authority/limits → signature upload with security notice)
-- `src/components/banking/MatrixRuleForm.tsx` — Add/edit signing matrix rule modal
-  - **Correction #3**: Live preview sentence below form that updates dynamically: "This rule means: Any [N] person(s) from [Group X] can authorize [Payments, Cheques] up to [AED 100,000] per transaction"
-- `src/components/banking/SignatoryCard.tsx` — Individual signatory display card
-- `src/components/banking/BankingTab.tsx` — Banking tab for company entity detail page
-
-### Account number masking
-- **Correction #4**: Account number/IBAN reveal toggle ONLY visible to Admin users (checked via `userRole` from `useAuth()`). Viewers see masked values (last 4 digits) with no toggle.
-
----
-
-## Step 5: Navigation Update
-
-Modify `src/components/AppSidebar.tsx`:
-- Add "BANKING" section divider below UBO Registry
-- Two nav items: "Bank Accounts" (Landmark icon), "Signatory Register" (PenLine icon)
-- Conditionally rendered based on `banking_enabled` from workspace
-- If disabled: show locked item with upgrade prompt
-
----
-
-## Step 6: Routes
-
-Add to `src/App.tsx`:
-- `/bank-accounts` → BankAccounts
-- `/bank-accounts/:id` → BankAccountDetail
-- `/signatory-register` → SignatoryRegister
-
----
-
-## Step 7: Entity Detail — Banking Tab
-
-Add "Banking" tab to company entity detail page showing:
-- Collapsible cards per bank account with signatory summary and matrix overview
-- "Add Bank Account" button
-- Links to full account detail
-
----
-
-## Step 8: Reports — Bank Signatory Report
-
-Add 5th report card to `src/pages/Reports.tsx`:
-- Configuration modal: company, bank account, report purpose, prepared by, date
-- PDF content: company details, signatories grouped with processed signature images, signing matrix table, declaration section
-- New component: `src/components/reports/BankSignatoryPdf.tsx`
-
----
-
-## Step 9: Alerts Integration
-
-Update edge functions:
-- `check-document-expiry` — add check for signatory expiry dates, create `SIGNATORY_EXPIRING` notifications
-- New logic in existing functions or new scheduled check for `BANK_ACK_PENDING` (signatories active >14 days without bank_acknowledged_date)
-- Add these two rule types to default alert rules creation
-
-Update `src/components/AlertRulesTab.tsx` — add the two new rule types to the settings UI
-
----
-
-## Step 10: Dashboard Update
-
-Modify `src/pages/Dashboard.tsx`:
-- Add "Banking Overview" section (conditional on `banking_enabled`)
-- Cards: total bank accounts, active signatories, expiring within 30 days, awaiting bank acknowledgement
-
----
-
-## Files Summary
-
-| Action | File |
-|--------|------|
-| Migration | New tables, enums, storage bucket, RLS |
-| Create | `supabase/functions/apply-signature-overlay/index.ts` |
-| Create | `src/lib/banking-utils.ts` |
-| Create | `src/pages/BankAccounts.tsx` |
-| Create | `src/pages/BankAccountDetail.tsx` |
-| Create | `src/pages/SignatoryRegister.tsx` |
-| Create | `src/components/banking/BankAccountForm.tsx` |
-| Create | `src/components/banking/SignatoryForm.tsx` |
-| Create | `src/components/banking/MatrixRuleForm.tsx` |
-| Create | `src/components/banking/SignatoryCard.tsx` |
-| Create | `src/components/banking/BankingTab.tsx` |
-| Create | `src/components/reports/BankSignatoryPdf.tsx` |
-| Modify | `src/components/AppSidebar.tsx` — banking nav items |
-| Modify | `src/App.tsx` — new routes |
-| Modify | `src/pages/EntityDetail.tsx` — banking tab |
-| Modify | `src/pages/Reports.tsx` — 5th report card |
-| Modify | `src/pages/Dashboard.tsx` — banking overview section |
-| Modify | `src/components/AlertRulesTab.tsx` — new rule types |
-| Modify | Edge functions — signatory expiry + bank ack alerts |
-
+- No database migrations required
+- No new npm dependencies (all features use existing `@xyflow/react` APIs, `lucide-react`, `html-to-image`)
+- All additional data (docs, appointments with roles) fetched in existing single `Promise.all`
+- Node dimensions passed to dagre are type-aware and visibility-aware
+- Capital badge is inside CompanyNode div — captured in PNG export, moves with node drag
