@@ -24,6 +24,10 @@ import { UBODeclarationPdf } from "@/components/reports/UBODeclarationPdf";
 import { KYCExpiryPdf } from "@/components/reports/KYCExpiryPdf";
 import { sanitizeFilename, formatDateForFilename } from "@/lib/report-helpers";
 
+import { BankSignatoryPdf } from "@/components/reports/BankSignatoryPdf";
+import { useBankingEnabled } from "@/hooks/use-banking-enabled";
+import { PenLine } from "lucide-react";
+
 const reportCards = [
   { key: "corporate", title: "Corporate Profile Report", icon: Building2, desc: "Complete company overview including shareholders, board, management and UBO declaration" },
   { key: "captable", title: "Cap Table Report", icon: PieChart, desc: "Full shareholder register with share classes, percentages and historical snapshot option" },
