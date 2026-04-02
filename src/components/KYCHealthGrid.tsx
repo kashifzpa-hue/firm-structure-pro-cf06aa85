@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getDocumentStatus } from "@/lib/document-status";
-import { RadialBarChart, RadialBar, ResponsiveContainer } from "recharts";
+import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from "recharts";
 
 function scoreColor(score: number): string {
   if (score >= 90) return "#16A34A";
