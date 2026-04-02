@@ -438,7 +438,7 @@ export default function OrgChart() {
             <MiniMap
               nodeColor={(node) => (node.type === "personNode" ? "#3B82F6" : "#0F172A")}
               maskColor="rgba(0,0,0,0.1)"
-              style={{ border: "1px solid hsl(var(--border))" }}
+              style={{ border: "1px solid hsl(var(--border))", backgroundColor: "#F8FAFC" }}
             />
           )}
           <Panel position="top-left">
