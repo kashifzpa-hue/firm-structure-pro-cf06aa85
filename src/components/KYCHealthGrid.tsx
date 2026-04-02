@@ -91,8 +91,9 @@ function KYCHealthGridInner() {
         return { id: co.id, name: co.name, score, valid, total, expiring, expired };
       });
 
-      // Sort by worst score first, limit to 12
+      // Sort by worst score first
       results.sort((a, b) => a.score - b.score);
+      setTotalCount(results.length);
       setCompanies(results.slice(0, 12));
       setLoading(false);
     };
