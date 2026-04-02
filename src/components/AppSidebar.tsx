@@ -21,6 +21,7 @@ const navItems = [
   { title: "Org Chart", url: "/org-chart", icon: GitBranch },
   { title: "Ledger", url: "/ledger", icon: ScrollText },
   { title: "UBO Registry", url: "/ubo", icon: Shield },
+  { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
