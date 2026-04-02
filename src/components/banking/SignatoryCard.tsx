@@ -34,9 +34,32 @@ export function SignatoryCard({ signatory, groupLabel, onEdit, onRevoke }: Props
         </div>
 
         {s.signature_image_url && (
-          <div>
-            <img src={s.signature_image_url} alt="Signature" className="h-16 border rounded" />
-            <p className="text-[10px] text-muted-foreground mt-1">Reference record only — not for use as digital signature</p>
+          <div className="relative inline-block border rounded overflow-hidden">
+            <img src={s.signature_image_url} alt="Signature" className="h-16 grayscale" />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: `
+                  repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,128,0.18) 10px, rgba(0,0,128,0.18) 11px),
+                  repeating-linear-gradient(135deg, transparent, transparent 10px, rgba(0,0,128,0.18) 10px, rgba(0,0,128,0.18) 11px)
+                `,
+              }}
+            />
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+              style={{
+                transform: "rotate(-20deg)",
+                color: "rgba(128,128,128,0.30)",
+                fontSize: "9px",
+                fontWeight: 700,
+                letterSpacing: "2px",
+                whiteSpace: "nowrap",
+                textTransform: "uppercase",
+              }}
+            >
+              CORPSYNC RECORD ONLY
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 px-1 pb-1">Reference record only — not for use as digital signature</p>
           </div>
         )}
 
