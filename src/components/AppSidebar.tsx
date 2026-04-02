@@ -38,6 +38,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut } = useAuth();
+  const { bankingEnabled } = useBankingEnabled();
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
