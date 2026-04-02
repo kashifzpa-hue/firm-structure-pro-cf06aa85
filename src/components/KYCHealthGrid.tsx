@@ -137,7 +137,7 @@ function KYCHealthGridInner() {
         {companies.map(co => {
           const color = scoreColor(co.score);
           const { text, icon } = statusLine(co.score, co.expiring, co.expired);
-          const chartData = [{ value: co.score, fill: color }];
+          const chartData = [{ value: co.score, fill: color }, { value: 100, fill: "transparent" }];
 
           return (
             <Card
