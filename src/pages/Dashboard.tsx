@@ -155,6 +155,29 @@ export default function Dashboard() {
         warnings: (unreadNotifs || []).filter((n: any) => warningTypes.includes(n.notification_type)).length,
       });
 
+      // Banking stats
+      const { data: wsData } = await supabase.from("workspaces").select("banking_enabled").eq("id", workspaceId).single();
+      const isBankingEnabled = !!(wsData as any)?.banking_enabled;
+      setBankingEnabled(isBankingEnabled);
+
+      if (isBankingEnabled) {
+        const today30 = new Date();
+        today30.setDate(today30.getDate() + 30);
+        const today30Str = today30.toISOString().split("T")[0];
+
+        const [baRes, sigRes] = await Promise.all([
+          supabase.from("bank_accounts").select("id").eq("workspace_id", workspaceId).eq("account_status", "active"),
+          supabase.from("signatories").select("id, expiry_date, bank_acknowledged_date").eq("workspace_id", workspaceId).eq("status", "active"),
+        ]);
+        const activeSigs = sigRes.data || [];
+        setBankingStats({
+          accounts: (baRes.data || []).length,
+          signatories: activeSigs.length,
+          expiring: activeSigs.filter(s => s.expiry_date && s.expiry_date <= today30Str).length,
+          pendingAck: activeSigs.filter(s => !s.bank_acknowledged_date).length,
+        });
+      }
+
       setLoading(false);
     };
     fetchData();
