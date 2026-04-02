@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { AlertTriangle, Info } from "lucide-react";
 
 interface Step2Props {
   data: any;
@@ -19,10 +20,13 @@ export function Step2Parties({ data, onChange, entities }: Step2Props) {
   const { workspaceId } = useAuth();
   const [equityLinks, setEquityLinks] = useState<any[]>([]);
   const [shareClass, setShareClass] = useState<any>(null);
+  const [reduceUnallocated, setReduceUnallocated] = useState(true);
 
-  const needsFrom = ["TRANSFER", "INHERITANCE", "GIFT", "COURT_ORDER", "CANCELLATION", "CAPITAL_DECREASE"].includes(data.movement_type);
+  const needsFrom = ["TRANSFER", "INHERITANCE", "GIFT", "COURT_ORDER", "CANCELLATION"].includes(data.movement_type);
   const needsTo = ["TRANSFER", "INHERITANCE", "GIFT", "COURT_ORDER", "ISSUANCE", "CAPITAL_INCREASE"].includes(data.movement_type);
   const isCapitalChange = ["CAPITAL_INCREASE", "CAPITAL_DECREASE"].includes(data.movement_type);
+  const isCapitalDecrease = data.movement_type === "CAPITAL_DECREASE";
+  const isIssuance = data.movement_type === "ISSUANCE";
 
   useEffect(() => {
     if (!data.company_entity_id || !data.share_class_id || !workspaceId) return;
@@ -40,8 +44,27 @@ export function Step2Parties({ data, onChange, entities }: Step2Props) {
     });
   }, [data.company_entity_id, data.share_class_id, workspaceId]);
 
+  // When switching to unallocated mode, clear from_entity_id
+  useEffect(() => {
+    if (isCapitalDecrease && reduceUnallocated && data.from_entity_id) {
+      onChange({ from_entity_id: "" });
+    }
+  }, [reduceUnallocated, isCapitalDecrease]);
+
+  const allocated = equityLinks.reduce((sum, l) => sum + (l.shares_owned || 0), 0);
+  const unallocated = shareClass ? shareClass.total_shares_issued - allocated : 0;
+
   const fromHolding = equityLinks.find(l => l.owner_entity_id === data.from_entity_id);
   const sharesError = needsFrom && fromHolding && data.shares_transferred > (fromHolding.shares_owned || 0);
+
+  // Issuance validation — no unallocated shares available
+  const issuanceBlocked = isIssuance && shareClass && unallocated <= 0;
+
+  // Capital decrease unallocated validation
+  const decreaseUnallocatedError = isCapitalDecrease && reduceUnallocated && data.shares_transferred > unallocated;
+
+  // Capital decrease from holder validation
+  const decreaseHolderNeedsFrom = isCapitalDecrease && !reduceUnallocated;
 
   // Dilution preview for capital changes
   const showDilutionPreview = isCapitalChange && data.shares_transferred > 0 && shareClass;
@@ -54,9 +77,40 @@ export function Step2Parties({ data, onChange, entities }: Step2Props) {
 
   return (
     <div className="space-y-6">
-      {needsFrom && (
+      {/* Issuance blocked warning */}
+      {issuanceBlocked && (
+        <Alert className="border-amber-500 bg-amber-50">
+          <Info className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 text-sm">
+            No unallocated shares available in this class. Record a Capital Increase movement first to add new shares before issuing.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Capital Decrease mode toggle */}
+      {isCapitalDecrease && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+            <div>
+              <Label className="text-sm font-medium">Reduce unallocated shares</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {reduceUnallocated
+                  ? `Reduce from ${unallocated.toLocaleString()} unallocated shares`
+                  : "Cancel shares from a specific holder"}
+              </p>
+            </div>
+            <Switch
+              checked={reduceUnallocated}
+              onCheckedChange={setReduceUnallocated}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* From entity — for transfers, cancellations, and capital decrease from holder */}
+      {(needsFrom || decreaseHolderNeedsFrom) && (
         <div className="space-y-2">
-          <Label>{data.movement_type === "CANCELLATION" || data.movement_type === "CAPITAL_DECREASE" ? "Holder *" : "From Entity *"}</Label>
+          <Label>{data.movement_type === "CANCELLATION" || isCapitalDecrease ? "Holder *" : "From Entity *"}</Label>
           <Select value={data.from_entity_id || ""} onValueChange={v => onChange({ from_entity_id: v })}>
             <SelectTrigger><SelectValue placeholder="Select entity" /></SelectTrigger>
             <SelectContent>
@@ -88,18 +142,33 @@ export function Step2Parties({ data, onChange, entities }: Step2Props) {
       )}
 
       <div className="space-y-2">
-        <Label>Shares to {data.movement_type === "CANCELLATION" || data.movement_type === "CAPITAL_DECREASE" ? "Cancel" : "Transfer"} *</Label>
+        <Label>Shares to {data.movement_type === "CANCELLATION" || isCapitalDecrease ? "Cancel" : "Transfer"} *</Label>
         <Input
           type="number"
           min={1}
+          max={isIssuance ? unallocated : undefined}
           value={data.shares_transferred || ""}
           onChange={e => onChange({ shares_transferred: parseInt(e.target.value) || 0 })}
+          disabled={issuanceBlocked}
         />
+        {isIssuance && shareClass && unallocated > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Available: {unallocated.toLocaleString()} unallocated shares
+          </p>
+        )}
         {sharesError && (
           <Alert className="border-destructive bg-destructive/10">
             <AlertTriangle className="h-4 w-4 text-destructive" />
             <AlertDescription className="text-destructive text-xs">
               Cannot transfer more shares than the holder owns ({fromHolding.shares_owned?.toLocaleString()}).
+            </AlertDescription>
+          </Alert>
+        )}
+        {decreaseUnallocatedError && (
+          <Alert className="border-destructive bg-destructive/10">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-destructive text-xs">
+              Cannot reduce total below {allocated.toLocaleString()} shares — {allocated.toLocaleString()} shares are currently allocated to active shareholders.
             </AlertDescription>
           </Alert>
         )}
