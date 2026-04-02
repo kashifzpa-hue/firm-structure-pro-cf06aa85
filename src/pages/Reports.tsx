@@ -210,14 +210,112 @@ export default function Reports() {
     setGenerating(true);
     try {
       const company = companies.find((c) => c.id === capCompanyId);
-      const [scRes, elRes] = await Promise.all([
-        supabase.from("share_classes").select("*").eq("company_entity_id", capCompanyId).eq("workspace_id", workspaceId),
-        supabase.from("equity_links").select("*, owner:entities!equity_links_owner_entity_id_fkey(id, name, type), share_class:share_classes(class_name)").eq("owned_entity_id", capCompanyId).eq("workspace_id", workspaceId).is("end_date", null),
-      ]);
+      const isHistorical = capAsOfDate.toDateString() !== new Date().toDateString();
+      const snapshotDateStr = capAsOfDate.toISOString().split("T")[0];
 
+      const scRes = await supabase.from("share_classes").select("*").eq("company_entity_id", capCompanyId).eq("workspace_id", workspaceId);
+
+      let shareholders: any[] = [];
       let movements: any[] = [];
+      let reportShareClasses = scRes.data || [];
+
+      if (isHistorical) {
+        // Reconstruct shareholding from confirmed movements up to snapshot date
+        const { data: confirmedMov } = await supabase.from("movements")
+          .select("*, share_class:share_classes(class_name, total_shares_issued), to_entity:entities!movements_to_entity_id_fkey(id, name, type), from_entity:entities!movements_from_entity_id_fkey(id, name, type)")
+          .eq("company_entity_id", capCompanyId)
+          .eq("workspace_id", workspaceId)
+          .eq("status", "confirmed")
+          .lte("movement_date", snapshotDateStr)
+          .order("movement_date", { ascending: true });
+
+        const holdings: Record<string, { entityId: string; entityName: string; entityType: string; shareClassName: string; shares: number; shareClassId: string; firstDate: string }> = {};
+        const totalIssued: Record<string, number> = {};
+
+        // Initialize total issued from share classes
+        (scRes.data || []).forEach((sc: any) => { totalIssued[sc.id] = sc.total_shares_issued; });
+
+        (confirmedMov || []).forEach((m: any) => {
+          const scId = m.share_class_id;
+          const scName = m.share_class?.class_name || "Unknown";
+
+          if (m.movement_type === "CAPITAL_INCREASE") {
+            totalIssued[scId] = (totalIssued[scId] || 0) + m.shares_transferred;
+          } else if (m.movement_type === "CAPITAL_DECREASE") {
+            totalIssued[scId] = (totalIssued[scId] || 0) - m.shares_transferred;
+          }
+
+          if (m.from_entity_id) {
+            const key = `${m.from_entity_id}_${scId}`;
+            if (!holdings[key]) holdings[key] = { entityId: m.from_entity_id, entityName: m.from_entity?.name || "Unknown", entityType: m.from_entity?.type || "person", shareClassName: scName, shares: 0, shareClassId: scId, firstDate: m.movement_date };
+            holdings[key].shares -= m.shares_transferred;
+          }
+          if (m.to_entity_id) {
+            const key = `${m.to_entity_id}_${scId}`;
+            if (!holdings[key]) holdings[key] = { entityId: m.to_entity_id, entityName: m.to_entity?.name || "Unknown", entityType: m.to_entity?.type || "person", shareClassName: scName, shares: 0, shareClassId: scId, firstDate: m.movement_date };
+            holdings[key].shares += m.shares_transferred;
+          }
+        });
+
+        // Reconstruct total issued per class from movements only
+        const historicalTotals: Record<string, number> = {};
+        (scRes.data || []).forEach((sc: any) => { historicalTotals[sc.id] = 0; });
+        (confirmedMov || []).forEach((m: any) => {
+          const scId = m.share_class_id;
+          if (historicalTotals[scId] === undefined) historicalTotals[scId] = 0;
+          // All movements that add shares to circulation
+          if (["ISSUANCE", "CAPITAL_INCREASE"].includes(m.movement_type)) {
+            historicalTotals[scId] += m.shares_transferred;
+          } else if (["CANCELLATION", "CAPITAL_DECREASE"].includes(m.movement_type)) {
+            historicalTotals[scId] -= m.shares_transferred;
+          }
+        });
+
+        shareholders = Object.values(holdings)
+          .filter(h => h.shares > 0)
+          .map(h => {
+            const total = historicalTotals[h.shareClassId] || 0;
+            const pct = total > 0 ? (h.shares / total) * 100 : 0;
+            return {
+              owner_name: h.entityName,
+              owner_type: h.entityType,
+              share_class_id: h.shareClassId,
+              share_class_name: h.shareClassName,
+              shares_owned: h.shares,
+              percentage: pct,
+              economic_pct: pct,
+              voting_pct: pct,
+              effective_date: h.firstDate,
+            };
+          });
+
+        // Override share class totals for display
+        reportShareClasses = (scRes.data || []).map((sc: any) => ({
+          ...sc,
+          total_shares_issued: historicalTotals[sc.id] ?? sc.total_shares_issued,
+        })).filter((sc: any) => sc.total_shares_issued > 0 || shareholders.some(s => s.share_class_id === sc.id));
+      } else {
+        // Current: use equity_links
+        const elRes = await supabase.from("equity_links").select("*, owner:entities!equity_links_owner_entity_id_fkey(id, name, type), share_class:share_classes(class_name)").eq("owned_entity_id", capCompanyId).eq("workspace_id", workspaceId).is("end_date", null);
+        shareholders = (elRes.data || []).map((el: any) => ({
+          owner_name: el.owner?.name,
+          owner_type: el.owner?.type,
+          share_class_id: el.share_class_id,
+          share_class_name: el.share_class?.class_name,
+          shares_owned: el.shares_owned,
+          percentage: el.percentage,
+          economic_pct: el.percentage,
+          voting_pct: el.percentage,
+          effective_date: el.effective_date,
+        }));
+      }
+
       if (capShowMovements) {
-        const movRes = await supabase.from("movements").select("*, from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name), share_class:share_classes!movements_share_class_id_fkey(class_name)").eq("company_entity_id", capCompanyId).eq("workspace_id", workspaceId).eq("status", "confirmed").order("movement_date");
+        let movQuery = supabase.from("movements").select("*, from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name), share_class:share_classes!movements_share_class_id_fkey(class_name)").eq("company_entity_id", capCompanyId).eq("workspace_id", workspaceId).eq("status", "confirmed").order("movement_date");
+        if (isHistorical) {
+          movQuery = movQuery.lte("movement_date", snapshotDateStr);
+        }
+        const movRes = await movQuery;
         movements = (movRes.data || []).map((m: any) => ({
           ...m,
           from_name: m.from_entity?.name,
@@ -226,23 +324,11 @@ export default function Reports() {
         }));
       }
 
-      const shareholders = (elRes.data || []).map((el: any) => ({
-        owner_name: el.owner?.name,
-        owner_type: el.owner?.type,
-        share_class_id: el.share_class_id,
-        share_class_name: el.share_class?.class_name,
-        shares_owned: el.shares_owned,
-        percentage: el.percentage,
-        economic_pct: el.percentage,
-        voting_pct: el.percentage,
-        effective_date: el.effective_date,
-      }));
-
       const doc = (
         <CapTablePdf
           data={{
             company,
-            shareClasses: scRes.data || [],
+            shareClasses: reportShareClasses,
             shareholders,
             movements,
             asOfDate: capAsOfDate,
