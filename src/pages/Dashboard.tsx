@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [shareholdingGaps, setShareholdingGaps] = useState<any[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [uboAlerts, setUboAlerts] = useState<any[]>([]);
+  const [unreadAlerts, setUnreadAlerts] = useState({ total: 0, critical: 0, warnings: 0 });
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -137,6 +138,21 @@ export default function Dashboard() {
         setUboAlerts(alerts);
       }
 
+      // Fetch unread notification counts
+      const { data: unreadNotifs } = await supabase
+        .from("notifications")
+        .select("notification_type")
+        .eq("workspace_id", workspaceId)
+        .eq("is_read", false);
+      
+      const criticalTypes = ["DOCUMENT_EXPIRED", "UBO_THRESHOLD_BREACH"];
+      const warningTypes = ["DOCUMENT_EXPIRING_SOON", "SHAREHOLDING_GAP", "MOVEMENT_DRAFT_PENDING"];
+      setUnreadAlerts({
+        total: (unreadNotifs || []).length,
+        critical: (unreadNotifs || []).filter((n: any) => criticalTypes.includes(n.notification_type)).length,
+        warnings: (unreadNotifs || []).filter((n: any) => warningTypes.includes(n.notification_type)).length,
+      });
+
       setLoading(false);
     };
     fetchData();
@@ -172,6 +188,20 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {unreadAlerts.total > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
+          <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
+          <span className="text-sm">
+            You have <strong>{unreadAlerts.total}</strong> unread alerts
+            {unreadAlerts.critical > 0 && <> — <span className="text-destructive font-semibold">{unreadAlerts.critical} critical</span></>}
+            {unreadAlerts.warnings > 0 && <>, <span className="text-warning font-semibold">{unreadAlerts.warnings} warnings</span></>}
+          </span>
+          <button onClick={() => navigate("/notifications?status=unread")} className="ml-auto text-xs text-primary hover:underline">
+            View all →
+          </button>
+        </div>
+      )}
 
       <Card className="shadow-sm">
         <CardHeader>

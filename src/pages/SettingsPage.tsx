@@ -9,8 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Trash2, Mail, Clock } from "lucide-react";
+import { AlertRulesTab } from "@/components/AlertRulesTab";
 
 export default function SettingsPage() {
   const { workspaceId, userRole, user } = useAuth();
@@ -114,118 +116,135 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
 
-      <Card className="shadow-sm">
-        <CardHeader><CardTitle className="text-base">Workspace</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Workspace Name</Label>
-            <div className="flex gap-2">
-              <Input value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} disabled={!isAdmin} />
-              {isAdmin && (
-                <Button onClick={updateWorkspaceName} disabled={loading}>Save</Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="workspace">
+        <TabsList>
+          <TabsTrigger value="workspace">Workspace</TabsTrigger>
+          <TabsTrigger value="alert-rules">Alert Rules</TabsTrigger>
+        </TabsList>
 
-      {isAdmin && (
-        <Card className="shadow-sm">
-          <CardHeader><CardTitle className="text-base">Invite User</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="user@example.com"
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className="flex-1"
-              />
-              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as "admin" | "viewer")}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={handleInvite} disabled={inviting}>
-                <Mail className="h-4 w-4 mr-2" />
-                {inviting ? "Sending..." : "Invite"}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Invited users will be automatically added to your workspace when they sign up with the invited email address.
-            </p>
-
-            {pendingInvites.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" /> Pending Invitations
-                </h4>
-                <div className="space-y-2">
-                  {pendingInvites.map((invite) => (
-                    <div key={invite.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <span>{invite.email}</span>
-                        <Badge variant="secondary" className="text-xs">{invite.role}</Badge>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleCancelInvite(invite.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
+        <TabsContent value="workspace" className="space-y-6 mt-4">
+          <Card className="shadow-sm">
+            <CardHeader><CardTitle className="text-base">Workspace</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Workspace Name</Label>
+                <div className="flex gap-2">
+                  <Input value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} disabled={!isAdmin} />
+                  {isAdmin && (
+                    <Button onClick={updateWorkspaceName} disabled={loading}>Save</Button>
+                  )}
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
 
-      <Card className="shadow-sm">
-        <CardHeader><CardTitle className="text-base">Team Members</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                {isAdmin && <TableHead className="w-10"></TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.map((m) => {
-                const role = m.user_roles?.[0]?.role || "viewer";
-                return (
-                  <TableRow key={m.id}>
-                    <TableCell className="font-medium">{m.full_name || "—"}</TableCell>
-                    <TableCell>{m.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={role === "admin" ? "default" : "secondary"}>
-                        {role === "admin" ? "Admin" : "Viewer"}
-                      </Badge>
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        {m.user_id !== user?.id && (
-                          <Button variant="ghost" size="icon" onClick={() => setRemoveUser(m)} className="h-8 w-8 text-destructive">
-                            <Trash2 className="h-4 w-4" />
+          {isAdmin && (
+            <Card className="shadow-sm">
+              <CardHeader><CardTitle className="text-base">Invite User</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="user@example.com"
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as "admin" | "viewer")}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="viewer">Viewer</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleInvite} disabled={inviting}>
+                    <Mail className="h-4 w-4 mr-2" />
+                    {inviting ? "Sending..." : "Invite"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Invited users will be automatically added to your workspace when they sign up with the invited email address.
+                </p>
+
+                {pendingInvites.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" /> Pending Invitations
+                    </h4>
+                    <div className="space-y-2">
+                      {pendingInvites.map((invite) => (
+                        <div key={invite.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span>{invite.email}</span>
+                            <Badge variant="secondary" className="text-xs">{invite.role}</Badge>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleCancelInvite(invite.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                        )}
-                      </TableCell>
-                    )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="shadow-sm">
+            <CardHeader><CardTitle className="text-base">Team Members</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    {isAdmin && <TableHead className="w-10"></TableHead>}
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {members.map((m) => {
+                    const role = m.user_roles?.[0]?.role || "viewer";
+                    return (
+                      <TableRow key={m.id}>
+                        <TableCell className="font-medium">{m.full_name || "—"}</TableCell>
+                        <TableCell>{m.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={role === "admin" ? "default" : "secondary"}>
+                            {role === "admin" ? "Admin" : "Viewer"}
+                          </Badge>
+                        </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            {m.user_id !== user?.id && (
+                              <Button variant="ghost" size="icon" onClick={() => setRemoveUser(m)} className="h-8 w-8 text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="alert-rules" className="mt-4">
+          <Card className="shadow-sm">
+            <CardContent className="pt-6">
+              <AlertRulesTab />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={!!removeUser} onOpenChange={() => setRemoveUser(null)}>
         <DialogContent>
