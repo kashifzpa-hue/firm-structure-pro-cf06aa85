@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_rules: {
+        Row: {
+          additional_emails: string[] | null
+          created_at: string
+          id: string
+          is_active: boolean
+          notify_email: boolean
+          notify_in_app: boolean
+          rule_type: Database["public"]["Enums"]["notification_type"]
+          sender_email: string | null
+          threshold_days: number | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          additional_emails?: string[] | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notify_email?: boolean
+          notify_in_app?: boolean
+          rule_type: Database["public"]["Enums"]["notification_type"]
+          sender_email?: string | null
+          threshold_days?: number | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          additional_emails?: string[] | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notify_email?: boolean
+          notify_in_app?: boolean
+          rule_type?: Database["public"]["Enums"]["notification_type"]
+          sender_email?: string | null
+          threshold_days?: number | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_rules_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           appointment_date: string
@@ -502,6 +552,90 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_url: string | null
+          body: string
+          created_at: string
+          document_id: string | null
+          entity_id: string | null
+          id: string
+          is_read: boolean
+          movement_id: string | null
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          read_at: string | null
+          recipient_user_id: string | null
+          title: string
+          workspace_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          body: string
+          created_at?: string
+          document_id?: string | null
+          entity_id?: string | null
+          id?: string
+          is_read?: boolean
+          movement_id?: string | null
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          read_at?: string | null
+          recipient_user_id?: string | null
+          title: string
+          workspace_id: string
+        }
+        Update: {
+          action_url?: string | null
+          body?: string
+          created_at?: string
+          document_id?: string | null
+          entity_id?: string | null
+          id?: string
+          is_read?: boolean
+          movement_id?: string | null
+          notification_type?: Database["public"]["Enums"]["notification_type"]
+          read_at?: string | null
+          recipient_user_id?: string | null
+          title?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_movement_id_fkey"
+            columns: ["movement_id"]
+            isOneToOne: false
+            referencedRelation: "movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_user_id_fkey"
+            columns: ["recipient_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -816,6 +950,16 @@ export type Database = {
         | "COURT_ORDER"
         | "CAPITAL_INCREASE"
         | "CAPITAL_DECREASE"
+      notification_type:
+        | "DOCUMENT_EXPIRED"
+        | "DOCUMENT_EXPIRING_SOON"
+        | "MOVEMENT_DRAFT_PENDING"
+        | "UBO_THRESHOLD_BREACH"
+        | "SHAREHOLDING_GAP"
+        | "UNRESOLVED_UBO_CHAIN"
+        | "LIVE_MODE_ACTIVATED"
+        | "ENTITY_DEACTIVATED"
+        | "SYSTEM_ALERT"
       ubo_snapshot_type: "live" | "historical"
     }
     CompositeTypes: {
@@ -970,6 +1114,17 @@ export const Constants = {
         "COURT_ORDER",
         "CAPITAL_INCREASE",
         "CAPITAL_DECREASE",
+      ],
+      notification_type: [
+        "DOCUMENT_EXPIRED",
+        "DOCUMENT_EXPIRING_SOON",
+        "MOVEMENT_DRAFT_PENDING",
+        "UBO_THRESHOLD_BREACH",
+        "SHAREHOLDING_GAP",
+        "UNRESOLVED_UBO_CHAIN",
+        "LIVE_MODE_ACTIVATED",
+        "ENTITY_DEACTIVATED",
+        "SYSTEM_ALERT",
       ],
       ubo_snapshot_type: ["live", "historical"],
     },
