@@ -37,6 +37,7 @@ const reportCards = [
 
 export default function Reports() {
   const { workspaceId } = useAuth();
+  const { bankingEnabled } = useBankingEnabled();
   const [searchParams, setSearchParams] = useSearchParams();
   const [companies, setCompanies] = useState<any[]>([]);
   const [allEntities, setAllEntities] = useState<any[]>([]);
