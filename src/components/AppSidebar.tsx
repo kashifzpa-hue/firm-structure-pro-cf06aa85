@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield } from "lucide-react";
+import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ const navItems = [
   { title: "Org Chart", url: "/org-chart", icon: GitBranch },
   { title: "Ledger", url: "/ledger", icon: ScrollText },
   { title: "UBO Registry", url: "/ubo", icon: Shield },
+  { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

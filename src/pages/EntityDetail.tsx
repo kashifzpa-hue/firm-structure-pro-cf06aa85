@@ -21,7 +21,8 @@ import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 import { LedgerTab } from "@/components/LedgerTab";
 import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
 import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History } from "lucide-react";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -273,6 +274,21 @@ export default function EntityDetail() {
           </div>
         </div>
         <div className="flex gap-2">
+          {!isPerson && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <FileBarChart className="mr-2 h-4 w-4" /> Reports <ChevronDown className="ml-1 h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => navigate(`/reports?type=corporate&company=${id}`)}>Corporate Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/reports?type=captable&company=${id}`)}>Cap Table</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/reports?type=ubo&company=${id}`)}>UBO Declaration</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/reports?type=kyc&company=${id}`)}>KYC Summary</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {!isInactive && (
             <Button variant="outline" onClick={() => navigate(`/entities/${id}/edit`)}>
               <Edit className="mr-2 h-4 w-4" /> Edit
