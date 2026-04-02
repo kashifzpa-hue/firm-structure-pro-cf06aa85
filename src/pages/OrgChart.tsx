@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -6,9 +6,11 @@ import {
   ReactFlow,
   Background,
   Controls,
+  MiniMap,
   useNodesState,
   useEdgesState,
   Panel,
+  getNodesBounds,
   type Node,
   type Edge,
   BackgroundVariant,
@@ -21,56 +23,82 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Building2, User, Download } from "lucide-react";
+import { Building2, User } from "lucide-react";
 import { toPng } from "html-to-image";
 import { ShareSummaryPanel } from "@/components/orgchart/ShareSummaryPanel";
 import { UnallocatedReport } from "@/components/orgchart/UnallocatedReport";
+import { CompanyNode } from "@/components/orgchart/CompanyNode";
+import { PersonNode } from "@/components/orgchart/PersonNode";
+import { CustomEdge } from "@/components/orgchart/CustomEdge";
+import { ChartControls, type VisibilityFlags } from "@/components/orgchart/ChartControls";
+import { differenceInDays, parseISO, isValid } from "date-fns";
 
-const NODE_WIDTH = 220;
-const NODE_HEIGHT = 90;
+const ROLE_PRIORITY: Record<string, number> = {
+  Director: 1, "Managing Director": 1, Chairman: 0, CEO: 0,
+  "Company Secretary": 2, CFO: 2, COO: 2,
+};
 
-function getLayoutedElements(nodes: Node[], edges: Edge[]) {
+function getSeniorRole(roles: { role_title: string; company_name: string }[]): string | undefined {
+  if (!roles.length) return undefined;
+  const sorted = [...roles].sort((a, b) => {
+    const pa = ROLE_PRIORITY[a.role_title] ?? 10;
+    const pb = ROLE_PRIORITY[b.role_title] ?? 10;
+    return pa - pb;
+  });
+  return `${sorted[0].role_title} — ${sorted[0].company_name}`;
+}
+
+function computeDocStatus(docs: { entity_id: string; expiry_date: string | null }[]): Record<string, "green" | "amber" | "red"> {
+  const map: Record<string, "green" | "amber" | "red"> = {};
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const byEntity: Record<string, { expiry_date: string | null }[]> = {};
+  docs.forEach((d) => {
+    if (!byEntity[d.entity_id]) byEntity[d.entity_id] = [];
+    byEntity[d.entity_id].push(d);
+  });
+
+  for (const [entityId, eDocs] of Object.entries(byEntity)) {
+    let status: "green" | "amber" | "red" = "green";
+    for (const doc of eDocs) {
+      if (!doc.expiry_date) continue;
+      const date = parseISO(doc.expiry_date);
+      if (!isValid(date)) continue;
+      const days = differenceInDays(date, today);
+      if (days < 0) { status = "red"; break; }
+      if (days <= 60 && status !== "red") status = "amber";
+    }
+    map[entityId] = status;
+  }
+  return map;
+}
+
+function getLayoutedElements(
+  nodes: Node[],
+  edges: Edge[],
+  rankdir: "TB" | "LR",
+  nodeDimensions: Record<string, { width: number; height: number }>
+) {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 80 });
-  nodes.forEach((node) => g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT }));
+  g.setGraph({ rankdir, nodesep: 100, ranksep: 140 });
+  nodes.forEach((node) => {
+    const dim = nodeDimensions[node.id] || { width: 280, height: 150 };
+    g.setNode(node.id, { width: dim.width, height: dim.height });
+  });
   edges.forEach((edge) => g.setEdge(edge.source, edge.target));
   dagre.layout(g);
   const layoutedNodes = nodes.map((node) => {
     const n = g.node(node.id);
-    return { ...node, position: { x: n.x - NODE_WIDTH / 2, y: n.y - NODE_HEIGHT / 2 } };
+    const dim = nodeDimensions[node.id] || { width: 280, height: 150 };
+    return { ...node, position: { x: n.x - dim.width / 2, y: n.y - dim.height / 2 } };
   });
   return { nodes: layoutedNodes, edges };
 }
 
-function EntityNode({ data }: { data: any }) {
-  const isCompany = data.type === "company";
-  return (
-    <div
-      className="rounded-lg px-4 py-3 shadow-md cursor-pointer text-center min-w-[200px]"
-      style={{ backgroundColor: isCompany ? "#0F172A" : "#3B82F6", color: "#FFFFFF" }}
-    >
-      <div className="font-semibold text-sm truncate">{data.label}</div>
-      <div className="text-xs opacity-80 mt-0.5">{isCompany ? data.companyType || "Company" : "Individual"}</div>
-      {data.ownerships && data.ownerships.length > 0 && (
-        <div className="mt-1 space-y-0.5">
-          {data.ownerships.map((o: any, i: number) => (
-            <div key={i} className="text-[10px] opacity-70 truncate">
-              Owns {o.percentage.toFixed(1)}% of {o.targetName}
-            </div>
-          ))}
-        </div>
-      )}
-      {isCompany && data.officerCount > 0 && (
-        <div className="text-xs opacity-70 mt-1 flex items-center justify-center gap-1">
-          <User className="h-3 w-3" /> {data.officerCount}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const nodeTypes = { entityNode: EntityNode };
+const nodeTypes = { companyNode: CompanyNode, personNode: PersonNode };
+const edgeTypes = { custom: CustomEdge };
 
 export default function OrgChart() {
   const { workspaceId } = useAuth();
@@ -82,27 +110,60 @@ export default function OrgChart() {
   const [allLinks, setAllLinks] = useState<any[]>([]);
   const [shareClasses, setShareClasses] = useState<any[]>([]);
   const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
+  const [appointmentMap, setAppointmentMap] = useState<Record<string, { role_title: string; company_name: string }[]>>({});
+  const [docStatusMap, setDocStatusMap] = useState<Record<string, "green" | "amber" | "red">>({});
+
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedShareClass, setSelectedShareClass] = useState("all");
 
+  const [layoutDirection, setLayoutDirection] = useState<"TB" | "LR">("TB");
+  const [visibility, setVisibility] = useState<VisibilityFlags>({
+    capitalBadges: true,
+    edgeLabels: true,
+    personHoldings: true,
+    officerCounts: true,
+    regNumbers: false,
+    incDates: false,
+  });
+  const [showMinimap, setShowMinimap] = useState(true);
+
+  // Store raw graph data so layout can be re-run without refetching
+  const rawGraphRef = useRef<{ nodes: Node[]; edges: Edge[]; dims: Record<string, { width: number; height: number }> } | null>(null);
+
   useEffect(() => {
     if (!workspaceId) return;
     const fetchData = async () => {
-      const [entRes, linksRes, apptsRes, scRes] = await Promise.all([
+      const [entRes, linksRes, apptsRes, scRes, docsRes] = await Promise.all([
         supabase.from("entities").select("*").eq("workspace_id", workspaceId).order("name"),
         supabase.from("equity_links").select("*").eq("workspace_id", workspaceId).is("end_date", null),
-        supabase.from("appointments").select("company_entity_id").eq("workspace_id", workspaceId).is("resignation_date", null),
+        supabase.from("appointments").select("person_entity_id, company_entity_id, role_title, role_category").eq("workspace_id", workspaceId).is("resignation_date", null),
         supabase.from("share_classes").select("*").eq("workspace_id", workspaceId),
+        supabase.from("documents").select("id, entity_id, expiry_date").eq("workspace_id", workspaceId),
       ]);
       setEntities(entRes.data || []);
       setAllLinks(linksRes.data || []);
-      const counts: Record<string, number> = {};
-      (apptsRes.data || []).forEach((a: any) => { counts[a.company_entity_id] = (counts[a.company_entity_id] || 0) + 1; });
-      setAppointmentCounts(counts);
       setShareClasses(scRes.data || []);
+
+      // Appointment counts + role map
+      const counts: Record<string, number> = {};
+      const roleMap: Record<string, { role_title: string; company_name: string }[]> = {};
+      const entMap = Object.fromEntries((entRes.data || []).map((e: any) => [e.id, e]));
+      (apptsRes.data || []).forEach((a: any) => {
+        counts[a.company_entity_id] = (counts[a.company_entity_id] || 0) + 1;
+        if (!roleMap[a.person_entity_id]) roleMap[a.person_entity_id] = [];
+        roleMap[a.person_entity_id].push({
+          role_title: a.role_title,
+          company_name: entMap[a.company_entity_id]?.name || "Unknown",
+        });
+      });
+      setAppointmentCounts(counts);
+      setAppointmentMap(roleMap);
+
+      // Doc status
+      setDocStatusMap(computeDocStatus(docsRes.data || []));
     };
     fetchData();
   }, [workspaceId]);
@@ -116,109 +177,201 @@ export default function OrgChart() {
     [shareClasses, rootId]
   );
 
-  // Filter links by selected share class
   const filteredLinks = useMemo(() => {
     if (selectedShareClass === "all") return allLinks;
     return allLinks.filter((l) => l.share_class_id === selectedShareClass);
   }, [allLinks, selectedShareClass]);
 
-  useEffect(() => {
-    if (!rootId || !filteredLinks.length) { setNodes([]); setEdges([]); return; }
+  // Compute per-company share class data with allocation
+  const companyShareClassData = useMemo(() => {
+    const result: Record<string, any[]> = {};
+    shareClasses.forEach((sc) => {
+      if (!result[sc.company_entity_id]) result[sc.company_entity_id] = [];
+      const allocatedShares = allLinks
+        .filter((l) => l.owned_entity_id === sc.company_entity_id && l.share_class_id === sc.id && !l.end_date)
+        .reduce((sum, l) => sum + (l.shares_owned || 0), 0);
+      result[sc.company_entity_id].push({ ...sc, allocated_shares: allocatedShares });
+    });
+    return result;
+  }, [shareClasses, allLinks]);
 
-    const visitedNodes = new Set<string>();
-    const graphNodes: Node[] = [];
-    const graphEdges: Edge[] = [];
-    const queue = [rootId];
-    visitedNodes.add(rootId);
-
-    // Pre-compute ownerships for each entity
-    const ownershipsByEntity: Record<string, { targetName: string; percentage: number }[]> = {};
-    filteredLinks.forEach((link) => {
-      if (!ownershipsByEntity[link.owner_entity_id]) ownershipsByEntity[link.owner_entity_id] = [];
-      const target = entityMap[link.owned_entity_id];
-      if (target) {
-        ownershipsByEntity[link.owner_entity_id].push({
-          targetName: target.name,
-          percentage: Number(link.percentage),
-        });
+  // Subsidiary count per entity
+  const subsidiaryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const seen = new Set<string>();
+    allLinks.forEach((l) => {
+      const key = `${l.owner_entity_id}-${l.owned_entity_id}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const owner = entityMap[l.owner_entity_id];
+      if (owner?.type === "company") {
+        const owned = entityMap[l.owned_entity_id];
+        if (owned?.type === "company") {
+          counts[l.owner_entity_id] = (counts[l.owner_entity_id] || 0) + 1;
+        }
       }
     });
+    return counts;
+  }, [allLinks, entityMap]);
 
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      const entity = entityMap[current];
-      if (!entity) continue;
+  // Build graph
+  const buildGraph = useCallback(
+    (badgesOn: boolean) => {
+      if (!rootId || !filteredLinks.length) return null;
 
-      graphNodes.push({
-        id: current,
-        type: "entityNode",
-        position: { x: 0, y: 0 },
-        data: {
-          label: entity.name,
-          type: entity.type,
-          companyType: entity.company_type,
-          officerCount: appointmentCounts[current] || 0,
-          ownerships: ownershipsByEntity[current] || [],
-        },
-      });
+      const visitedNodes = new Set<string>();
+      const graphNodes: Node[] = [];
+      const edgeMap = new Map<string, { links: any[]; source: string; target: string }>();
+      const queue = [rootId];
+      visitedNodes.add(rootId);
 
-      const ownedLinks = filteredLinks.filter((l) => l.owner_entity_id === current);
-      ownedLinks.forEach((link) => {
-        const pct = Number(link.percentage);
-        const color = pct > 50 ? "hsl(142.1, 76.2%, 36.3%)" : pct >= 25 ? "hsl(38, 92%, 50%)" : "hsl(215, 16%, 47%)";
-        const sc = link.share_class_id ? shareClassMap[link.share_class_id] : null;
-        const labelParts: string[] = [];
-        if (sc) labelParts.push(sc.class_name);
-        if (link.shares_owned) labelParts.push(`${link.shares_owned.toLocaleString()} shares`);
-        labelParts.push(`${pct.toFixed(2)}%`);
-        graphEdges.push({
-          id: link.id,
-          source: current,
-          target: link.owned_entity_id,
-          label: labelParts.join(" · "),
-          style: { stroke: color, strokeWidth: 2 },
-          labelStyle: { fontSize: 11, fontWeight: 600 },
-          markerEnd: { type: "arrowclosed" as any, color },
-          data: { link, shareClass: sc },
-        });
-        if (!visitedNodes.has(link.owned_entity_id)) {
-          visitedNodes.add(link.owned_entity_id);
-          queue.push(link.owned_entity_id);
-        }
-      });
-
-      const ownerLinks = filteredLinks.filter((l) => l.owned_entity_id === current);
-      ownerLinks.forEach((link) => {
-        const pct = Number(link.percentage);
-        const color = pct > 50 ? "hsl(142.1, 76.2%, 36.3%)" : pct >= 25 ? "hsl(38, 92%, 50%)" : "hsl(215, 16%, 47%)";
-        if (!visitedNodes.has(link.owner_entity_id)) {
-          visitedNodes.add(link.owner_entity_id);
-          queue.push(link.owner_entity_id);
-        }
-        if (!graphEdges.find((e) => e.id === link.id)) {
-          const sc = link.share_class_id ? shareClassMap[link.share_class_id] : null;
-          const labelParts: string[] = [];
-          if (sc) labelParts.push(sc.class_name);
-          if (link.shares_owned) labelParts.push(`${link.shares_owned.toLocaleString()} shares`);
-          labelParts.push(`${pct.toFixed(2)}%`);
-          graphEdges.push({
-            id: link.id,
-            source: link.owner_entity_id,
-            target: link.owned_entity_id,
-            label: labelParts.join(" · "),
-            style: { stroke: color, strokeWidth: 2 },
-            labelStyle: { fontSize: 11, fontWeight: 600 },
-            markerEnd: { type: "arrowclosed" as any, color },
-            data: { link, shareClass: sc },
+      const ownershipsByEntity: Record<string, { targetName: string; percentage: number }[]> = {};
+      filteredLinks.forEach((link) => {
+        if (!ownershipsByEntity[link.owner_entity_id]) ownershipsByEntity[link.owner_entity_id] = [];
+        const target = entityMap[link.owned_entity_id];
+        if (target) {
+          ownershipsByEntity[link.owner_entity_id].push({
+            targetName: target.name,
+            percentage: Number(link.percentage),
           });
         }
       });
-    }
 
-    const { nodes: layouted, edges: layoutedEdges } = getLayoutedElements(graphNodes, graphEdges);
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        const entity = entityMap[current];
+        if (!entity) continue;
+
+        const isCompany = entity.type === "company";
+
+        graphNodes.push({
+          id: current,
+          type: isCompany ? "companyNode" : "personNode",
+          position: { x: 0, y: 0 },
+          data: isCompany
+            ? {
+                label: entity.name,
+                companyType: entity.company_type,
+                jurisdiction: entity.nationality_or_jurisdiction,
+                registrationNumber: entity.registration_number,
+                incorporationDate: entity.date_of_birth_or_incorporation,
+                officerCount: appointmentCounts[current] || 0,
+                subsidiaryCount: subsidiaryCounts[current] || 0,
+                docStatus: docStatusMap[current] || "green",
+                shareClasses: companyShareClassData[current] || [],
+                visibility: {
+                  capitalBadges: badgesOn,
+                  officerCounts: visibility.officerCounts,
+                  regNumbers: visibility.regNumbers,
+                  incDates: visibility.incDates,
+                },
+              }
+            : {
+                label: entity.name,
+                nationality: entity.nationality_or_jurisdiction,
+                docStatus: docStatusMap[current] || "green",
+                primaryRole: getSeniorRole(appointmentMap[current] || []),
+                ownerships: ownershipsByEntity[current] || [],
+                visibility: { personHoldings: visibility.personHoldings },
+              },
+        });
+
+        // Collect links for edge dedup
+        const ownedLinks = filteredLinks.filter((l) => l.owner_entity_id === current);
+        ownedLinks.forEach((link) => {
+          const pairKey = `${link.owner_entity_id}__${link.owned_entity_id}`;
+          if (!edgeMap.has(pairKey)) edgeMap.set(pairKey, { links: [], source: link.owner_entity_id, target: link.owned_entity_id });
+          edgeMap.get(pairKey)!.links.push(link);
+          if (!visitedNodes.has(link.owned_entity_id)) {
+            visitedNodes.add(link.owned_entity_id);
+            queue.push(link.owned_entity_id);
+          }
+        });
+
+        const ownerLinks = filteredLinks.filter((l) => l.owned_entity_id === current);
+        ownerLinks.forEach((link) => {
+          if (!visitedNodes.has(link.owner_entity_id)) {
+            visitedNodes.add(link.owner_entity_id);
+            queue.push(link.owner_entity_id);
+          }
+          const pairKey = `${link.owner_entity_id}__${link.owned_entity_id}`;
+          if (!edgeMap.has(pairKey)) edgeMap.set(pairKey, { links: [], source: link.owner_entity_id, target: link.owned_entity_id });
+          const existing = edgeMap.get(pairKey)!;
+          if (!existing.links.find((l: any) => l.id === link.id)) existing.links.push(link);
+        });
+      }
+
+      // Build deduplicated edges
+      const graphEdges: Edge[] = [];
+      edgeMap.forEach((val, key) => {
+        const maxPct = Math.max(...val.links.map((l: any) => Number(l.percentage)));
+        const color = maxPct > 50 ? "#16A34A" : maxPct >= 25 ? "#D97706" : "#94A3B8";
+        graphEdges.push({
+          id: key,
+          source: val.source,
+          target: val.target,
+          type: "custom",
+          markerEnd: { type: "arrowclosed" as any, color },
+          data: {
+            links: val.links.map((l: any) => ({
+              shareClassName: l.share_class_id ? shareClassMap[l.share_class_id]?.class_name : null,
+              sharesOwned: l.shares_owned,
+              percentage: Number(l.percentage),
+              votingRights: l.share_class_id ? (shareClassMap[l.share_class_id]?.voting_rights ?? true) : true,
+            })),
+            showLabels: visibility.edgeLabels,
+            maxPct,
+          },
+        });
+      });
+
+      // Compute dimensions
+      const dims: Record<string, { width: number; height: number }> = {};
+      graphNodes.forEach((n) => {
+        if (n.type === "companyNode") {
+          dims[n.id] = { width: badgesOn ? 440 : 280, height: 150 };
+        } else {
+          dims[n.id] = { width: 260, height: 140 };
+        }
+      });
+
+      return { nodes: graphNodes, edges: graphEdges, dims };
+    },
+    [rootId, filteredLinks, entityMap, shareClassMap, appointmentCounts, appointmentMap, docStatusMap, companyShareClassData, subsidiaryCounts, visibility]
+  );
+
+  // Build + layout when data or layout-affecting state changes
+  useEffect(() => {
+    const graph = buildGraph(visibility.capitalBadges);
+    if (!graph) {
+      setNodes([]);
+      setEdges([]);
+      rawGraphRef.current = null;
+      return;
+    }
+    rawGraphRef.current = graph;
+    const { nodes: layouted, edges: layoutedEdges } = getLayoutedElements(
+      graph.nodes,
+      graph.edges,
+      layoutDirection,
+      graph.dims
+    );
     setNodes(layouted);
     setEdges(layoutedEdges);
-  }, [rootId, filteredLinks, entityMap, shareClassMap, appointmentCounts]);
+  }, [buildGraph, layoutDirection, visibility.capitalBadges]);
+
+  // Re-run layout when layoutDirection or capitalBadges toggle changes
+  // (handled in the useEffect above since both are deps)
+
+  // Update edge label visibility without re-layout
+  useEffect(() => {
+    setEdges((eds) =>
+      eds.map((e) => ({
+        ...e,
+        data: { ...e.data, showLabels: visibility.edgeLabels },
+      }))
+    );
+  }, [visibility.edgeLabels]);
 
   const onNodeClick = useCallback((_: any, node: Node) => {
     const entity = entityMap[node.id];
@@ -228,7 +381,7 @@ export default function OrgChart() {
   const handleExportPng = useCallback(() => {
     const el = document.querySelector(".react-flow") as HTMLElement;
     if (!el) return;
-    toPng(el, { backgroundColor: "#F8FAFC" }).then((url) => {
+    toPng(el, { backgroundColor: "#F8FAFC", width: el.scrollWidth, height: el.scrollHeight }).then((url) => {
       const a = document.createElement("a");
       a.href = url;
       a.download = "org-chart.png";
@@ -270,11 +423,19 @@ export default function OrgChart() {
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           fitView
           attributionPosition="bottom-left"
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#CBD5E1" />
           <Controls showInteractive={false} />
+          {showMinimap && (
+            <MiniMap
+              nodeColor={(node) => (node.type === "personNode" ? "#3B82F6" : "#0F172A")}
+              maskColor="rgba(0,0,0,0.1)"
+              style={{ border: "1px solid hsl(var(--border))" }}
+            />
+          )}
           <Panel position="top-left">
             <div className="bg-background border rounded-lg p-2 shadow-sm">
               <Select value={rootId} onValueChange={(v) => { setSearchParams({ root: v }); setSelectedShareClass("all"); }}>
@@ -286,11 +447,15 @@ export default function OrgChart() {
             </div>
           </Panel>
           <Panel position="top-right">
-            <div className="flex gap-1">
-              <Button variant="outline" size="icon" onClick={handleExportPng} title="Export as PNG">
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
+            <ChartControls
+              layoutDirection={layoutDirection}
+              onLayoutChange={setLayoutDirection}
+              visibility={visibility}
+              onVisibilityChange={setVisibility}
+              showMinimap={showMinimap}
+              onMinimapToggle={() => setShowMinimap((v) => !v)}
+              onExportPng={handleExportPng}
+            />
           </Panel>
           {!rootId && (
             <Panel position="top-center" className="mt-32">
@@ -332,7 +497,7 @@ export default function OrgChart() {
                       <TableCell>{Number(s.percentage).toFixed(2)}%</TableCell>
                       <TableCell>
                         {s.shareClass ? (
-                          s.shareClass.voting_rights ? <Badge className="bg-green-100 text-green-700 border-0 text-xs">Yes</Badge> : <Badge variant="secondary" className="text-xs">Non-voting</Badge>
+                          s.shareClass.voting_rights ? <Badge className="bg-success/20 text-success border-0 text-xs">Yes</Badge> : <Badge variant="secondary" className="text-xs">Non-voting</Badge>
                         ) : "—"}
                       </TableCell>
                       <TableCell>
