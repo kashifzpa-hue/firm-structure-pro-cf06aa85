@@ -822,6 +822,48 @@ export default function Reports() {
         </DialogContent>
       </Dialog>
 
+      {/* ===== BANK SIGNATORY MODAL ===== */}
+      <Dialog open={openModal === "banksig"} onOpenChange={(v) => !v && setOpenModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Bank Signatory Report</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Company</Label>
+              <Select value={bsCompanyId} onValueChange={(v) => { setBsCompanyId(v); setBsBankAccountId(""); loadBankAccounts(v); }}>
+                <SelectTrigger><SelectValue placeholder="Select company" /></SelectTrigger>
+                <SelectContent>{companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Bank Account</Label>
+              <Select value={bsBankAccountId} onValueChange={setBsBankAccountId}>
+                <SelectTrigger><SelectValue placeholder="Select bank account" /></SelectTrigger>
+                <SelectContent>{bankAccounts.map((ba) => <SelectItem key={ba.id} value={ba.id}>{ba.bank_name} — ••••{ba.account_number.slice(-4)}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Report Purpose</Label>
+              <Select value={bsPurpose} onValueChange={setBsPurpose}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Internal Reference">Internal Reference</SelectItem>
+                  <SelectItem value="Bank Submission">Bank Submission</SelectItem>
+                  <SelectItem value="Audit Documentation">Audit Documentation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Prepared By</Label><Input value={bsPreparedBy} onChange={(e) => setBsPreparedBy(e.target.value)} /></div>
+            <div><Label>Report Date</Label><DatePicker date={bsReportDate} onChange={setBsReportDate} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenModal(null)}>Cancel</Button>
+            <Button onClick={generateBankSignatory} disabled={!bsBankAccountId || generating}>
+              {generating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Preparing report...</> : "Generate PDF"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Preview Modal */}
       {previewDoc && (
         <PdfPreviewModal
