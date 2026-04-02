@@ -637,6 +637,24 @@ export default function Reports() {
             </CardContent>
           </Card>
         ))}
+
+        {/* Bank Signatory Report - only if banking enabled */}
+        {bankingEnabled && (
+          <Card className="shadow-sm hover:border-primary/30 transition-colors">
+            <CardHeader className="flex flex-row items-start gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <PenLine className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <CardTitle className="text-base">Bank Signatory Report</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Formatted signatory authority record for bank submission or internal reference</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => openReport("banksig")} className="w-full">Generate</Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* ===== CORPORATE PROFILE MODAL ===== */}
