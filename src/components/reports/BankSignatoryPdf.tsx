@@ -29,6 +29,8 @@ const localStyles = StyleSheet.create({
   sigBlockDecl: { width: "45%", marginTop: 20 },
   sigLine: { borderBottomWidth: 1, borderBottomColor: "#1E293B", marginBottom: 4, marginTop: 30 },
   sigBlockLabel: { fontSize: 8, color: "#64748B", marginBottom: 2 },
+  subtitle: { fontSize: 8, color: "#64748B", marginBottom: 10 },
+  noData: { fontSize: 9, color: "#94A3B8", fontStyle: "italic" },
 });
 
 interface BankSignatoryData {
@@ -65,14 +67,9 @@ function formatAuthFor(arr: string[]): string {
 function formatRuleSignatories(rule: any, groups: any[]): string {
   const groupA = groups.find((g: any) => g.id === rule.group_a_id);
   const groupB = groups.find((g: any) => g.id === rule.group_b_id);
-  
-  if (rule.rule_type === "solo") {
-    return `Any 1 from ${groupA?.group_label || "—"}`;
-  } else if (rule.rule_type === "joint_same_group") {
-    return `Any ${rule.min_signatories_from_a} from ${groupA?.group_label || "—"}`;
-  } else if (rule.rule_type === "joint_cross_group") {
-    return `${rule.min_signatories_from_a} from ${groupA?.group_label || "—"} + ${rule.min_signatories_from_b || 1} from ${groupB?.group_label || "—"}`;
-  }
+  if (rule.rule_type === "solo") return `Any 1 from ${groupA?.group_label || "—"}`;
+  if (rule.rule_type === "joint_same_group") return `Any ${rule.min_signatories_from_a} from ${groupA?.group_label || "—"}`;
+  if (rule.rule_type === "joint_cross_group") return `${rule.min_signatories_from_a} from ${groupA?.group_label || "—"} + ${rule.min_signatories_from_b || 1} from ${groupB?.group_label || "—"}`;
   return "—";
 }
 
@@ -85,7 +82,6 @@ export function BankSignatoryPdf({ data }: { data: BankSignatoryData }) {
   const genDate = formatDateTime(new Date());
   const ba = data.bankAccount;
 
-  // Group signatories by group
   const groupMap: Record<string, any[]> = {};
   const ungrouped: any[] = [];
   data.signatories.forEach((s: any) => {
@@ -103,12 +99,10 @@ export function BankSignatoryPdf({ data }: { data: BankSignatoryData }) {
   return (
     <Document>
       <PdfPageWrapper reportTitle="Authorised Signatory Record" generationDate={genDate}>
-        {/* Title */}
         <Text style={localStyles.reportTitle}>AUTHORISED SIGNATORY RECORD</Text>
         <Text style={localStyles.companyName}>{data.company?.name}</Text>
         <Text style={localStyles.bankName}>{ba?.bank_name}</Text>
 
-        {/* Info Box */}
         <View style={localStyles.infoBox}>
           <View style={localStyles.infoCol}>
             <InfoRow label="Account Number" value={ba?.account_number} />
@@ -126,118 +120,109 @@ export function BankSignatoryPdf({ data }: { data: BankSignatoryData }) {
 
         <View style={localStyles.divider} />
 
-        {/* Section 1: Company Details */}
-        <PdfSection title="COMPANY DETAILS">
-          <View style={{ flexDirection: "row", marginBottom: 12 }}>
-            <View style={{ width: "50%" }}>
-              <InfoRow label="Registration Number" value={data.company?.registration_number} />
-              <InfoRow label="Jurisdiction" value={data.company?.nationality_or_jurisdiction} />
-            </View>
-            <View style={{ width: "50%" }}>
-              <InfoRow label="Incorporation Date" value={formatReportDate(data.company?.date_of_birth_or_incorporation)} />
-              <InfoRow label="Registered Address" value={data.company?.registered_address} />
-            </View>
+        {/* Company Details */}
+        <PdfSection title="COMPANY DETAILS" />
+        <View style={{ flexDirection: "row", marginBottom: 12 }}>
+          <View style={{ width: "50%" }}>
+            <InfoRow label="Registration Number" value={data.company?.registration_number} />
+            <InfoRow label="Jurisdiction" value={data.company?.nationality_or_jurisdiction} />
           </View>
-        </PdfSection>
+          <View style={{ width: "50%" }}>
+            <InfoRow label="Incorporation Date" value={formatReportDate(data.company?.date_of_birth_or_incorporation)} />
+            <InfoRow label="Registered Address" value={data.company?.registered_address} />
+          </View>
+        </View>
 
-        {/* Section 2: Authorised Signatories */}
-        <PdfSection title="AUTHORISED SIGNATORIES">
-          <Text style={{ fontSize: 8, color: "#64748B", marginBottom: 10 }}>
-            {activeCount} active signator{activeCount === 1 ? "y" : "ies"} across {groupCount} group{groupCount === 1 ? "" : "s"}
-          </Text>
+        {/* Signatories */}
+        <PdfSection title="AUTHORISED SIGNATORIES" />
+        <Text style={localStyles.subtitle}>
+          {activeCount} active signator{activeCount === 1 ? "y" : "ies"} across {groupCount} group{groupCount === 1 ? "" : "s"}
+        </Text>
 
-          {data.groups.map((group: any) => {
-            const groupSigs = groupMap[group.id] || [];
-            if (groupSigs.length === 0) return null;
-            return (
-              <View key={group.id} wrap={false}>
-                <Text style={localStyles.groupHeader}>
-                  {group.group_label.toUpperCase()}{group.description ? ` — ${group.description}` : ""}
-                </Text>
-                {groupSigs.map((sig: any) => (
-                  <SignatoryBlock key={sig.id} sig={sig} passportMap={data.passportMap} />
-                ))}
-              </View>
-            );
-          })}
-
-          {ungrouped.length > 0 && (
-            <View>
-              <Text style={localStyles.groupHeader}>UNASSIGNED</Text>
-              {ungrouped.map((sig: any) => (
+        {data.groups.map((group: any) => {
+          const groupSigs = groupMap[group.id] || [];
+          if (groupSigs.length === 0) return null;
+          return (
+            <View key={group.id}>
+              <Text style={localStyles.groupHeader}>
+                {group.group_label.toUpperCase()}{group.description ? ` — ${group.description}` : ""}
+              </Text>
+              {groupSigs.map((sig: any) => (
                 <SignatoryBlock key={sig.id} sig={sig} passportMap={data.passportMap} />
               ))}
             </View>
-          )}
-        </PdfSection>
+          );
+        })}
 
-        {/* Section 3: Signing Matrix */}
-        <PdfSection title="SIGNING MATRIX">
-          <Text style={{ fontSize: 8, color: "#64748B", marginBottom: 8 }}>
-            Valid signatory combinations and transaction authorities
-          </Text>
-
-          {data.matrixRules.length === 0 ? (
-            <Text style={{ fontSize: 9, color: "#94A3B8", fontStyle: "italic" }}>
-              No signing matrix rules recorded for this account.
-            </Text>
-          ) : (
-            <>
-              <PdfTable
-                columns={[
-                  { header: "Rule", width: "20%" },
-                  { header: "Signatories Required", width: "25%" },
-                  { header: "Transaction Limit", width: "18%" },
-                  { header: "Daily Limit", width: "17%" },
-                  { header: "Applies To", width: "20%" },
-                ]}
-                rows={data.matrixRules.map((r: any) => [
-                  r.rule_name,
-                  formatRuleSignatories(r, data.groups),
-                  formatLimit(r.transaction_limit, r.limit_currency),
-                  formatLimit(r.daily_limit, r.limit_currency),
-                  formatAuthFor(r.applies_to),
-                ])}
-              />
-              <Text style={localStyles.matrixNote}>
-                The above matrix defines valid combinations of authorised signatories and their respective transaction limits.
-                All signatories must act within the scope of their designated authority.
-              </Text>
-            </>
-          )}
-        </PdfSection>
-
-        {/* Section 4: Declaration */}
-        <PdfSection title="DECLARATION">
-          <Text style={localStyles.declText}>
-            This document sets out the authorised signatories for {data.company?.name} with respect to account {ba?.account_number} at {ba?.bank_name}.
-            {"\n\n"}
-            This record is accurate as of {formatReportDate(data.reportDate.toISOString().split("T")[0])} and supersedes all previous signatory records for this account.
-          </Text>
-
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <View style={localStyles.sigBlockDecl}>
-              <Text style={localStyles.sigBlockLabel}>Authorised Signatory:</Text>
-              <View style={localStyles.sigLine} />
-              <Text style={localStyles.sigBlockLabel}>Name (Print):</Text>
-              <View style={localStyles.sigLine} />
-              <Text style={localStyles.sigBlockLabel}>Title:</Text>
-              <View style={{ ...localStyles.sigLine, marginTop: 20 }} />
-              <Text style={localStyles.sigBlockLabel}>Date:</Text>
-              <View style={{ ...localStyles.sigLine, marginTop: 20 }} />
-            </View>
-            <View style={localStyles.sigBlockDecl}>
-              <Text style={localStyles.sigBlockLabel}>Authorised Signatory:</Text>
-              <View style={localStyles.sigLine} />
-              <Text style={localStyles.sigBlockLabel}>Name (Print):</Text>
-              <View style={localStyles.sigLine} />
-              <Text style={localStyles.sigBlockLabel}>Title:</Text>
-              <View style={{ ...localStyles.sigLine, marginTop: 20 }} />
-              <Text style={localStyles.sigBlockLabel}>Date:</Text>
-              <View style={{ ...localStyles.sigLine, marginTop: 20 }} />
-            </View>
+        {ungrouped.length > 0 && (
+          <View>
+            <Text style={localStyles.groupHeader}>UNASSIGNED</Text>
+            {ungrouped.map((sig: any) => (
+              <SignatoryBlock key={sig.id} sig={sig} passportMap={data.passportMap} />
+            ))}
           </View>
-        </PdfSection>
+        )}
+
+        {/* Signing Matrix */}
+        <PdfSection title="SIGNING MATRIX" />
+        <Text style={localStyles.subtitle}>Valid signatory combinations and transaction authorities</Text>
+
+        {data.matrixRules.length === 0 ? (
+          <Text style={localStyles.noData}>No signing matrix rules recorded for this account.</Text>
+        ) : (
+          <>
+            <PdfTable
+              columns={[
+                { label: "Rule", width: "20%" },
+                { label: "Signatories Required", width: "25%" },
+                { label: "Transaction Limit", width: "18%" },
+                { label: "Daily Limit", width: "17%" },
+                { label: "Applies To", width: "20%" },
+              ]}
+              rows={data.matrixRules.map((r: any) => [
+                r.rule_name,
+                formatRuleSignatories(r, data.groups),
+                formatLimit(r.transaction_limit, r.limit_currency),
+                formatLimit(r.daily_limit, r.limit_currency),
+                formatAuthFor(r.applies_to),
+              ])}
+            />
+            <Text style={localStyles.matrixNote}>
+              The above matrix defines valid combinations of authorised signatories and their respective transaction limits. All signatories must act within the scope of their designated authority.
+            </Text>
+          </>
+        )}
+
+        {/* Declaration */}
+        <PdfSection title="DECLARATION" />
+        <Text style={localStyles.declText}>
+          This document sets out the authorised signatories for {data.company?.name} with respect to account {ba?.account_number} at {ba?.bank_name}.
+          {"\n\n"}
+          This record is accurate as of {formatReportDate(data.reportDate.toISOString().split("T")[0])} and supersedes all previous signatory records for this account.
+        </Text>
+
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <View style={localStyles.sigBlockDecl}>
+            <Text style={localStyles.sigBlockLabel}>Authorised Signatory:</Text>
+            <View style={localStyles.sigLine} />
+            <Text style={localStyles.sigBlockLabel}>Name (Print):</Text>
+            <View style={localStyles.sigLine} />
+            <Text style={localStyles.sigBlockLabel}>Title:</Text>
+            <View style={{ ...localStyles.sigLine, marginTop: 20 }} />
+            <Text style={localStyles.sigBlockLabel}>Date:</Text>
+            <View style={{ ...localStyles.sigLine, marginTop: 20 }} />
+          </View>
+          <View style={localStyles.sigBlockDecl}>
+            <Text style={localStyles.sigBlockLabel}>Authorised Signatory:</Text>
+            <View style={localStyles.sigLine} />
+            <Text style={localStyles.sigBlockLabel}>Name (Print):</Text>
+            <View style={localStyles.sigLine} />
+            <Text style={localStyles.sigBlockLabel}>Title:</Text>
+            <View style={{ ...localStyles.sigLine, marginTop: 20 }} />
+            <Text style={localStyles.sigBlockLabel}>Date:</Text>
+            <View style={{ ...localStyles.sigLine, marginTop: 20 }} />
+          </View>
+        </View>
       </PdfPageWrapper>
     </Document>
   );
@@ -301,9 +286,7 @@ function SignatoryBlock({ sig, passportMap }: { sig: any; passportMap?: Record<s
         </Text>
         <View style={localStyles.sigDivider} />
         <Text style={localStyles.sigDetail}>
-          <Text style={localStyles.sigDetailLabel}>Status: </Text>
-          <Text style={localStyles.statusDot}>● </Text>
-          {sig.status === "active" ? "Active" : sig.status === "suspended" ? "Suspended" : "Revoked"}
+          <Text style={localStyles.sigDetailLabel}>Status: </Text>● {sig.status === "active" ? "Active" : sig.status === "suspended" ? "Suspended" : "Revoked"}
         </Text>
       </View>
     </View>
