@@ -94,6 +94,7 @@ export default function Reports() {
       setCompanies(compRes.data || []);
       setAllEntities(entRes.data || []);
       setUboPreparedBy(profileRes.data?.full_name || "");
+      setBsPreparedBy(profileRes.data?.full_name || "");
     };
     load();
   }, [workspaceId]);
