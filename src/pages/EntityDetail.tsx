@@ -704,6 +704,13 @@ export default function EntityDetail() {
             <PersonUBOTab personEntityId={id!} personName={entity.name} />
           </TabsContent>
         )}
+
+        {/* Banking Tab */}
+        {!isPerson && bankingEnabled && (
+          <TabsContent value="banking">
+            <BankingTab entityId={id!} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Ownership Form Modal for Setup Mode */}

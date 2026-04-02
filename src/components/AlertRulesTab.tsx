@@ -119,7 +119,7 @@ export function AlertRulesTab() {
           {rules.map((rule) => {
             const label = ruleLabels[rule.rule_type] || rule.rule_type;
             const desc = ruleDescriptions[rule.rule_type] || "";
-            const showThreshold = ["DOCUMENT_EXPIRING_SOON", "MOVEMENT_DRAFT_PENDING"].includes(rule.rule_type);
+            const showThreshold = ["DOCUMENT_EXPIRING_SOON", "MOVEMENT_DRAFT_PENDING", "SIGNATORY_EXPIRING", "BANK_ACK_PENDING"].includes(rule.rule_type);
             return (
               <TableRow key={rule.id}>
                 <TableCell className="font-medium text-sm">
