@@ -189,6 +189,20 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {unreadAlerts.total > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
+          <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
+          <span className="text-sm">
+            You have <strong>{unreadAlerts.total}</strong> unread alerts
+            {unreadAlerts.critical > 0 && <> — <span className="text-destructive font-semibold">{unreadAlerts.critical} critical</span></>}
+            {unreadAlerts.warnings > 0 && <>, <span className="text-warning font-semibold">{unreadAlerts.warnings} warnings</span></>}
+          </span>
+          <button onClick={() => navigate("/notifications?status=unread")} className="ml-auto text-xs text-primary hover:underline">
+            View all →
+          </button>
+        </div>
+      )}
+
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Expiry Alerts</CardTitle>
