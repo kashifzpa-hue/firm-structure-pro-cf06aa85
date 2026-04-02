@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
               ...(adminProfiles || []).map((p: any) => p.email).filter(Boolean),
               ...(rule.additional_emails || []),
             ];
-            const senderEmail = rule.sender_email || "noreply@corpsync.app";
+            const senderEmail = rule.sender_email || "onboarding@resend.dev";
 
             for (const email of emails) {
               try {

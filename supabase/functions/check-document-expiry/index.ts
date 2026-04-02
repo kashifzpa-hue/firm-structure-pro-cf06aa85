@@ -151,7 +151,7 @@ Deno.serve(async (req: Request) => {
               ...(rule.additional_emails || []),
             ];
 
-            const senderEmail = rule.sender_email || "noreply@corpsync.app";
+            const senderEmail = rule.sender_email || "onboarding@resend.dev";
             const subject = isExpired
               ? `[URGENT] Expired Document — ${entityName} — CorpSync`
               : `[Action Required] Document Expiring in ${diffDays} days — ${entityName} — CorpSync`;
