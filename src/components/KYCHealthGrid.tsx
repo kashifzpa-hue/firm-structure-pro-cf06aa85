@@ -35,6 +35,7 @@ function KYCHealthGridInner() {
   const { workspaceId } = useAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<CompanyHealth[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
