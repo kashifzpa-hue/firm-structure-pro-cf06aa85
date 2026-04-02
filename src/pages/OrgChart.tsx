@@ -221,6 +221,9 @@ export default function OrgChart() {
     (badgesOn: boolean) => {
       if (!rootId || !filteredLinks.length) return null;
 
+      // Deduplicate links by ID to prevent double-counting
+      const uniqueLinks = Array.from(new Map(filteredLinks.map((l) => [l.id, l])).values());
+
       const visitedNodes = new Set<string>();
       const graphNodes: Node[] = [];
       const edgeMap = new Map<string, { links: any[]; source: string; target: string }>();
