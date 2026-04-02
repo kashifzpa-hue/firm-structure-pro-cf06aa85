@@ -75,6 +75,14 @@ export default function Reports() {
   const [kycWindow, setKycWindow] = useState("all");
   const [kycIncludeUbo, setKycIncludeUbo] = useState(true);
 
+  // Bank Signatory config
+  const [bsCompanyId, setBsCompanyId] = useState("");
+  const [bsBankAccountId, setBsBankAccountId] = useState("");
+  const [bsPurpose, setBsPurpose] = useState("Internal Reference");
+  const [bsPreparedBy, setBsPreparedBy] = useState("");
+  const [bsReportDate, setBsReportDate] = useState<Date>(new Date());
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+
   useEffect(() => {
     if (!workspaceId) return;
     const load = async () => {
