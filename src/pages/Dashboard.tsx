@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
-import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart, ScrollText, Shield } from "lucide-react";
+import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart, ScrollText, Shield, Landmark, PenLine, Clock, Hourglass } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [uboAlerts, setUboAlerts] = useState<any[]>([]);
   const [unreadAlerts, setUnreadAlerts] = useState({ total: 0, critical: 0, warnings: 0 });
+  const [bankingEnabled, setBankingEnabled] = useState(false);
+  const [bankingStats, setBankingStats] = useState({ accounts: 0, signatories: 0, expiring: 0, pendingAck: 0 });
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -153,6 +155,29 @@ export default function Dashboard() {
         warnings: (unreadNotifs || []).filter((n: any) => warningTypes.includes(n.notification_type)).length,
       });
 
+      // Banking stats
+      const { data: wsData } = await supabase.from("workspaces").select("banking_enabled").eq("id", workspaceId).single();
+      const isBankingEnabled = !!(wsData as any)?.banking_enabled;
+      setBankingEnabled(isBankingEnabled);
+
+      if (isBankingEnabled) {
+        const today30 = new Date();
+        today30.setDate(today30.getDate() + 30);
+        const today30Str = today30.toISOString().split("T")[0];
+
+        const [baRes, sigRes] = await Promise.all([
+          supabase.from("bank_accounts").select("id").eq("workspace_id", workspaceId).eq("account_status", "active"),
+          supabase.from("signatories").select("id, expiry_date, bank_acknowledged_date").eq("workspace_id", workspaceId).eq("status", "active"),
+        ]);
+        const activeSigs = sigRes.data || [];
+        setBankingStats({
+          accounts: (baRes.data || []).length,
+          signatories: activeSigs.length,
+          expiring: activeSigs.filter(s => s.expiry_date && s.expiry_date <= today30Str).length,
+          pendingAck: activeSigs.filter(s => !s.bank_acknowledged_date).length,
+        });
+      }
+
       setLoading(false);
     };
     fetchData();
@@ -200,6 +225,29 @@ export default function Dashboard() {
           <button onClick={() => navigate("/notifications?status=unread")} className="ml-auto text-xs text-primary hover:underline">
             View all →
           </button>
+        </div>
+      )}
+
+      {/* Banking Overview */}
+      {bankingEnabled && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Banking Overview</h2>
+          <div className="grid gap-4 md:grid-cols-4">
+            {[
+              { title: "Bank Accounts", value: bankingStats.accounts, icon: Landmark, color: "text-primary", link: "/bank-accounts" },
+              { title: "Active Signatories", value: bankingStats.signatories, icon: PenLine, color: "text-primary", link: "/bank-accounts" },
+              { title: "Expiring Authority (30d)", value: bankingStats.expiring, icon: Clock, color: "text-warning", link: "/signatory-register?expiry=30" },
+              { title: "Awaiting Bank Ack", value: bankingStats.pendingAck, icon: Hourglass, color: "text-muted-foreground", link: "/signatory-register?ack=pending" },
+            ].map(card => (
+              <Card key={card.title} className="shadow-sm cursor-pointer hover:border-primary/50" onClick={() => navigate(card.link)}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
+                  <card.icon className={`h-5 w-5 ${card.color}`} />
+                </CardHeader>
+                <CardContent><div className="text-3xl font-bold">{card.value}</div></CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 

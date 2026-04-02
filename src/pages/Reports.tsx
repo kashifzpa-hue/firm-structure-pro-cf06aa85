@@ -24,6 +24,10 @@ import { UBODeclarationPdf } from "@/components/reports/UBODeclarationPdf";
 import { KYCExpiryPdf } from "@/components/reports/KYCExpiryPdf";
 import { sanitizeFilename, formatDateForFilename } from "@/lib/report-helpers";
 
+import { BankSignatoryPdf } from "@/components/reports/BankSignatoryPdf";
+import { useBankingEnabled } from "@/hooks/use-banking-enabled";
+import { PenLine } from "lucide-react";
+
 const reportCards = [
   { key: "corporate", title: "Corporate Profile Report", icon: Building2, desc: "Complete company overview including shareholders, board, management and UBO declaration" },
   { key: "captable", title: "Cap Table Report", icon: PieChart, desc: "Full shareholder register with share classes, percentages and historical snapshot option" },
@@ -33,6 +37,7 @@ const reportCards = [
 
 export default function Reports() {
   const { workspaceId } = useAuth();
+  const { bankingEnabled } = useBankingEnabled();
   const [searchParams, setSearchParams] = useSearchParams();
   const [companies, setCompanies] = useState<any[]>([]);
   const [allEntities, setAllEntities] = useState<any[]>([]);
@@ -70,6 +75,14 @@ export default function Reports() {
   const [kycWindow, setKycWindow] = useState("all");
   const [kycIncludeUbo, setKycIncludeUbo] = useState(true);
 
+  // Bank Signatory config
+  const [bsCompanyId, setBsCompanyId] = useState("");
+  const [bsBankAccountId, setBsBankAccountId] = useState("");
+  const [bsPurpose, setBsPurpose] = useState("Internal Reference");
+  const [bsPreparedBy, setBsPreparedBy] = useState("");
+  const [bsReportDate, setBsReportDate] = useState<Date>(new Date());
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+
   useEffect(() => {
     if (!workspaceId) return;
     const load = async () => {
@@ -81,6 +94,7 @@ export default function Reports() {
       setCompanies(compRes.data || []);
       setAllEntities(entRes.data || []);
       setUboPreparedBy(profileRes.data?.full_name || "");
+      setBsPreparedBy(profileRes.data?.full_name || "");
     };
     load();
   }, [workspaceId]);
@@ -544,6 +558,50 @@ export default function Reports() {
     setGenerating(false);
   };
 
+  // ========== BANK SIGNATORY ==========
+  const loadBankAccounts = async (companyId: string) => {
+    if (!workspaceId || !companyId) return;
+    const { data } = await supabase.from("bank_accounts").select("id, bank_name, account_number").eq("company_entity_id", companyId).eq("workspace_id", workspaceId);
+    setBankAccounts(data || []);
+  };
+
+  const generateBankSignatory = async () => {
+    if (!bsBankAccountId || !workspaceId) return;
+    setGenerating(true);
+    try {
+      const company = companies.find(c => c.id === bsCompanyId);
+      const [baRes, groupsRes, sigsRes, rulesRes] = await Promise.all([
+        supabase.from("bank_accounts").select("*").eq("id", bsBankAccountId).single(),
+        supabase.from("signatory_groups").select("*").eq("bank_account_id", bsBankAccountId).eq("workspace_id", workspaceId).order("display_order"),
+        supabase.from("signatories").select("*, person:entities!signatories_person_entity_id_fkey(name)").eq("bank_account_id", bsBankAccountId).eq("workspace_id", workspaceId).eq("status", "active"),
+        supabase.from("signing_matrix_rules").select("*").eq("bank_account_id", bsBankAccountId).eq("workspace_id", workspaceId).order("display_order"),
+      ]);
+      const sigs = (sigsRes.data || []).map((s: any) => ({ ...s, person_name: s.person?.name }));
+      const personIds = sigs.map((s: any) => s.person_entity_id).filter(Boolean);
+      let passportMap: Record<string, any> = {};
+      if (personIds.length > 0) {
+        const { data: passports } = await supabase.from("documents").select("*").eq("workspace_id", workspaceId).in("entity_id", personIds).eq("document_type", "Passport");
+        (passports || []).forEach((p: any) => { passportMap[p.entity_id] = p; });
+      }
+      const doc = (
+        <BankSignatoryPdf data={{
+          company, bankAccount: baRes.data, signatories: sigs,
+          groups: groupsRes.data || [], matrixRules: rulesRes.data || [],
+          reportDate: bsReportDate, preparedBy: bsPreparedBy, purpose: bsPurpose, passportMap,
+        }} />
+      );
+      const ba = baRes.data;
+      const filename = `BankSignatory_${sanitizeFilename(company?.name || "Company")}_${sanitizeFilename(ba?.bank_name || "Bank")}_${formatDateForFilename(bsReportDate)}.pdf`;
+      setPreviewDoc(doc);
+      setPreviewFilename(filename);
+      setPreviewOpen(true);
+      setOpenModal(null);
+    } catch (e: any) {
+      toast.error("Failed to generate report: " + (e.message || "Unknown error"));
+    }
+    setGenerating(false);
+  };
+
   const DatePicker = ({ date, onChange }: { date: Date; onChange: (d: Date) => void }) => (
     <Popover>
       <PopoverTrigger asChild>
@@ -579,6 +637,24 @@ export default function Reports() {
             </CardContent>
           </Card>
         ))}
+
+        {/* Bank Signatory Report - only if banking enabled */}
+        {bankingEnabled && (
+          <Card className="shadow-sm hover:border-primary/30 transition-colors">
+            <CardHeader className="flex flex-row items-start gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <PenLine className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <CardTitle className="text-base">Bank Signatory Report</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Formatted signatory authority record for bank submission or internal reference</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => openReport("banksig")} className="w-full">Generate</Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* ===== CORPORATE PROFILE MODAL ===== */}
@@ -740,6 +816,48 @@ export default function Reports() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenModal(null)}>Cancel</Button>
             <Button onClick={generateKycExpiry} disabled={generating}>
+              {generating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Preparing report...</> : "Generate PDF"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== BANK SIGNATORY MODAL ===== */}
+      <Dialog open={openModal === "banksig"} onOpenChange={(v) => !v && setOpenModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Bank Signatory Report</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Company</Label>
+              <Select value={bsCompanyId} onValueChange={(v) => { setBsCompanyId(v); setBsBankAccountId(""); loadBankAccounts(v); }}>
+                <SelectTrigger><SelectValue placeholder="Select company" /></SelectTrigger>
+                <SelectContent>{companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Bank Account</Label>
+              <Select value={bsBankAccountId} onValueChange={setBsBankAccountId}>
+                <SelectTrigger><SelectValue placeholder="Select bank account" /></SelectTrigger>
+                <SelectContent>{bankAccounts.map((ba) => <SelectItem key={ba.id} value={ba.id}>{ba.bank_name} — ••••{ba.account_number.slice(-4)}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Report Purpose</Label>
+              <Select value={bsPurpose} onValueChange={setBsPurpose}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Internal Reference">Internal Reference</SelectItem>
+                  <SelectItem value="Bank Submission">Bank Submission</SelectItem>
+                  <SelectItem value="Audit Documentation">Audit Documentation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Prepared By</Label><Input value={bsPreparedBy} onChange={(e) => setBsPreparedBy(e.target.value)} /></div>
+            <div><Label>Report Date</Label><DatePicker date={bsReportDate} onChange={setBsReportDate} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenModal(null)}>Cancel</Button>
+            <Button onClick={generateBankSignatory} disabled={!bsBankAccountId || generating}>
               {generating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Preparing report...</> : "Generate PDF"}
             </Button>
           </DialogFooter>

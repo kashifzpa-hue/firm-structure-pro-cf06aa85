@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AUTHORITY_OPTIONS, logBankingActivity } from "@/lib/banking-utils";
 import { toast } from "sonner";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Upload, Loader2, ShieldAlert } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -38,6 +38,12 @@ export function SignatoryForm({ open, onClose, onSaved, bankAccountId, groups, p
   const [bankAckDate, setBankAckDate] = useState(editData?.bank_acknowledged_date || "");
   const [notes, setNotes] = useState(editData?.notes || "");
 
+  // Signature upload state
+  const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [processedUrl, setProcessedUrl] = useState(editData?.signature_image_url || "");
+  const [sigConfirmed, setSigConfirmed] = useState(false);
+
   const selectedPerson = persons.find(p => p.id === personId);
   const isInactive = selectedPerson?.entity_status === "inactive";
 
@@ -49,6 +55,43 @@ export function SignatoryForm({ open, onClose, onSaved, bankAccountId, groups, p
       if (authorisedFor.includes(value)) setAuthorisedFor(without);
       else setAuthorisedFor([...without, value]);
     }
+  };
+
+  const handleSignatureUpload = async (file: File, sigId: string) => {
+    if (!workspaceId) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("signatory_id", sigId);
+      formData.append("workspace_id", workspaceId);
+
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/apply-signature-overlay`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const result = await res.json();
+      if (!res.ok) {
+        toast.error(result.error || "Signature upload failed");
+      } else {
+        setProcessedUrl(result.processed_url);
+        toast.success("Signature processed successfully");
+      }
+    } catch (err: any) {
+      toast.error("Signature upload failed: " + (err.message || "Unknown error"));
+    }
+    setUploading(false);
   };
 
   const handleSave = async () => {
@@ -83,11 +126,23 @@ export function SignatoryForm({ open, onClose, onSaved, bankAccountId, groups, p
     if (editData) {
       const { error } = await supabase.from("signatories").update(payload).eq("id", editData.id);
       if (error) { toast.error(error.message); setSaving(false); return; }
+
+      // Upload signature if new file selected
+      if (signatureFile) {
+        await handleSignatureUpload(signatureFile, editData.id);
+      }
+
       await logBankingActivity(bankAccountId, "signatory_updated", `Signatory ${selectedPerson?.name} updated`, profile?.id || "", workspaceId);
       toast.success("Signatory updated");
     } else {
-      const { error } = await supabase.from("signatories").insert(payload);
+      const { data: inserted, error } = await supabase.from("signatories").insert(payload).select("id").single();
       if (error) { toast.error(error.message); setSaving(false); return; }
+
+      // Upload signature if file selected
+      if (signatureFile && inserted) {
+        await handleSignatureUpload(signatureFile, inserted.id);
+      }
+
       await logBankingActivity(bankAccountId, "signatory_added", `Signatory ${selectedPerson?.name} added`, profile?.id || "", workspaceId);
       toast.success("Signatory added");
     }
@@ -150,6 +205,52 @@ export function SignatoryForm({ open, onClose, onSaved, bankAccountId, groups, p
           <div><Label>Board Resolution Reference</Label><Input value={boardResRef} onChange={e => setBoardResRef(e.target.value)} /></div>
           <div><Label>Bank Acknowledged Date</Label><Input type="date" value={bankAckDate} onChange={e => setBankAckDate(e.target.value)} /><p className="text-xs text-muted-foreground mt-1">The date the bank confirmed this authority in writing</p></div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} /></div>
+
+          {/* Signature Upload Section */}
+          <div className="space-y-3">
+            <Label>Signature Upload</Label>
+            <Alert className="border-amber-300/50 bg-amber-50">
+              <ShieldAlert className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 text-xs">
+                <strong>Signature Protection Notice:</strong> Uploaded signatures are automatically overlaid with a security mesh and watermark. The original image cannot be retrieved. This record is for identification purposes only.
+              </AlertDescription>
+            </Alert>
+
+            {processedUrl && (
+              <div className="border rounded-lg p-3 bg-muted/30">
+                <img src={processedUrl} alt="Processed signature" className="w-full max-h-24 object-contain" />
+                <p className="text-[10px] text-muted-foreground mt-1 italic">Reference record only — not for use as digital signature</p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept=".png,.jpg,.jpeg"
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    if (f.size > 5 * 1024 * 1024) {
+                      toast.error("File too large. Maximum 5MB.");
+                      return;
+                    }
+                    setSignatureFile(f);
+                    setSigConfirmed(false);
+                  }
+                }}
+                className="text-sm"
+              />
+              {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+            </div>
+
+            {signatureFile && !processedUrl && (
+              <p className="text-xs text-muted-foreground">
+                Signature will be uploaded and processed when you save.
+              </p>
+            )}
+
+            <p className="text-xs text-muted-foreground">Accepts PNG and JPG only. Max 5MB. <button type="button" onClick={() => { setSignatureFile(null); setProcessedUrl(""); }} className="text-primary hover:underline ml-1">Skip for now</button></p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
