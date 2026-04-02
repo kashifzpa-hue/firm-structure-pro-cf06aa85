@@ -138,6 +138,21 @@ export default function Dashboard() {
         setUboAlerts(alerts);
       }
 
+      // Fetch unread notification counts
+      const { data: unreadNotifs } = await supabase
+        .from("notifications")
+        .select("notification_type")
+        .eq("workspace_id", workspaceId)
+        .eq("is_read", false);
+      
+      const criticalTypes = ["DOCUMENT_EXPIRED", "UBO_THRESHOLD_BREACH"];
+      const warningTypes = ["DOCUMENT_EXPIRING_SOON", "SHAREHOLDING_GAP", "MOVEMENT_DRAFT_PENDING"];
+      setUnreadAlerts({
+        total: (unreadNotifs || []).length,
+        critical: (unreadNotifs || []).filter((n: any) => criticalTypes.includes(n.notification_type)).length,
+        warnings: (unreadNotifs || []).filter((n: any) => warningTypes.includes(n.notification_type)).length,
+      });
+
       setLoading(false);
     };
     fetchData();
