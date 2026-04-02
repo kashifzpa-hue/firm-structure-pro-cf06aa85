@@ -183,9 +183,9 @@ function KYCHealthGridInner() {
         })}
       </div>
 
-      {companies.length >= 12 && (
+      {totalCount > 12 && (
         <button onClick={() => navigate("/entities")} className="text-xs text-primary hover:underline">
-          View all →
+          View all {totalCount} companies →
         </button>
       )}
     </div>
