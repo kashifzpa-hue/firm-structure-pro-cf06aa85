@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getDocumentStatus } from "@/lib/document-status";
-import { RadialBarChart, RadialBar, ResponsiveContainer } from "recharts";
+import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from "recharts";
 
 function scoreColor(score: number): string {
   if (score >= 90) return "#16A34A";
@@ -35,6 +35,7 @@ function KYCHealthGridInner() {
   const { workspaceId } = useAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<CompanyHealth[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -90,8 +91,9 @@ function KYCHealthGridInner() {
         return { id: co.id, name: co.name, score, valid, total, expiring, expired };
       });
 
-      // Sort by worst score first, limit to 12
+      // Sort by worst score first
       results.sort((a, b) => a.score - b.score);
+      setTotalCount(results.length);
       setCompanies(results.slice(0, 12));
       setLoading(false);
     };
@@ -153,7 +155,10 @@ function KYCHealthGridInner() {
                       startAngle={225}
                       endAngle={-45}
                       barSize={8}
+                      cx="50%"
+                      cy="50%"
                     >
+                      <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
                       <RadialBar
                         dataKey="value"
                         cornerRadius={4}
@@ -179,9 +184,9 @@ function KYCHealthGridInner() {
         })}
       </div>
 
-      {companies.length >= 12 && (
+      {totalCount > 12 && (
         <button onClick={() => navigate("/entities")} className="text-xs text-primary hover:underline">
-          View all →
+          View all {totalCount} companies →
         </button>
       )}
     </div>
