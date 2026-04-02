@@ -282,7 +282,7 @@ export default function OrgChart() {
         });
 
         // Collect links for edge dedup
-        const ownedLinks = filteredLinks.filter((l) => l.owner_entity_id === current);
+        const ownedLinks = uniqueLinks.filter((l) => l.owner_entity_id === current);
         ownedLinks.forEach((link) => {
           const pairKey = `${link.owner_entity_id}__${link.owned_entity_id}`;
           if (!edgeMap.has(pairKey)) edgeMap.set(pairKey, { links: [], source: link.owner_entity_id, target: link.owned_entity_id });
