@@ -68,6 +68,7 @@ const App = () => (
               <Route path="/ledger/:id" element={<MovementDetail />} />
               <Route path="/ubo" element={<UBORegistry />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
