@@ -1,12 +1,14 @@
-import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell } from "lucide-react";
+import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBankingEnabled } from "@/hooks/use-banking-enabled";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -24,6 +26,11 @@ const navItems = [
   { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const bankingItems = [
+  { title: "Bank Accounts", url: "/bank-accounts", icon: Landmark },
+  { title: "Signatory Register", url: "/signatory-register", icon: PenLine },
 ];
 
 export function AppSidebar() {
