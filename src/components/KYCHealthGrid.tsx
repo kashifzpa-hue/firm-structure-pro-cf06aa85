@@ -80,9 +80,9 @@ function KYCHealthGridInner() {
           docs.forEach(doc => {
             total++;
             const status = getDocumentStatus(doc.expiry_date);
-            if (status === "valid" || status === "no_expiry") valid++;
+            if (status === "expired") { expired++; }
             else if (status === "expiring_soon") { expiring++; }
-            else if (status === "expired") { expired++; }
+            else { valid++; }
           });
         });
 

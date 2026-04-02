@@ -210,7 +210,7 @@ function MovementTimelineInner({ movements, companyName }: MovementTimelineProps
                       style={{
                         backgroundColor: isVoided ? "#9CA3AF" : color,
                         borderColor: isSelected ? color : "transparent",
-                        ringColor: color,
+                        boxShadow: isSelected ? `0 0 0 2px ${color}40` : "none",
                       }}
                     >
                       {isVoided && <X className="h-2 w-2 text-white" />}
