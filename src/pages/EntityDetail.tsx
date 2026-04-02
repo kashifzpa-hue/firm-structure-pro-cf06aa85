@@ -329,6 +329,7 @@ export default function EntityDetail() {
           {!isPerson && isLiveMode && <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1" />Ledger</TabsTrigger>}
           {!isPerson && <TabsTrigger value="ubo"><Shield className="h-4 w-4 mr-1" />UBO</TabsTrigger>}
           {isPerson && <TabsTrigger value="ubo-exposure"><Shield className="h-4 w-4 mr-1" />UBO Exposure</TabsTrigger>}
+          {!isPerson && bankingEnabled && <TabsTrigger value="banking"><Landmark className="h-4 w-4 mr-1" />Banking</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
