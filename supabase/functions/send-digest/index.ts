@@ -113,7 +113,7 @@ Deno.serve(async (req: Request) => {
 
       if (!emails.length) continue;
 
-      const senderEmail = digestRule[0].sender_email || "noreply@corpsync.app";
+      const senderEmail = digestRule[0].sender_email || "onboarding@resend.dev";
       const subject = `CorpSync Weekly Compliance Summary — ${ws.name}`;
 
       const htmlBody = `

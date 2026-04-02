@@ -26,7 +26,7 @@ const ruleLabels: Record<string, string> = {
 export function AlertRulesTab() {
   const { workspaceId, userRole } = useAuth();
   const [rules, setRules] = useState<any[]>([]);
-  const [senderEmail, setSenderEmail] = useState("noreply@corpsync.app");
+  const [senderEmail, setSenderEmail] = useState("onboarding@resend.dev");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const isAdmin = userRole === "admin";
