@@ -33,6 +33,7 @@ export default function EntityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { workspaceId } = useAuth();
+  const { bankingEnabled } = useBankingEnabled();
   const [entity, setEntity] = useState<any>(null);
   const [docs, setDocs] = useState<any[]>([]);
   const [owns, setOwns] = useState<any[]>([]);
