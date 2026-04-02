@@ -13,6 +13,8 @@ const ruleDescriptions: Record<string, string> = {
   MOVEMENT_DRAFT_PENDING: "Alert when a draft movement has not been confirmed",
   UBO_THRESHOLD_BREACH: "Alert when a UBO above 25% has an expired or expiring document",
   SYSTEM_ALERT: "Receive a weekly summary of all compliance items",
+  SIGNATORY_EXPIRING: "Alert when a signatory authority expires within the threshold",
+  BANK_ACK_PENDING: "Alert when a signatory has not been acknowledged by the bank",
 };
 
 const ruleLabels: Record<string, string> = {
@@ -21,6 +23,8 @@ const ruleLabels: Record<string, string> = {
   MOVEMENT_DRAFT_PENDING: "Draft Movement Reminder",
   UBO_THRESHOLD_BREACH: "UBO Document Alert",
   SYSTEM_ALERT: "Weekly Digest Email",
+  SIGNATORY_EXPIRING: "Signatory Expiry Warning",
+  BANK_ACK_PENDING: "Bank Acknowledgement Pending",
 };
 
 export function AlertRulesTab() {
