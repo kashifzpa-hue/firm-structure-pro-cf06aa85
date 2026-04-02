@@ -21,6 +21,7 @@ import MovementDetail from "./pages/MovementDetail";
 import UBORegistry from "./pages/UBORegistry";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
+import Notifications from "./pages/Notifications";
 import SetupWorkspace from "./pages/SetupWorkspace";
 import NotFound from "./pages/NotFound";
 
