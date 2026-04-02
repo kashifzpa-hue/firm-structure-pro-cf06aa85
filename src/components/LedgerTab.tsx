@@ -211,5 +211,8 @@ export function LedgerTab({ companyEntityId, companyName, incorporationDate, wor
         </CardContent>
       </Card>
     </div>
+    </TabsContent>
+    </Tabs>
+    </div>
   );
 }
