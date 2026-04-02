@@ -433,6 +433,7 @@ export default function UBORegistry() {
               snapshot={selectedChain}
               personName={entityMap[selectedChain.person_entity_id]?.name || "Unknown"}
               companyName={entityMap[selectedChain.company_entity_id]?.name || "Unknown"}
+              entityMap={entityMap}
             />
           )}
         </DialogContent>
