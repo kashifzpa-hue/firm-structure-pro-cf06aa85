@@ -496,6 +496,15 @@ export default function EntityDetail() {
               </div>
             )}
 
+            {/* Cap Table Waterfall */}
+            {!isPerson && ownedBy.length > 0 && (
+              <CapTableWaterfall
+                shareClasses={shareClasses}
+                ownedBy={ownedBy}
+                onAddOwnership={isSetupMode ? () => { setEditingOwnershipLink(null); setOwnershipModalOpen(true); } : undefined}
+              />
+            )}
+
             {/* Owns */}
             <Card className="shadow-sm">
               <CardHeader>
