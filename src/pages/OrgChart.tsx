@@ -60,15 +60,17 @@ function computeDocStatus(docs: { entity_id: string; expiry_date: string | null 
   });
 
   for (const [entityId, eDocs] of Object.entries(byEntity)) {
-    let status: "green" | "amber" | "red" = "green";
+    let hasExpired = false;
+    let hasExpiring = false;
     for (const doc of eDocs) {
       if (!doc.expiry_date) continue;
       const date = parseISO(doc.expiry_date);
       if (!isValid(date)) continue;
       const days = differenceInDays(date, today);
-      if (days < 0) { status = "red"; break; }
-      if (days <= 60 && status !== "red") status = "amber";
+      if (days < 0) { hasExpired = true; break; }
+      if (days <= 60) hasExpiring = true;
     }
+    const status: "green" | "amber" | "red" = hasExpired ? "red" : hasExpiring ? "amber" : "green";
     map[entityId] = status;
   }
   return map;
