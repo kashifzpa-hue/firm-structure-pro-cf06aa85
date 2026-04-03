@@ -30,6 +30,7 @@ import { BankingTab } from "@/components/banking/BankingTab";
 import { CapTableWaterfall } from "@/components/CapTableWaterfall";
 import { useBankingEnabled } from "@/hooks/use-banking-enabled";
 import { ArrowLeft, Building2, Download, Edit, ExternalLink, Linkedin, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark, RefreshCw, Clock } from "lucide-react";
+import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { DocumentRenewalModal } from "@/components/DocumentRenewalModal";
 import { DocumentVersionHistory } from "@/components/DocumentVersionHistory";
 import { getFrequencyLabel, RenewalFrequency } from "@/lib/renewal-utils";
@@ -573,8 +574,9 @@ export default function EntityDetail() {
                         <TableHead>Expiry Date</TableHead>
                         <TableHead>Renewal Cycle</TableHead>
                         <TableHead>Versions</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
+                         <TableHead>Status</TableHead>
+                         <TableHead>🔒</TableHead>
+                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -608,8 +610,9 @@ export default function EntityDetail() {
                                   </Badge>
                                 )}
                               </TableCell>
-                              <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
-                              <TableCell>
+                               <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
+                               <TableCell><EncryptionLockIcon isEncrypted={doc.is_encrypted} /></TableCell>
+                               <TableCell>
                                 <div className="flex items-center gap-1">
                                   {doc.file_url && (
                                     <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={async (e) => {

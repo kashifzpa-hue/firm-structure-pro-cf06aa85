@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Users, AlertTriangle, Download, Loader2, Lock } from "lucide-react";
+import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { maskAccountNumber, maskIban, formatLimit, getAuthorityLabels, logBankingActivity, BANK_DOC_TYPES } from "@/lib/banking-utils";
@@ -380,7 +381,7 @@ export default function BankAccountDetail() {
                     {docs.map(d => (
                       <TableRow key={d.id}>
                         <TableCell className="font-medium flex items-center gap-1.5">
-                          {d.file_url && <Lock className="h-3 w-3 text-muted-foreground" />}
+                          <EncryptionLockIcon isEncrypted={d.is_encrypted} className="h-3 w-3" />
                           {d.document_type}
                         </TableCell>
                         <TableCell>{d.description || "—"}</TableCell>

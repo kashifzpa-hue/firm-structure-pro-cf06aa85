@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
 import { Building2, FileWarning, AlertTriangle, Users, Link2, User, PieChart, ScrollText, Shield, Landmark, PenLine, Clock, Hourglass } from "lucide-react";
+import { SecurityStatusWidget } from "@/components/SecurityStatusWidget";
 import { KYCHealthGrid } from "@/components/KYCHealthGrid";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -503,6 +504,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+      {/* Security Status Widget */}
+      <SecurityStatusWidget />
     </div>
   );
 }

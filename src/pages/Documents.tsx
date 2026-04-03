@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
 import { getFrequencyLabel, RenewalFrequency } from "@/lib/renewal-utils";
 import { Download, FileText, RefreshCw } from "lucide-react";
+import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -112,6 +113,7 @@ export default function Documents() {
                 <TableHead>Renewal Cycle</TableHead>
                 <TableHead>Versions</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>🔒</TableHead>
                 <TableHead>File</TableHead>
               </TableRow>
             </TableHeader>
@@ -136,6 +138,7 @@ export default function Documents() {
                       {vCount > 0 && <Badge variant="secondary" className="text-xs">v{vCount}</Badge>}
                     </TableCell>
                     <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
+                    <TableCell><EncryptionLockIcon isEncrypted={doc.is_encrypted} /></TableCell>
                     <TableCell>
                       {doc.file_url ? (
                         <Button variant="ghost" size="sm" className="inline-flex items-center gap-1 text-primary text-sm h-auto p-0" onClick={async (e) => {

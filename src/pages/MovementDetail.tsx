@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, Download, Loader2, Lock } from "lucide-react";
+import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO } from "date-fns";
@@ -195,7 +196,7 @@ export default function MovementDetail() {
                 {movementDocs.map(d => (
                   <TableRow key={d.id}>
                     <TableCell className="font-medium flex items-center gap-1.5">
-                      <Lock className="h-3 w-3 text-muted-foreground" />
+                      <EncryptionLockIcon isEncrypted={d.is_encrypted} className="h-3 w-3" />
                       {d.document_type}
                     </TableCell>
                     <TableCell>{d.notes || "—"}</TableCell>
