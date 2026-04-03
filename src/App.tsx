@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner, toast } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -38,6 +38,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading, userRole } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!session) return <Navigate to="/auth" replace />;
+  if (userRole !== "admin") {
+    toast("You don't have permission to perform this action. Contact your workspace admin.", { duration: 4000 });
+    return <Navigate to="/entities" replace />;
+  }
+  return <>{children}</>;
+}
+
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
@@ -61,9 +72,9 @@ const App = () => (
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/entities" element={<Entities />} />
-              <Route path="/entities/new" element={<EntityForm />} />
+              <Route path="/entities/new" element={<AdminRoute><EntityForm /></AdminRoute>} />
               <Route path="/entities/:id" element={<EntityDetail />} />
-              <Route path="/entities/:id/edit" element={<EntityForm />} />
+              <Route path="/entities/:id/edit" element={<AdminRoute><EntityForm /></AdminRoute>} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/ownership" element={<Ownership />} />
               <Route path="/org-chart" element={<OrgChart />} />

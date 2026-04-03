@@ -15,7 +15,8 @@ interface Props {
 }
 
 export function BankingTab({ entityId }: Props) {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<any[]>([]);
   const [signatories, setSignatories] = useState<any[]>([]);
@@ -57,7 +58,7 @@ export function BankingTab({ entityId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Bank Accounts ({accounts.length})</h3>
-        <Button size="sm" onClick={() => setFormOpen(true)}><Plus className="h-3 w-3 mr-1" /> Add Bank Account</Button>
+        {isAdmin && <Button size="sm" onClick={() => setFormOpen(true)}><Plus className="h-3 w-3 mr-1" /> Add Bank Account</Button>}
       </div>
 
       {accounts.length === 0 ? (

@@ -8,11 +8,12 @@ import { format, parseISO, differenceInDays } from "date-fns";
 interface Props {
   signatory: any;
   groupLabel?: string;
+  isAdmin?: boolean;
   onEdit: () => void;
   onRevoke: () => void;
 }
 
-export function SignatoryCard({ signatory, groupLabel, onEdit, onRevoke }: Props) {
+export function SignatoryCard({ signatory, groupLabel, isAdmin = true, onEdit, onRevoke }: Props) {
   const s = signatory;
   const isRevoked = s.status === "revoked";
   const isSuspended = s.status === "suspended";
@@ -79,7 +80,7 @@ export function SignatoryCard({ signatory, groupLabel, onEdit, onRevoke }: Props
           <div><span className="text-muted-foreground">Bank Acknowledged:</span> {s.bank_acknowledged_date ? format(parseISO(s.bank_acknowledged_date), "dd MMM yyyy") : "⏳ Pending"}</div>
         </div>
 
-        {!isRevoked && (
+        {!isRevoked && isAdmin && (
           <div className="flex gap-2 pt-2">
             <Button size="sm" variant="outline" onClick={onEdit}><Edit className="h-3 w-3 mr-1" /> Edit</Button>
             <Button size="sm" variant="outline" className="text-destructive" onClick={onRevoke}><Ban className="h-3 w-3 mr-1" /> Revoke</Button>

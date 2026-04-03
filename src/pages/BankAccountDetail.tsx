@@ -234,7 +234,7 @@ export default function BankAccountDetail() {
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Account Information</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Edit className="h-3 w-3 mr-1" /> Edit</Button>
+              {isAdmin && <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Edit className="h-3 w-3 mr-1" /> Edit</Button>}
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-2 gap-4">
@@ -269,9 +269,9 @@ export default function BankAccountDetail() {
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{activeSigs.length} Active Signatories across {groups.length} Groups</p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setGroupFormOpen(true)}>Manage Groups</Button>
+                {isAdmin && <Button variant="outline" size="sm" onClick={() => setGroupFormOpen(true)}>Manage Groups</Button>}
                 <Button variant="outline" size="sm" onClick={() => setShowRevoked(!showRevoked)}>{showRevoked ? "Hide Revoked" : "Show Revoked"}</Button>
-                <Button size="sm" onClick={() => { setEditSig(null); setSigFormOpen(true); }}><Plus className="h-3 w-3 mr-1" /> Add Signatory</Button>
+                {isAdmin && <Button size="sm" onClick={() => { setEditSig(null); setSigFormOpen(true); }}><Plus className="h-3 w-3 mr-1" /> Add Signatory</Button>}
               </div>
             </div>
 
@@ -280,7 +280,7 @@ export default function BankAccountDetail() {
                 <h3 className="font-semibold text-sm mb-2 text-primary">{group.group_label} {group.description && <span className="text-muted-foreground font-normal">— {group.description}</span>}</h3>
                 <div className="grid gap-3 md:grid-cols-2">
                   {(sigsByGroup[group.id] || []).map(s => (
-                    <SignatoryCard key={s.id} signatory={s} groupLabel={group.group_label} onEdit={() => { setEditSig(s); setSigFormOpen(true); }} onRevoke={() => { setRevokeSig(s); setRevokeOpen(true); }} />
+                    <SignatoryCard key={s.id} signatory={s} groupLabel={group.group_label} isAdmin={isAdmin} onEdit={() => { setEditSig(s); setSigFormOpen(true); }} onRevoke={() => { setRevokeSig(s); setRevokeOpen(true); }} />
                   ))}
                   {!(sigsByGroup[group.id] || []).length && <p className="text-sm text-muted-foreground col-span-2">No signatories in this group</p>}
                 </div>
@@ -292,7 +292,7 @@ export default function BankAccountDetail() {
                 <h3 className="font-semibold text-sm mb-2">Ungrouped</h3>
                 <div className="grid gap-3 md:grid-cols-2">
                   {ungrouped.map(s => (
-                    <SignatoryCard key={s.id} signatory={s} onEdit={() => { setEditSig(s); setSigFormOpen(true); }} onRevoke={() => { setRevokeSig(s); setRevokeOpen(true); }} />
+                    <SignatoryCard key={s.id} signatory={s} isAdmin={isAdmin} onEdit={() => { setEditSig(s); setSigFormOpen(true); }} onRevoke={() => { setRevokeSig(s); setRevokeOpen(true); }} />
                   ))}
                 </div>
               </div>
@@ -308,7 +308,7 @@ export default function BankAccountDetail() {
                 <h3 className="font-semibold">Signing Matrix — {bankDisplayName} — {account.company?.name}</h3>
                 <p className="text-sm text-muted-foreground">Defines valid signatory combinations and their transaction authorities</p>
               </div>
-              <Button size="sm" onClick={() => { setEditRule(null); setRuleFormOpen(true); }}><Plus className="h-3 w-3 mr-1" /> Add Rule</Button>
+              {isAdmin && <Button size="sm" onClick={() => { setEditRule(null); setRuleFormOpen(true); }}><Plus className="h-3 w-3 mr-1" /> Add Rule</Button>}
             </div>
 
             {emptyGroupWarnings.map(g => (
@@ -344,10 +344,12 @@ export default function BankAccountDetail() {
                         <TableCell>{formatLimit(rule.daily_limit, rule.limit_currency)}</TableCell>
                         <TableCell>{getAuthorityLabels(rule.applies_to || []).join(", ") || "—"}</TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(rule); setRuleFormOpen(true); }}><Edit className="h-3 w-3" /></Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteRule(rule)}><Trash2 className="h-3 w-3" /></Button>
-                          </div>
+                          {isAdmin && (
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(rule); setRuleFormOpen(true); }}><Edit className="h-3 w-3" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteRule(rule)}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -363,7 +365,7 @@ export default function BankAccountDetail() {
         <TabsContent value="documents">
           <div className="space-y-4">
             <div className="flex justify-end">
-              <Button size="sm" onClick={() => setDocUploadOpen(true)}><Plus className="h-3 w-3 mr-1" /> Upload Document</Button>
+              {isAdmin && <Button size="sm" onClick={() => setDocUploadOpen(true)}><Plus className="h-3 w-3 mr-1" /> Upload Document</Button>}
             </div>
             <Card className="shadow-sm">
               <CardContent className="p-0">
