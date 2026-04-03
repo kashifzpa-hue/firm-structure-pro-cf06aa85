@@ -388,6 +388,11 @@ export default function EntityDetail() {
           )}
         </div>
         <div className="flex gap-2">
+          {isPerson && (
+            <Button variant="outline" onClick={handleDownloadPersonPdf}>
+              <Download className="mr-2 h-4 w-4" /> Download PDF
+            </Button>
+          )}
           {!isPerson && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
