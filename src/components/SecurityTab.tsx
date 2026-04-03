@@ -73,15 +73,18 @@ export function SecurityTab() {
 
       const result = await res.json();
       setMigrateProgress({ current: result.encrypted_count, total: result.total_count });
+      setMigrateResult(result);
       setMigrateComplete(true);
 
       if (result.errors?.length > 0) {
         toast.warning(`Encrypted ${result.encrypted_count} documents. ${result.errors.length} failed.`);
+      } else if (result.encrypted_count > 0) {
+        toast.success(`${result.encrypted_count} documents encrypted successfully`);
       } else {
-        toast.success(`All ${result.encrypted_count} documents encrypted successfully`);
+        toast.info("No eligible documents to encrypt (files may be placeholders or missing).");
       }
 
-      fetchStats();
+      await fetchStats();
     } catch (err: any) {
       toast.error(err.message || "Migration failed");
     } finally {
