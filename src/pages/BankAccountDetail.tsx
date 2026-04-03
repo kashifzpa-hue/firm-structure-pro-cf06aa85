@@ -161,13 +161,11 @@ export default function BankAccountDetail() {
     if (!doc.file_url) { toast.error("No file attached"); return; }
     setDownloading(doc.id);
     try {
-      const a = document.createElement("a");
-      a.href = doc.file_url;
-      a.download = `${doc.document_type}_${doc.id}`;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      await encryptedDownload({
+        documentId: doc.id,
+        table: "bank_account_documents",
+        filename: `${doc.document_type}_${doc.id}`,
+      });
     } catch (err: any) {
       toast.error(err.message || "Download failed");
     } finally {
