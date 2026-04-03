@@ -30,7 +30,8 @@ const TYPE_COLORS: Record<string, string> = {
 export default function MovementDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const [movement, setMovement] = useState<any>(null);
   const [movementDocs, setMovementDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
