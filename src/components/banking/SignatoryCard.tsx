@@ -80,7 +80,7 @@ export function SignatoryCard({ signatory, groupLabel, isAdmin = true, onEdit, o
           <div><span className="text-muted-foreground">Bank Acknowledged:</span> {s.bank_acknowledged_date ? format(parseISO(s.bank_acknowledged_date), "dd MMM yyyy") : "⏳ Pending"}</div>
         </div>
 
-        {!isRevoked && (
+        {!isRevoked && isAdmin && (
           <div className="flex gap-2 pt-2">
             <Button size="sm" variant="outline" onClick={onEdit}><Edit className="h-3 w-3 mr-1" /> Edit</Button>
             <Button size="sm" variant="outline" className="text-destructive" onClick={onRevoke}><Ban className="h-3 w-3 mr-1" /> Revoke</Button>
