@@ -2,8 +2,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { pdf } from "@react-pdf/renderer";
 import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/esm/Page/AnnotationLayer.css";
-import "react-pdf/dist/esm/Page/TextLayer.css";
 import { Download, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import React, { useState, useEffect, useCallback } from "react";
@@ -134,8 +132,8 @@ export function PdfPreviewModal({ open, onClose, document: pdfDoc, filename }: P
               <Page
                 pageNumber={currentPage}
                 width={700}
-                renderTextLayer
-                renderAnnotationLayer
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
               />
             </Document>
           ) : (
