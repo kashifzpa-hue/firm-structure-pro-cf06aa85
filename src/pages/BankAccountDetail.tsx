@@ -280,7 +280,7 @@ export default function BankAccountDetail() {
                 <h3 className="font-semibold text-sm mb-2 text-primary">{group.group_label} {group.description && <span className="text-muted-foreground font-normal">— {group.description}</span>}</h3>
                 <div className="grid gap-3 md:grid-cols-2">
                   {(sigsByGroup[group.id] || []).map(s => (
-                    <SignatoryCard key={s.id} signatory={s} groupLabel={group.group_label} onEdit={() => { setEditSig(s); setSigFormOpen(true); }} onRevoke={() => { setRevokeSig(s); setRevokeOpen(true); }} />
+                    <SignatoryCard key={s.id} signatory={s} groupLabel={group.group_label} isAdmin={isAdmin} onEdit={() => { setEditSig(s); setSigFormOpen(true); }} onRevoke={() => { setRevokeSig(s); setRevokeOpen(true); }} />
                   ))}
                   {!(sigsByGroup[group.id] || []).length && <p className="text-sm text-muted-foreground col-span-2">No signatories in this group</p>}
                 </div>
