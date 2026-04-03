@@ -312,10 +312,13 @@ export type Database = {
       document_versions: {
         Row: {
           document_id: string
+          encryption_version: number
           expiry_date: string | null
           file_url: string | null
           id: string
+          is_encrypted: boolean
           issue_date: string | null
+          iv: string | null
           notes: string | null
           uploaded_at: string
           uploaded_by: string | null
@@ -324,10 +327,13 @@ export type Database = {
         }
         Insert: {
           document_id: string
+          encryption_version?: number
           expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
           issue_date?: string | null
+          iv?: string | null
           notes?: string | null
           uploaded_at?: string
           uploaded_by?: string | null
@@ -336,10 +342,13 @@ export type Database = {
         }
         Update: {
           document_id?: string
+          encryption_version?: number
           expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
           issue_date?: string | null
+          iv?: string | null
           notes?: string | null
           uploaded_at?: string
           uploaded_by?: string | null
@@ -377,11 +386,14 @@ export type Database = {
           created_at: string
           document_number: string | null
           document_type: string
+          encryption_version: number
           entity_id: string
           expiry_date: string | null
           file_url: string | null
           id: string
+          is_encrypted: boolean
           issue_date: string | null
+          iv: string | null
           renewal_frequency:
             | Database["public"]["Enums"]["document_renewal_frequency"]
             | null
@@ -394,11 +406,14 @@ export type Database = {
           created_at?: string
           document_number?: string | null
           document_type: string
+          encryption_version?: number
           entity_id: string
           expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
           issue_date?: string | null
+          iv?: string | null
           renewal_frequency?:
             | Database["public"]["Enums"]["document_renewal_frequency"]
             | null
@@ -411,11 +426,14 @@ export type Database = {
           created_at?: string
           document_number?: string | null
           document_type?: string
+          encryption_version?: number
           entity_id?: string
           expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
           issue_date?: string | null
+          iv?: string | null
           renewal_frequency?:
             | Database["public"]["Enums"]["document_renewal_frequency"]
             | null
