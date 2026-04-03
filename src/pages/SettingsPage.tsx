@@ -11,8 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, Mail, Clock } from "lucide-react";
+import { Trash2, Mail, Clock, Shield } from "lucide-react";
 import { AlertRulesTab } from "@/components/AlertRulesTab";
+import { SecurityTab } from "@/components/SecurityTab";
 
 export default function SettingsPage() {
   const { workspaceId, userRole, user } = useAuth();
