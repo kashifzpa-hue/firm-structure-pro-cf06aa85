@@ -169,6 +169,9 @@ export default function Reports() {
         role_title: a.role_title,
         nationality: a.person?.nationality_or_jurisdiction,
         appointment_date: a.appointment_date,
+        professional_bio: a.person?.professional_bio,
+        qualifications: a.person?.qualifications,
+        languages_spoken: a.person?.languages_spoken,
       }));
 
       const management = (apptsRes.data || []).filter((a: any) => a.role_category === "management").map((a: any) => ({
@@ -176,6 +179,9 @@ export default function Reports() {
         role_title: a.role_title,
         nationality: a.person?.nationality_or_jurisdiction,
         appointment_date: a.appointment_date,
+        professional_bio: a.person?.professional_bio,
+        qualifications: a.person?.qualifications,
+        languages_spoken: a.person?.languages_spoken,
       }));
 
       const ubos = (uboRes.data || []).filter((u: any) => u.person_entity_id && !u.calculation_error).map((u: any) => ({
