@@ -216,7 +216,7 @@ export default function Ledger() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/ledger/${m.id}`)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {m.status === "draft" && (
+                        {isAdmin && m.status === "draft" && (
                           <>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingMovement(m); setWizardOpen(true); }}>
                               <Pencil className="h-4 w-4" />
@@ -226,7 +226,7 @@ export default function Ledger() {
                             </Button>
                           </>
                         )}
-                        {m.status === "confirmed" && (
+                        {isAdmin && m.status === "confirmed" && (
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setVoidingId(m.id); setVoidOpen(true); }}>
                             <XCircle className="h-4 w-4" />
                           </Button>

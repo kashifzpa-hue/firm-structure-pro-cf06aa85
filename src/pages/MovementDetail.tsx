@@ -127,12 +127,12 @@ export default function MovementDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          {movement.status === "draft" && !isFuture && (
+          {isAdmin && movement.status === "draft" && !isFuture && (
             <Button onClick={handleConfirm} disabled={confirming} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="mr-2 h-4 w-4" /> {confirming ? "Confirming..." : "Confirm"}
             </Button>
           )}
-          {movement.status === "confirmed" && (
+          {isAdmin && movement.status === "confirmed" && (
             <Button variant="destructive" onClick={() => setVoidOpen(true)}>
               <XCircle className="mr-2 h-4 w-4" /> Void
             </Button>

@@ -193,12 +193,16 @@ export default function Ownership() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { setEditingLink(link); setModalOpen(true); }}>Edit</Button>
-                        {isActive && !canDelete && (
-                          <Button variant="outline" size="sm" onClick={() => { setClosingLink(link); setCloseDate(format(new Date(), "yyyy-MM-dd")); setCloseDialogOpen(true); }}>Close</Button>
-                        )}
-                        {canDelete && (
-                          <Button variant="destructive" size="sm" onClick={() => { setDeletingLink(link); setDeleteDialogOpen(true); }}>Delete</Button>
+                        {isAdmin && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => { setEditingLink(link); setModalOpen(true); }}>Edit</Button>
+                            {isActive && !canDelete && (
+                              <Button variant="outline" size="sm" onClick={() => { setClosingLink(link); setCloseDate(format(new Date(), "yyyy-MM-dd")); setCloseDialogOpen(true); }}>Close</Button>
+                            )}
+                            {canDelete && (
+                              <Button variant="destructive" size="sm" onClick={() => { setDeletingLink(link); setDeleteDialogOpen(true); }}>Delete</Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </TableCell>
