@@ -1523,6 +1523,11 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: undefined
       }
+      vault_insert_secret: {
+        Args: { _name: string; _secret: string }
+        Returns: undefined
+      }
+      vault_read_secret: { Args: { _name: string }; Returns: string }
       void_movement: {
         Args: { p_movement_id: string; p_reason: string }
         Returns: undefined
