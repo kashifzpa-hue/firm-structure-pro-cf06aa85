@@ -112,7 +112,7 @@ export function BoardManagementTab({ companyEntityId, companyName }: Props) {
               </TableCell>
               <TableCell>
                 <div className="flex gap-1">
-                  {!appt.resignation_date && (
+                {isAdmin && !appt.resignation_date && (
                     <>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(appt); setFormCategory(category); setFormOpen(true); }}>
                         <Edit className="h-4 w-4" />
@@ -122,7 +122,7 @@ export function BoardManagementTab({ companyEntityId, companyName }: Props) {
                       </Button>
                     </>
                   )}
-                  {isToday(appt.appointment_date) && (
+                  {isAdmin && isToday(appt.appointment_date) && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setDeleteTarget(appt); setDeleteOpen(true); }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
