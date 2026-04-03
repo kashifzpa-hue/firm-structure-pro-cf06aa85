@@ -57,11 +57,13 @@ export function DocumentVersionHistory({ documentId }: Props) {
             </div>
           </div>
           {v.file_url && (
-            <a href={v.file_url} target="_blank" rel="noopener noreferrer">
-              <Button variant="ghost" size="sm" className="gap-1">
-                <Download className="h-3.5 w-3.5" /> Download
-              </Button>
-            </a>
+            <Button variant="ghost" size="sm" className="gap-1" onClick={async () => {
+              try {
+                await encryptedDownload({ versionId: v.id, table: "document_versions", filename: `version_${v.version_number}` });
+              } catch (err: any) { console.error(err); }
+            }}>
+              <Download className="h-3.5 w-3.5" /> Download
+            </Button>
           )}
         </div>
       ))}
