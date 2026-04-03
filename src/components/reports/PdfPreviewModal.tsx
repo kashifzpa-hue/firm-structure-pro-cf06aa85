@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { pdf } from "@react-pdf/renderer";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 interface PdfPreviewModalProps {
   open: boolean;
@@ -16,11 +16,13 @@ export function PdfPreviewModal({ open, onClose, document: pdfDoc, filename }: P
   const [downloading, setDownloading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const urlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
+      if (urlRef.current) {
+        URL.revokeObjectURL(urlRef.current);
+        urlRef.current = null;
         setPreviewUrl(null);
       }
       return;
@@ -33,7 +35,10 @@ export function PdfPreviewModal({ open, onClose, document: pdfDoc, filename }: P
       .toBlob()
       .then((blob) => {
         if (cancelled) return;
-        const url = URL.createObjectURL(blob);
+        // Ensure the blob has the correct PDF MIME type
+        const pdfBlob = new Blob([blob], { type: "application/pdf" });
+        const url = URL.createObjectURL(pdfBlob);
+        urlRef.current = url;
         setPreviewUrl(url);
       })
       .catch(() => {
@@ -86,11 +91,17 @@ export function PdfPreviewModal({ open, onClose, document: pdfDoc, filename }: P
               <span className="ml-2 text-muted-foreground">Generating preview…</span>
             </div>
           ) : previewUrl ? (
-            <iframe
-              src={previewUrl}
-              className="w-full h-full border-0 rounded"
-              title="PDF Preview"
-            />
+            <object
+              data={`${previewUrl}#toolbar=1&navpanes=0`}
+              type="application/pdf"
+              className="w-full h-full rounded"
+            >
+              <iframe
+                src={`${previewUrl}#toolbar=1`}
+                className="w-full h-full border-0 rounded"
+                title="PDF Preview"
+              />
+            </object>
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               Preview unavailable — use Download PDF instead.
