@@ -85,9 +85,11 @@ export default function Ownership() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Ownership Links</h1>
-        <Button onClick={() => { setEditingLink(null); setModalOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => { setEditingLink(null); setModalOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-4 items-center">
