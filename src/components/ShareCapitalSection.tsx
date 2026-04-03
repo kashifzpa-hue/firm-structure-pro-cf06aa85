@@ -18,7 +18,8 @@ interface Props {
 }
 
 export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode = false }: Props) {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const [shareClasses, setShareClasses] = useState<any[]>([]);
   const [allocations, setAllocations] = useState<Record<string, number>>({});
   const [modalOpen, setModalOpen] = useState(false);
