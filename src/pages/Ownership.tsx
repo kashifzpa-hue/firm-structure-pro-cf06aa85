@@ -172,11 +172,19 @@ export default function Ownership() {
                     </TableCell>
                     <TableCell>{format(parseISO(link.effective_date), "MMM dd, yyyy")}</TableCell>
                     <TableCell>
-                      {isActive ? (
-                        <Badge className="bg-success text-success-foreground">Active</Badge>
-                      ) : (
-                        <Badge variant="secondary">Closed</Badge>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {isActive ? (
+                          <Badge className="bg-success text-success-foreground">Active</Badge>
+                        ) : (
+                          <Badge variant="secondary">Closed</Badge>
+                        )}
+                        {link.circular_ownership_type && (
+                          <Badge variant="outline" className="text-xs gap-1 border-amber-300 bg-amber-50 text-amber-700">
+                            <AlertTriangle className="h-3 w-3" />
+                            Legal Exception — {link.circular_ownership_type.replace(/_/g, " ")}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
