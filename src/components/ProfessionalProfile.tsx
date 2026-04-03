@@ -38,6 +38,7 @@ export function ProfessionalProfile({ entityId, entity, onUpdated }: Professiona
   const { workspaceId } = useAuth();
   const [bio, setBio] = useState(entity?.professional_bio || "");
   const [qualifications, setQualifications] = useState(entity?.qualifications || "");
+  const [linkedinUrl, setLinkedinUrl] = useState(entity?.linkedin_url || "");
   const [languages, setLanguages] = useState<string[]>(entity?.languages_spoken || []);
   const [langInput, setLangInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
