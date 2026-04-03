@@ -113,7 +113,7 @@ export default function EntityForm() {
 
       const { data: existingDocs } = await supabase.from("documents").select("*").eq("entity_id", id);
       if (existingDocs && existingDocs.length > 0) {
-        setDocs(existingDocs.map((d) => {
+        setDocs(existingDocs.map((d: any) => {
           const isKnownType = [...personDocTypes, ...companyDocTypes].filter(t => t !== "Other").includes(d.document_type);
           return {
             id: d.id,
@@ -125,6 +125,9 @@ export default function EntityForm() {
             expiry_date: d.expiry_date || "",
             file: null,
             file_url: d.file_url || "",
+            renewal_frequency: d.renewal_frequency || "",
+            renewal_months: d.renewal_months || "",
+            auto_suggest_expiry: d.auto_suggest_expiry ?? true,
           };
         }));
       }
