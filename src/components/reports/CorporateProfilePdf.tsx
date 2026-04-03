@@ -2,6 +2,17 @@ import { Document, Page, View, Text } from "@react-pdf/renderer";
 import { PdfPageWrapper, PdfSection, PdfTable, PdfStyles } from "@/components/pdf/PdfLayout";
 import { formatReportDate, formatDateTime, buildOwnershipChainLabel, getDocStatusLabel } from "@/lib/report-helpers";
 
+interface CircularDisclosure {
+  ownerName: string;
+  ownedName: string;
+  exceptionType: string;
+  jurisdiction: string;
+  disposalRequired: boolean;
+  disposalDeadline: string | null;
+  notes: string | null;
+  percentage: number;
+}
+
 interface CorporateProfileData {
   company: any;
   shareClasses: any[];
@@ -12,6 +23,7 @@ interface CorporateProfileData {
   documents: any[];
   asOfDate: Date;
   generatedBy: string;
+  circularDisclosures?: CircularDisclosure[];
   sections: {
     shareCapital: boolean;
     shareholders: boolean;
@@ -224,6 +236,31 @@ export function CorporateProfilePdf({ data }: { data: CorporateProfileData }) {
                 getDocStatusLabel(d.expiry_date),
               ])}
             />
+          </>
+        )}
+        {/* Circular Ownership Disclosure */}
+        {data.circularDisclosures && data.circularDisclosures.length > 0 && (
+          <>
+            <PdfSection title="CIRCULAR OWNERSHIP DISCLOSURE" />
+            <Text style={{ fontSize: 8, color: "#94A3B8", fontStyle: "italic", marginBottom: 6 }}>
+              The following circular ownership arrangements exist within this structure:
+            </Text>
+            {data.circularDisclosures.map((cd, i) => (
+              <View key={i} style={{ marginBottom: 8, padding: 8, backgroundColor: "#FFFBEB", borderRadius: 4, borderWidth: 1, borderColor: "#FDE68A" }}>
+                <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", color: "#92400E", marginBottom: 4 }}>
+                  {cd.ownerName} → {cd.ownedName} ({cd.percentage?.toFixed(2)}%)
+                </Text>
+                <Text style={{ fontSize: 8, color: "#78716C" }}>Exception Type: {cd.exceptionType}</Text>
+                <Text style={{ fontSize: 8, color: "#78716C" }}>Jurisdiction: {cd.jurisdiction}</Text>
+                <Text style={{ fontSize: 8, color: "#78716C" }}>
+                  Disposal Required: {cd.disposalRequired ? `Yes — by ${formatReportDate(cd.disposalDeadline)}` : "No"}
+                </Text>
+                {cd.notes && <Text style={{ fontSize: 8, color: "#78716C", marginTop: 2 }}>Legal Notes: {cd.notes}</Text>}
+              </View>
+            ))}
+            <Text style={{ fontSize: 8, color: "#64748B", marginTop: 4 }}>
+              Declaration: These circular ownership arrangements have been reviewed and are maintained in accordance with applicable law.
+            </Text>
           </>
         )}
       </PdfPageWrapper>

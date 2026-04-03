@@ -330,7 +330,27 @@ export default function OrgChart() {
         );
 
         const maxPct = Math.max(...edgeLabelLinks.map((link) => link.percentage));
-        const color = maxPct > 50 ? "#16A34A" : maxPct >= 25 ? "#D97706" : "#94A3B8";
+
+        // Check for circular ownership on any link in this edge
+        const hasCircularException = val.links.some((l: any) => l.circular_ownership_type != null);
+        const circularLink = val.links.find((l: any) => l.circular_ownership_type != null);
+        // Check if reverse link exists (circular without exception)
+        const isReverseCircular = !hasCircularException && val.links.some((l: any) => {
+          // Check if there's a link going the other way
+          return allLinks.some((other: any) =>
+            other.owner_entity_id === l.owned_entity_id &&
+            other.owned_entity_id === l.owner_entity_id &&
+            !other.end_date
+          );
+        });
+
+        let circularType: "illegal" | "legal_exception" | null = null;
+        if (hasCircularException) circularType = "legal_exception";
+        else if (isReverseCircular) circularType = "illegal";
+
+        const color = circularType === "illegal" ? "#EF4444"
+          : circularType === "legal_exception" ? "#F97316"
+          : maxPct > 50 ? "#16A34A" : maxPct >= 25 ? "#D97706" : "#94A3B8";
 
         graphEdges.push({
           id: key,
@@ -342,6 +362,10 @@ export default function OrgChart() {
             links: edgeLabelLinks,
             showLabels: visibility.edgeLabels,
             maxPct,
+            circularType,
+            circularExceptionType: circularLink?.circular_ownership_type || null,
+            disposalRequired: circularLink?.disposal_required || false,
+            disposalDeadline: circularLink?.disposal_deadline || null,
           },
         });
       });
