@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, GripVertical, Loader2, X } from "lucide-react";
+import { Plus, Trash2, GripVertical, Loader2, X, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 
 const LANGUAGE_SUGGESTIONS = [
