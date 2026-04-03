@@ -104,7 +104,7 @@ export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode =
                 <TableHead>Allocated</TableHead>
                 <TableHead>Unallocated</TableHead>
                 <TableHead>% Allocated</TableHead>
-                {!isLiveMode && <TableHead>Actions</TableHead>}
+                {!isLiveMode && isAdmin && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
