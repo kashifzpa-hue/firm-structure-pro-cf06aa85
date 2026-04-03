@@ -504,6 +504,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+      {/* Security Status Widget */}
+      <SecurityStatusWidget />
     </div>
   );
 }
