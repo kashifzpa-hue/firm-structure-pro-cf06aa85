@@ -139,7 +139,7 @@ export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode =
                         <span className="text-xs text-muted-foreground">{pctAllocated.toFixed(0)}%</span>
                       </div>
                     </TableCell>
-                    {!isLiveMode && (
+                    {!isLiveMode && isAdmin && (
                       <TableCell>
                         <div className="flex gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingClass(sc); setModalOpen(true); }}>

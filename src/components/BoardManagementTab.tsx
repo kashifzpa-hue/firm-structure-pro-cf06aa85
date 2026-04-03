@@ -164,9 +164,11 @@ export function BoardManagementTab({ companyEntityId, companyName }: Props) {
       <div className="space-y-3">
         <div className="flex items-center justify-between border-b pb-2">
           <h3 className="text-base font-semibold">Key Management Personnel</h3>
-          <Button size="sm" onClick={() => { setEditing(null); setFormCategory("management"); setFormOpen(true); }}>
-            <Plus className="mr-1 h-4 w-4" /> Add Management
-          </Button>
+          {isAdmin && (
+            <Button size="sm" onClick={() => { setEditing(null); setFormCategory("management"); setFormOpen(true); }}>
+              <Plus className="mr-1 h-4 w-4" /> Add Management
+            </Button>
+          )}
         </div>
         {renderTable(mgmtAppts, "management")}
       </div>
