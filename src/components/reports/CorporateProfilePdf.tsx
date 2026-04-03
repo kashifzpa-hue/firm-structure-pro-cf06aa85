@@ -2,6 +2,17 @@ import { Document, Page, View, Text } from "@react-pdf/renderer";
 import { PdfPageWrapper, PdfSection, PdfTable, PdfStyles } from "@/components/pdf/PdfLayout";
 import { formatReportDate, formatDateTime, buildOwnershipChainLabel, getDocStatusLabel } from "@/lib/report-helpers";
 
+interface CircularDisclosure {
+  ownerName: string;
+  ownedName: string;
+  exceptionType: string;
+  jurisdiction: string;
+  disposalRequired: boolean;
+  disposalDeadline: string | null;
+  notes: string | null;
+  percentage: number;
+}
+
 interface CorporateProfileData {
   company: any;
   shareClasses: any[];
@@ -12,6 +23,7 @@ interface CorporateProfileData {
   documents: any[];
   asOfDate: Date;
   generatedBy: string;
+  circularDisclosures?: CircularDisclosure[];
   sections: {
     shareCapital: boolean;
     shareholders: boolean;
