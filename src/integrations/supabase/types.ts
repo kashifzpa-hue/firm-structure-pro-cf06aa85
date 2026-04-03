@@ -452,6 +452,7 @@ export type Database = {
           entity_status: Database["public"]["Enums"]["entity_status"]
           id: string
           languages_spoken: string[] | null
+          linkedin_url: string | null
           name: string
           nationality_or_jurisdiction: string | null
           notes: string | null
@@ -479,6 +480,7 @@ export type Database = {
           entity_status?: Database["public"]["Enums"]["entity_status"]
           id?: string
           languages_spoken?: string[] | null
+          linkedin_url?: string | null
           name: string
           nationality_or_jurisdiction?: string | null
           notes?: string | null
@@ -506,6 +508,7 @@ export type Database = {
           entity_status?: Database["public"]["Enums"]["entity_status"]
           id?: string
           languages_spoken?: string[] | null
+          linkedin_url?: string | null
           name?: string
           nationality_or_jurisdiction?: string | null
           notes?: string | null
