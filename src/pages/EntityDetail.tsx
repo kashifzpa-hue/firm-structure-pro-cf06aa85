@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { EntityAvatar } from "@/components/EntityAvatar";
+import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
+import { ProfessionalProfile } from "@/components/ProfessionalProfile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +78,9 @@ export default function EntityDetail() {
   const [renewingDoc, setRenewingDoc] = useState<any>(null);
   const [versionCounts, setVersionCounts] = useState<Record<string, number>>({});
   const [expandedVersionDoc, setExpandedVersionDoc] = useState<string | null>(null);
+  
+  // Person primary role
+  const [primaryRole, setPrimaryRole] = useState<string | null>(null);
 
   const fetchAll = async () => {
     if (!id || !workspaceId) return;
@@ -104,6 +110,25 @@ export default function EntityDetail() {
     setShareClasses(scRes.data || []);
     setEntities(entitiesRes.data || []);
     setFieldHistory(historyRes.data || []);
+    
+    // Fetch primary role for persons
+    if (entityRes.data?.type === "person") {
+      const { data: appts } = await supabase
+        .from("appointments")
+        .select("role_title, company_entity_id, entities!appointments_company_entity_id_fkey(name)")
+        .eq("person_entity_id", id!)
+        .eq("workspace_id", workspaceId)
+        .is("resignation_date", null)
+        .order("appointment_date", { ascending: false })
+        .limit(1);
+      if (appts && appts.length > 0) {
+        const co = (appts[0] as any).entities?.name;
+        setPrimaryRole(`${appts[0].role_title}${co ? ` · ${co}` : ""}`);
+      } else {
+        setPrimaryRole(null);
+      }
+    }
+    
     setLoading(false);
     
     // Fetch version counts for each document
@@ -267,6 +292,13 @@ export default function EntityDetail() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/entities")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
+        <EntityAvatar
+          entityId={entity.id}
+          name={entity.name}
+          photoUrl={isPerson ? entity.profile_photo_url : null}
+          size="lg"
+          inactive={isInactive}
+        />
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{entity.name}</h1>
@@ -296,10 +328,22 @@ export default function EntityDetail() {
                 </Tooltip>
               </TooltipProvider>
             )}
-            {entity.nationality_or_jurisdiction && (
-              <span className="text-sm text-muted-foreground">{entity.nationality_or_jurisdiction}</span>
-            )}
           </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+            {entity.nationality_or_jurisdiction && <span>{entity.nationality_or_jurisdiction}</span>}
+            {entity.nationality_or_jurisdiction && entity.date_of_birth_or_incorporation && <span>·</span>}
+            {entity.date_of_birth_or_incorporation && <span>{format(parseISO(entity.date_of_birth_or_incorporation), "MMM dd, yyyy")}</span>}
+          </div>
+          {isPerson && primaryRole && (
+            <div className="text-sm text-muted-foreground mt-0.5">{primaryRole}</div>
+          )}
+          {isPerson && (entity.email || entity.phone) && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+              {entity.email && <span>{entity.email}</span>}
+              {entity.email && entity.phone && <span>·</span>}
+              {entity.phone && <span>{entity.phone}</span>}
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           {!isPerson && (
@@ -359,6 +403,23 @@ export default function EntityDetail() {
 
         <TabsContent value="profile">
           <div className="space-y-6">
+            {/* Photo upload for persons */}
+            {isPerson && (
+              <Card className="shadow-sm">
+                <CardContent className="pt-6">
+                  <ProfilePhotoUpload
+                    entityId={entity.id}
+                    entityName={entity.name}
+                    currentPhotoUrl={entity.profile_photo_url}
+                    currentThumbUrl={entity.profile_photo_thumb}
+                    onPhotoUpdated={(photoUrl, thumbUrl) => {
+                      setEntity({ ...entity, profile_photo_url: photoUrl, profile_photo_thumb: thumbUrl });
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="shadow-sm">
               <CardContent className="pt-6">
                 <dl className="grid grid-cols-2 gap-4">
@@ -433,6 +494,11 @@ export default function EntityDetail() {
                 </dl>
               </CardContent>
             </Card>
+
+            {/* Professional Profile for persons */}
+            {isPerson && (
+              <ProfessionalProfile entityId={entity.id} entity={entity} onUpdated={fetchAll} />
+            )}
 
             {/* Share Capital Section for companies */}
             {!isPerson && (

@@ -136,7 +136,7 @@ export default function Reports() {
       const [scRes, elRes, apptsRes, docsRes, uboRes, entRes] = await Promise.all([
         supabase.from("share_classes").select("*").eq("company_entity_id", corpCompanyId).eq("workspace_id", workspaceId),
         supabase.from("equity_links").select("*, owner:entities!equity_links_owner_entity_id_fkey(id, name, type, nationality_or_jurisdiction, date_of_birth_or_incorporation), share_class:share_classes(class_name)").eq("owned_entity_id", corpCompanyId).eq("workspace_id", workspaceId).is("end_date", null),
-        supabase.from("appointments").select("*, person:entities!appointments_person_entity_id_fkey(id, name, nationality_or_jurisdiction)").eq("company_entity_id", corpCompanyId).eq("workspace_id", workspaceId).is("resignation_date", null),
+        supabase.from("appointments").select("*, person:entities!appointments_person_entity_id_fkey(id, name, nationality_or_jurisdiction, professional_bio, qualifications, languages_spoken)").eq("company_entity_id", corpCompanyId).eq("workspace_id", workspaceId).is("resignation_date", null),
         supabase.from("documents").select("*").eq("entity_id", corpCompanyId).eq("workspace_id", workspaceId),
         supabase.from("ubo_snapshots").select("*").eq("company_entity_id", corpCompanyId).eq("workspace_id", workspaceId).eq("snapshot_type", "live"),
         supabase.from("entities").select("id, name, nationality_or_jurisdiction, date_of_birth_or_incorporation").eq("workspace_id", workspaceId),
@@ -169,6 +169,9 @@ export default function Reports() {
         role_title: a.role_title,
         nationality: a.person?.nationality_or_jurisdiction,
         appointment_date: a.appointment_date,
+        professional_bio: a.person?.professional_bio,
+        qualifications: a.person?.qualifications,
+        languages_spoken: a.person?.languages_spoken,
       }));
 
       const management = (apptsRes.data || []).filter((a: any) => a.role_category === "management").map((a: any) => ({
@@ -176,6 +179,9 @@ export default function Reports() {
         role_title: a.role_title,
         nationality: a.person?.nationality_or_jurisdiction,
         appointment_date: a.appointment_date,
+        professional_bio: a.person?.professional_bio,
+        qualifications: a.person?.qualifications,
+        languages_spoken: a.person?.languages_spoken,
       }));
 
       const ubos = (uboRes.data || []).filter((u: any) => u.person_entity_id && !u.calculation_error).map((u: any) => ({

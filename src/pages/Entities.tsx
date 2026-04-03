@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Building2, User, Search, Upload, Download, Ban } from "lucide-react";
+import { EntityAvatar } from "@/components/EntityAvatar";
 import { Switch } from "@/components/ui/switch";
 import { format, parseISO } from "date-fns";
 import { getDocumentStatus } from "@/lib/document-status";
@@ -210,6 +211,13 @@ export default function Entities() {
                   <TableRow key={entity.id} className={`cursor-pointer hover:bg-muted/50 ${isInactive ? "opacity-50" : ""}`} onClick={() => navigate(`/entities/${entity.id}`)}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
+                        <EntityAvatar
+                          entityId={entity.id}
+                          name={entity.name}
+                          photoUrl={entity.type === "person" ? entity.profile_photo_thumb : null}
+                          size="sm"
+                          inactive={isInactive}
+                        />
                         {entity.name}
                         {isInactive && <Badge variant="outline" className="text-xs gap-1 border-muted-foreground/30"><Ban className="h-3 w-3" /> Inactive</Badge>}
                       </div>
