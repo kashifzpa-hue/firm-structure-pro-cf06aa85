@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { encryptedUpload } from "@/lib/encryption";
 import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
 import { useNavigate, useParams } from "react-router-dom";
