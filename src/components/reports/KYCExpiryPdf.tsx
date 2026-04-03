@@ -42,20 +42,22 @@ export function KYCExpiryPdf({ data }: { data: KYCExpiryData }) {
             <PdfSection title="CRITICAL: ALREADY EXPIRED" />
             <PdfTable
               columns={[
-                { label: "Entity Name", width: "20%" },
-                { label: "Role/Position", width: "22%" },
-                { label: "Document Type", width: "15%" },
-                { label: "Document Number", width: "13%" },
-                { label: "Expired On", width: "14%" },
-                { label: "Days Overdue", width: "16%" },
+                { label: "Entity Name", width: "18%" },
+                { label: "Role/Position", width: "18%" },
+                { label: "Document Type", width: "14%" },
+                { label: "Doc Number", width: "12%" },
+                { label: "Expired On", width: "12%" },
+                { label: "Days Overdue", width: "12%" },
+                { label: "Renewal", width: "14%" },
               ]}
               rows={data.expired.map((d) => [
                 d.entity_name,
                 d.role || "—",
                 d.document_type,
-                d.document_number || "[Not recorded]",
+                d.document_number || "[N/A]",
                 formatReportDate(d.expiry_date),
                 getDaysInfo(d.expiry_date),
+                d.renewal_cycle || "—",
               ])}
             />
           </>
@@ -67,20 +69,22 @@ export function KYCExpiryPdf({ data }: { data: KYCExpiryData }) {
             <PdfSection title="EXPIRING SOON" />
             <PdfTable
               columns={[
-                { label: "Entity Name", width: "20%" },
-                { label: "Role/Position", width: "20%" },
-                { label: "Document Type", width: "15%" },
-                { label: "Document Number", width: "13%" },
-                { label: "Expiry Date", width: "14%" },
-                { label: "Days Remaining", width: "18%" },
+                { label: "Entity Name", width: "18%" },
+                { label: "Role/Position", width: "18%" },
+                { label: "Document Type", width: "14%" },
+                { label: "Doc Number", width: "12%" },
+                { label: "Expiry Date", width: "12%" },
+                { label: "Days Left", width: "12%" },
+                { label: "Renewal", width: "14%" },
               ]}
               rows={data.expiringSoon.map((d) => [
                 d.entity_name,
                 d.role || "—",
                 d.document_type,
-                d.document_number || "[Not recorded]",
+                d.document_number || "[N/A]",
                 formatReportDate(d.expiry_date),
                 getDaysInfo(d.expiry_date),
+                d.renewal_cycle || "—",
               ])}
             />
           </>

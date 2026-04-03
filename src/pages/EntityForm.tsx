@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, ArrowLeft, X } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { countries } from "@/lib/countries";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
@@ -20,6 +20,9 @@ import { toast } from "sonner";
 const personDocTypes = ["National ID", "Passport", "Driving License", "Other"];
 const companyDocTypes = ["Trade License", "Certificate of Incorporation", "Memorandum of Association", "Articles of Association", "Tax Registration Certificate", "Power of Attorney", "Other"];
 const companyTypes = ["LLC", "Free Zone LLC", "Holding Company", "Offshore", "Joint Stock", "Other"];
+
+import { RenewalFrequency, RENEWAL_OPTIONS, DOC_TYPE_PRESETS, calculateNextExpiry, getFrequencyLabel, getFrequencyMonths } from "@/lib/renewal-utils";
+import { Switch } from "@/components/ui/switch";
 
 interface DocRow {
   id?: string;
@@ -31,6 +34,9 @@ interface DocRow {
   expiry_date: string;
   file: File | null;
   file_url: string;
+  renewal_frequency: RenewalFrequency | "";
+  renewal_months: number | "";
+  auto_suggest_expiry: boolean;
 }
 
 const emptyDoc = (): DocRow => ({
@@ -42,6 +48,9 @@ const emptyDoc = (): DocRow => ({
   expiry_date: "",
   file: null,
   file_url: "",
+  renewal_frequency: "",
+  renewal_months: "",
+  auto_suggest_expiry: true,
 });
 
 export default function EntityForm() {
@@ -104,7 +113,7 @@ export default function EntityForm() {
 
       const { data: existingDocs } = await supabase.from("documents").select("*").eq("entity_id", id);
       if (existingDocs && existingDocs.length > 0) {
-        setDocs(existingDocs.map((d) => {
+        setDocs(existingDocs.map((d: any) => {
           const isKnownType = [...personDocTypes, ...companyDocTypes].filter(t => t !== "Other").includes(d.document_type);
           return {
             id: d.id,
@@ -116,6 +125,9 @@ export default function EntityForm() {
             expiry_date: d.expiry_date || "",
             file: null,
             file_url: d.file_url || "",
+            renewal_frequency: d.renewal_frequency || "",
+            renewal_months: d.renewal_months || "",
+            auto_suggest_expiry: d.auto_suggest_expiry ?? true,
           };
         }));
       }
@@ -230,7 +242,7 @@ export default function EntityForm() {
       }
 
       const resolvedDocType = doc.document_type === "Other" && doc.custom_document_type ? doc.custom_document_type : doc.document_type;
-      const docData = {
+      const docData: any = {
         entity_id: entityId!,
         workspace_id: workspaceId,
         document_type: resolvedDocType,
@@ -239,6 +251,9 @@ export default function EntityForm() {
         issue_date: doc.issue_date || null,
         expiry_date: doc.expiry_date || null,
         file_url: fileUrl || null,
+        renewal_frequency: doc.renewal_frequency || null,
+        renewal_months: doc.renewal_frequency === 'custom' && doc.renewal_months ? Number(doc.renewal_months) : null,
+        auto_suggest_expiry: doc.auto_suggest_expiry,
       };
 
       if (doc.id) {
@@ -433,6 +448,12 @@ export default function EntityForm() {
                       <Select value={doc.document_type} onValueChange={(v) => {
                         updateDoc(i, "document_type", v);
                         if (v !== "Other") updateDoc(i, "custom_document_type", "");
+                        // Auto-populate renewal frequency from presets
+                        const preset = DOC_TYPE_PRESETS[v];
+                        if (preset) {
+                          updateDoc(i, "renewal_frequency", preset.frequency);
+                          if (preset.months) updateDoc(i, "renewal_months", preset.months);
+                        }
                       }}>
                         <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                         <SelectContent>
@@ -492,6 +513,43 @@ export default function EntityForm() {
                       <Label>Expiry Date</Label>
                       <Input type="date" value={doc.expiry_date} onChange={(e) => updateDoc(i, "expiry_date", e.target.value)} />
                     </div>
+                  </div>
+                  {/* Renewal Frequency Section */}
+                  <div className="space-y-3 rounded-md border border-dashed p-3">
+                    <Label className="text-sm font-medium">Renewal Frequency</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Select value={doc.renewal_frequency || "none"} onValueChange={(v) => updateDoc(i, "renewal_frequency", v as RenewalFrequency)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {RENEWAL_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {doc.renewal_frequency === "custom" && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Renews every</span>
+                            <Input type="number" min={1} className="w-20" value={doc.renewal_months} onChange={(e) => updateDoc(i, "renewal_months", parseInt(e.target.value) || "")} />
+                            <span className="text-sm text-muted-foreground">months</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch checked={doc.auto_suggest_expiry} onCheckedChange={(v) => updateDoc(i, "auto_suggest_expiry", v)} id={`auto-suggest-${i}`} />
+                      <Label htmlFor={`auto-suggest-${i}`} className="text-xs text-muted-foreground cursor-pointer">
+                        Auto-suggest next expiry date when renewing
+                      </Label>
+                    </div>
+                    {doc.expiry_date && doc.renewal_frequency && doc.renewal_frequency !== 'none' && (() => {
+                      const nextExpiry = calculateNextExpiry(doc.expiry_date, doc.renewal_frequency as RenewalFrequency, typeof doc.renewal_months === 'number' ? doc.renewal_months : undefined);
+                      return nextExpiry ? (
+                        <p className="text-xs text-muted-foreground">
+                          Next renewal due: <span className="font-medium">{format(parseISO(nextExpiry), "MMM dd, yyyy")}</span> ({getFrequencyLabel(doc.renewal_frequency as RenewalFrequency, typeof doc.renewal_months === 'number' ? doc.renewal_months : undefined)} from expiry date)
+                        </p>
+                      ) : null;
+                    })()}
                   </div>
                   <div className="space-y-2">
                     <Label>Upload File (PDF or Image)</Label>

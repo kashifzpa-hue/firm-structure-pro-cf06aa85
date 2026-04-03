@@ -4,9 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
-import { Download, FileText } from "lucide-react";
+import { getFrequencyLabel, RenewalFrequency } from "@/lib/renewal-utils";
+import { Download, FileText, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
 
 export default function Documents() {
@@ -17,18 +20,33 @@ export default function Documents() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [entityTypeFilter, setEntityTypeFilter] = useState("all");
   const [docTypeFilter, setDocTypeFilter] = useState("all");
+  const [versionCounts, setVersionCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!workspaceId) return;
-    const fetch = async () => {
+    const fetchData = async () => {
       const { data } = await supabase
         .from("documents")
         .select("*, entities!inner(name, type)")
         .eq("workspace_id", workspaceId);
-      setDocs(data || []);
+      const allDocs = data || [];
+      setDocs(allDocs);
+
+      // Fetch version counts
+      if (allDocs.length > 0) {
+        const { data: versions } = await supabase
+          .from("document_versions")
+          .select("document_id, version_number")
+          .in("document_id", allDocs.map((d: any) => d.id));
+        const counts: Record<string, number> = {};
+        (versions || []).forEach((v: any) => {
+          counts[v.document_id] = Math.max(counts[v.document_id] || 0, v.version_number);
+        });
+        setVersionCounts(counts);
+      }
       setLoading(false);
     };
-    fetch();
+    fetchData();
   }, [workspaceId]);
 
   const docTypes = [...new Set(docs.map((d) => d.document_type))].sort();
@@ -88,30 +106,44 @@ export default function Documents() {
                 <TableHead>Entity Name</TableHead>
                 <TableHead>Document Type</TableHead>
                 <TableHead>Document Number</TableHead>
-                <TableHead>Country of Issue</TableHead>
                 <TableHead>Expiry Date</TableHead>
+                <TableHead>Renewal Cycle</TableHead>
+                <TableHead>Versions</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>File</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((doc) => (
-                <TableRow key={doc.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/entities/${doc.entity_id}`)}>
-                  <TableCell className="font-medium">{(doc.entities as any)?.name}</TableCell>
-                  <TableCell>{doc.document_type}</TableCell>
-                  <TableCell>{doc.document_number || "—"}</TableCell>
-                  <TableCell>{doc.country_of_issue || "—"}</TableCell>
-                  <TableCell>{doc.expiry_date ? format(parseISO(doc.expiry_date), "MMM dd, yyyy") : "—"}</TableCell>
-                  <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
-                  <TableCell>
-                    {doc.file_url ? (
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline text-sm" onClick={(e) => e.stopPropagation()}>
-                        <Download className="h-4 w-4" /> Download
-                      </a>
-                    ) : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((doc) => {
+                const hasRenewal = doc.renewal_frequency && doc.renewal_frequency !== 'none';
+                const vCount = versionCounts[doc.id] || 0;
+                return (
+                  <TableRow key={doc.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/entities/${doc.entity_id}`)}>
+                    <TableCell className="font-medium">{(doc.entities as any)?.name}</TableCell>
+                    <TableCell>{doc.document_type}</TableCell>
+                    <TableCell>{doc.document_number || "—"}</TableCell>
+                    <TableCell>{doc.expiry_date ? format(parseISO(doc.expiry_date), "MMM dd, yyyy") : "—"}</TableCell>
+                    <TableCell>
+                      {hasRenewal ? (
+                        <Badge variant="outline" className="text-xs">
+                          {getFrequencyLabel(doc.renewal_frequency as RenewalFrequency, doc.renewal_months)}
+                        </Badge>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {vCount > 0 && <Badge variant="secondary" className="text-xs">v{vCount}</Badge>}
+                    </TableCell>
+                    <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
+                    <TableCell>
+                      {doc.file_url ? (
+                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline text-sm" onClick={(e) => e.stopPropagation()}>
+                          <Download className="h-4 w-4" /> Download
+                        </a>
+                      ) : "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
