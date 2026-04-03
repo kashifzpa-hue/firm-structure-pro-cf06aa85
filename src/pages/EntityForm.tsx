@@ -511,6 +511,43 @@ export default function EntityForm() {
                       <Input type="date" value={doc.expiry_date} onChange={(e) => updateDoc(i, "expiry_date", e.target.value)} />
                     </div>
                   </div>
+                  {/* Renewal Frequency Section */}
+                  <div className="space-y-3 rounded-md border border-dashed p-3">
+                    <Label className="text-sm font-medium">Renewal Frequency</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Select value={doc.renewal_frequency || "none"} onValueChange={(v) => updateDoc(i, "renewal_frequency", v as RenewalFrequency)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {RENEWAL_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {doc.renewal_frequency === "custom" && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Renews every</span>
+                            <Input type="number" min={1} className="w-20" value={doc.renewal_months} onChange={(e) => updateDoc(i, "renewal_months", parseInt(e.target.value) || "")} />
+                            <span className="text-sm text-muted-foreground">months</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch checked={doc.auto_suggest_expiry} onCheckedChange={(v) => updateDoc(i, "auto_suggest_expiry", v)} id={`auto-suggest-${i}`} />
+                      <Label htmlFor={`auto-suggest-${i}`} className="text-xs text-muted-foreground cursor-pointer">
+                        Auto-suggest next expiry date when renewing
+                      </Label>
+                    </div>
+                    {doc.expiry_date && doc.renewal_frequency && doc.renewal_frequency !== 'none' && (() => {
+                      const nextExpiry = calculateNextExpiry(doc.expiry_date, doc.renewal_frequency as RenewalFrequency, typeof doc.renewal_months === 'number' ? doc.renewal_months : undefined);
+                      return nextExpiry ? (
+                        <p className="text-xs text-muted-foreground">
+                          Next renewal due: <span className="font-medium">{format(parseISO(nextExpiry), "MMM dd, yyyy")}</span> ({getFrequencyLabel(doc.renewal_frequency as RenewalFrequency, typeof doc.renewal_months === 'number' ? doc.renewal_months : undefined)} from expiry date)
+                        </p>
+                      ) : null;
+                    })()}
+                  </div>
                   <div className="space-y-2">
                     <Label>Upload File (PDF or Image)</Label>
                     <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" onChange={(e) => updateDoc(i, "file", e.target.files?.[0] || null)} />
