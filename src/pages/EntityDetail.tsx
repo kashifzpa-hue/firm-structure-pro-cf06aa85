@@ -411,19 +411,21 @@ export default function EntityDetail() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {!isInactive && (
+          {isAdmin && !isInactive && (
             <Button variant="outline" onClick={() => navigate(`/entities/${id}/edit`)}>
               <Edit className="mr-2 h-4 w-4" /> Edit
             </Button>
           )}
-          {isInactive && (
+          {isAdmin && isInactive && (
             <Button variant="outline" onClick={handleReactivate}>
               <CheckCircle className="mr-2 h-4 w-4" /> Reactivate
             </Button>
           )}
-          <Button variant="destructive" onClick={handleDeleteClick}>
-            <Trash2 className="mr-2 h-4 w-4" /> Delete
-          </Button>
+          {isAdmin && (
+            <Button variant="destructive" onClick={handleDeleteClick}>
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </Button>
+          )}
         </div>
       </div>
 
