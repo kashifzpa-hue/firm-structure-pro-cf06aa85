@@ -15,7 +15,8 @@ interface Props {
 }
 
 export function BankingTab({ entityId }: Props) {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<any[]>([]);
   const [signatories, setSignatories] = useState<any[]>([]);
