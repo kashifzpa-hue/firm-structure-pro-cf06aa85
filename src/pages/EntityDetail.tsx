@@ -69,6 +69,12 @@ export default function EntityDetail() {
   
   // Field history
   const [fieldHistory, setFieldHistory] = useState<any[]>([]);
+  
+  // Renewal
+  const [renewModalOpen, setRenewModalOpen] = useState(false);
+  const [renewingDoc, setRenewingDoc] = useState<any>(null);
+  const [versionCounts, setVersionCounts] = useState<Record<string, number>>({});
+  const [expandedVersionDoc, setExpandedVersionDoc] = useState<string | null>(null);
 
   const fetchAll = async () => {
     if (!id || !workspaceId) return;
