@@ -124,6 +124,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="workspace">Workspace</TabsTrigger>
           <TabsTrigger value="alert-rules">Alert Rules</TabsTrigger>
+          <TabsTrigger value="security"><Shield className="h-3.5 w-3.5 mr-1.5" />Security</TabsTrigger>
         </TabsList>
 
         <TabsContent value="workspace" className="space-y-6 mt-4">
