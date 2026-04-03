@@ -292,7 +292,7 @@ export default function BankAccountDetail() {
                 <h3 className="font-semibold text-sm mb-2">Ungrouped</h3>
                 <div className="grid gap-3 md:grid-cols-2">
                   {ungrouped.map(s => (
-                    <SignatoryCard key={s.id} signatory={s} onEdit={() => { setEditSig(s); setSigFormOpen(true); }} onRevoke={() => { setRevokeSig(s); setRevokeOpen(true); }} />
+                    <SignatoryCard key={s.id} signatory={s} isAdmin={isAdmin} onEdit={() => { setEditSig(s); setSigFormOpen(true); }} onRevoke={() => { setRevokeSig(s); setRevokeOpen(true); }} />
                   ))}
                 </div>
               </div>
