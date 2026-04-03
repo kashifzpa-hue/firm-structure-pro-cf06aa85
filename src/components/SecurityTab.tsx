@@ -26,6 +26,7 @@ export function SecurityTab() {
   const [migrating, setMigrating] = useState(false);
   const [migrateProgress, setMigrateProgress] = useState({ current: 0, total: 0 });
   const [migrateComplete, setMigrateComplete] = useState(false);
+  const [migrateResult, setMigrateResult] = useState<{ encrypted_count: number; total_count: number; errors: any[] } | null>(null);
 
   const fetchStats = async () => {
     if (!workspaceId) return;
@@ -73,15 +74,18 @@ export function SecurityTab() {
 
       const result = await res.json();
       setMigrateProgress({ current: result.encrypted_count, total: result.total_count });
+      setMigrateResult(result);
       setMigrateComplete(true);
 
       if (result.errors?.length > 0) {
         toast.warning(`Encrypted ${result.encrypted_count} documents. ${result.errors.length} failed.`);
+      } else if (result.encrypted_count > 0) {
+        toast.success(`${result.encrypted_count} documents encrypted successfully`);
       } else {
-        toast.success(`All ${result.encrypted_count} documents encrypted successfully`);
+        toast.info("No eligible documents to encrypt (files may be placeholders or missing).");
       }
 
-      fetchStats();
+      await fetchStats();
     } catch (err: any) {
       toast.error(err.message || "Migration failed");
     } finally {
@@ -143,10 +147,35 @@ export function SecurityTab() {
             </div>
           )}
 
-          {migrateComplete && (
-            <div className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3">
-              <CheckCircle className="h-4 w-4 text-emerald-600" />
-              <span className="text-sm text-emerald-700">All documents encrypted successfully</span>
+          {migrateComplete && migrateResult && (
+            <div className={`flex items-center gap-2 rounded-lg border px-4 py-3 ${
+              migrateResult.errors?.length > 0
+                ? "border-amber-300 bg-amber-50"
+                : "border-emerald-300 bg-emerald-50"
+            }`}>
+              {migrateResult.errors?.length > 0 ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm text-amber-700">
+                    ⚠ {migrateResult.encrypted_count} encrypted, {migrateResult.errors.length} failed. Check logs for details.
+                  </span>
+                </>
+              ) : migrateResult.encrypted_count > 0 ? (
+                <>
+                  <CheckCircle className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm text-emerald-700">
+                    ✓ {migrateResult.encrypted_count} documents encrypted.
+                    {unencrypted > 0 && ` ${unencrypted} skipped (no file attached).`}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm text-emerald-700">
+                    {allEncrypted ? "✓ All documents are already encrypted." : "✓ No eligible documents to encrypt (placeholder or missing files)."}
+                  </span>
+                </>
+              )}
             </div>
           )}
 
