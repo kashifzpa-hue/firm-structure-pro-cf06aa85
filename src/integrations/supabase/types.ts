@@ -312,10 +312,13 @@ export type Database = {
       document_versions: {
         Row: {
           document_id: string
+          encryption_version: number
           expiry_date: string | null
           file_url: string | null
           id: string
+          is_encrypted: boolean
           issue_date: string | null
+          iv: string | null
           notes: string | null
           uploaded_at: string
           uploaded_by: string | null
@@ -324,10 +327,13 @@ export type Database = {
         }
         Insert: {
           document_id: string
+          encryption_version?: number
           expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
           issue_date?: string | null
+          iv?: string | null
           notes?: string | null
           uploaded_at?: string
           uploaded_by?: string | null
@@ -336,10 +342,13 @@ export type Database = {
         }
         Update: {
           document_id?: string
+          encryption_version?: number
           expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
           issue_date?: string | null
+          iv?: string | null
           notes?: string | null
           uploaded_at?: string
           uploaded_by?: string | null
@@ -377,11 +386,14 @@ export type Database = {
           created_at: string
           document_number: string | null
           document_type: string
+          encryption_version: number
           entity_id: string
           expiry_date: string | null
           file_url: string | null
           id: string
+          is_encrypted: boolean
           issue_date: string | null
+          iv: string | null
           renewal_frequency:
             | Database["public"]["Enums"]["document_renewal_frequency"]
             | null
@@ -394,11 +406,14 @@ export type Database = {
           created_at?: string
           document_number?: string | null
           document_type: string
+          encryption_version?: number
           entity_id: string
           expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
           issue_date?: string | null
+          iv?: string | null
           renewal_frequency?:
             | Database["public"]["Enums"]["document_renewal_frequency"]
             | null
@@ -411,11 +426,14 @@ export type Database = {
           created_at?: string
           document_number?: string | null
           document_type?: string
+          encryption_version?: number
           entity_id?: string
           expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
           issue_date?: string | null
+          iv?: string | null
           renewal_frequency?:
             | Database["public"]["Enums"]["document_renewal_frequency"]
             | null
@@ -1437,6 +1455,41 @@ export type Database = {
           },
         ]
       }
+      workspace_encryption_keys: {
+        Row: {
+          created_at: string
+          encryption_version: number
+          id: string
+          key_reference: string
+          rotated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          encryption_version?: number
+          id?: string
+          key_reference: string
+          rotated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          encryption_version?: number
+          id?: string
+          key_reference?: string
+          rotated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_encryption_keys_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_invitations: {
         Row: {
           accepted_at: string | null
@@ -1523,6 +1576,11 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: undefined
       }
+      vault_insert_secret: {
+        Args: { _name: string; _secret: string }
+        Returns: undefined
+      }
+      vault_read_secret: { Args: { _name: string }; Returns: string }
       void_movement: {
         Args: { p_movement_id: string; p_reason: string }
         Returns: undefined
