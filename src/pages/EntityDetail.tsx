@@ -110,6 +110,25 @@ export default function EntityDetail() {
     setShareClasses(scRes.data || []);
     setEntities(entitiesRes.data || []);
     setFieldHistory(historyRes.data || []);
+    
+    // Fetch primary role for persons
+    if (entityRes.data?.type === "person") {
+      const { data: appts } = await supabase
+        .from("appointments")
+        .select("role_title, company_entity_id, entities!appointments_company_entity_id_fkey(name)")
+        .eq("person_entity_id", id!)
+        .eq("workspace_id", workspaceId)
+        .is("resignation_date", null)
+        .order("appointment_date", { ascending: false })
+        .limit(1);
+      if (appts && appts.length > 0) {
+        const co = (appts[0] as any).entities?.name;
+        setPrimaryRole(`${appts[0].role_title}${co ? ` · ${co}` : ""}`);
+      } else {
+        setPrimaryRole(null);
+      }
+    }
+    
     setLoading(false);
     
     // Fetch version counts for each document
