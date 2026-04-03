@@ -96,6 +96,15 @@ export default function MovementDetail() {
         </div>
       </div>
 
+      {movement.circular_exception_type && (
+        <Alert className="border-amber-300 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 text-sm">
+            ⚠ This movement resulted in a circular ownership arrangement. Exception type: <strong>{movement.circular_exception_type.replace(/_/g, " ")}</strong>. See equity link for full details.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {movement.status === "voided" && (
         <div className="relative">
           <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
