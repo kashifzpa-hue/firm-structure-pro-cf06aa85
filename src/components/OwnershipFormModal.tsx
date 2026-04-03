@@ -195,10 +195,10 @@ export function OwnershipFormModal({ open, onOpenChange, editingLink, entities, 
 
     if (shouldCheck) {
       setSaving(true);
-      console.log("Circular check: running for company=", ownedId, "owner=", ownerId);
+      console.log("Circular check: running for owner=", ownerId, "owned=", ownedId);
       const { data: isCircular, error: checkError } = await supabase.rpc("check_circular_ownership", {
-        p_company_entity_id: ownedId,
-        p_potential_owner_id: ownerId,
+        p_company_entity_id: ownerId,
+        p_potential_owner_id: ownedId,
       });
       console.log("Circular check result:", { isCircular, checkError });
       setSaving(false);
