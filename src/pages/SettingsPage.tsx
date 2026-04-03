@@ -33,11 +33,17 @@ export default function SettingsPage() {
     const { data: ws } = await supabase.from("workspaces").select("name").eq("id", workspaceId).single();
     if (ws) setWorkspaceName(ws.name);
 
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("*, user_roles(*)")
-      .eq("workspace_id", workspaceId);
-    setMembers(profiles || []);
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase.from("profiles").select("*").eq("workspace_id", workspaceId),
+      supabase.from("user_roles").select("*").eq("workspace_id", workspaceId),
+    ]);
+    const profiles = profilesRes.data || [];
+    const roles = rolesRes.data || [];
+    const merged = profiles.map((p: any) => ({
+      ...p,
+      user_roles: roles.filter((r: any) => r.user_id === p.user_id),
+    }));
+    setMembers(merged);
 
     const { data: invites } = await supabase
       .from("workspace_invitations")
