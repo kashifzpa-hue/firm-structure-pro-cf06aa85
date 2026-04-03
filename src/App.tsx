@@ -72,9 +72,9 @@ const App = () => (
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/entities" element={<Entities />} />
-              <Route path="/entities/new" element={<EntityForm />} />
+              <Route path="/entities/new" element={<AdminRoute><EntityForm /></AdminRoute>} />
               <Route path="/entities/:id" element={<EntityDetail />} />
-              <Route path="/entities/:id/edit" element={<EntityForm />} />
+              <Route path="/entities/:id/edit" element={<AdminRoute><EntityForm /></AdminRoute>} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/ownership" element={<Ownership />} />
               <Route path="/org-chart" element={<OrgChart />} />
