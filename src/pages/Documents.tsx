@@ -113,6 +113,7 @@ export default function Documents() {
                 <TableHead>Renewal Cycle</TableHead>
                 <TableHead>Versions</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>🔒</TableHead>
                 <TableHead>File</TableHead>
               </TableRow>
             </TableHeader>
