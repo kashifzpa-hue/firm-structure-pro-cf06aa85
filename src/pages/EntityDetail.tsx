@@ -292,6 +292,13 @@ export default function EntityDetail() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/entities")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
+        <EntityAvatar
+          entityId={entity.id}
+          name={entity.name}
+          photoUrl={isPerson ? entity.profile_photo_url : null}
+          size="lg"
+          inactive={isInactive}
+        />
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{entity.name}</h1>
@@ -321,10 +328,22 @@ export default function EntityDetail() {
                 </Tooltip>
               </TooltipProvider>
             )}
-            {entity.nationality_or_jurisdiction && (
-              <span className="text-sm text-muted-foreground">{entity.nationality_or_jurisdiction}</span>
-            )}
           </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+            {entity.nationality_or_jurisdiction && <span>{entity.nationality_or_jurisdiction}</span>}
+            {entity.nationality_or_jurisdiction && entity.date_of_birth_or_incorporation && <span>·</span>}
+            {entity.date_of_birth_or_incorporation && <span>{format(parseISO(entity.date_of_birth_or_incorporation), "MMM dd, yyyy")}</span>}
+          </div>
+          {isPerson && primaryRole && (
+            <div className="text-sm text-muted-foreground mt-0.5">{primaryRole}</div>
+          )}
+          {isPerson && (entity.email || entity.phone) && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+              {entity.email && <span>{entity.email}</span>}
+              {entity.email && entity.phone && <span>·</span>}
+              {entity.phone && <span>{entity.phone}</span>}
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           {!isPerson && (
