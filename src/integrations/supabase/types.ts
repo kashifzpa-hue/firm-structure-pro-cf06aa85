@@ -1586,6 +1586,8 @@ export type Database = {
         | "SYSTEM_ALERT"
         | "SIGNATORY_EXPIRING"
         | "BANK_ACK_PENDING"
+        | "CIRCULAR_DISPOSAL_DUE"
+        | "CIRCULAR_DISPOSAL_OVERDUE"
       signatory_status: "active" | "suspended" | "revoked"
       signing_rule_type: "solo" | "joint_same_group" | "joint_cross_group"
       ubo_snapshot_type: "live" | "historical"
@@ -1778,6 +1780,8 @@ export const Constants = {
         "SYSTEM_ALERT",
         "SIGNATORY_EXPIRING",
         "BANK_ACK_PENDING",
+        "CIRCULAR_DISPOSAL_DUE",
+        "CIRCULAR_DISPOSAL_OVERDUE",
       ],
       signatory_status: ["active", "suspended", "revoked"],
       signing_rule_type: ["solo", "joint_same_group", "joint_cross_group"],
