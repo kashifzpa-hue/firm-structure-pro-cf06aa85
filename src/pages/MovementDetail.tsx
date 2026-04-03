@@ -8,10 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, Download, Loader2, Lock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { encryptedDownload } from "@/lib/encryption";
 
 const TYPE_COLORS: Record<string, string> = {
   TRANSFER: "bg-primary/10 text-primary",
@@ -29,17 +31,27 @@ export default function MovementDetail() {
   const navigate = useNavigate();
   const { workspaceId } = useAuth();
   const [movement, setMovement] = useState<any>(null);
+  const [movementDocs, setMovementDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [voidOpen, setVoidOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [voiding, setVoiding] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const fetchMovement = async () => {
     if (!id || !workspaceId) return;
-    const { data } = await supabase.from("movements")
-      .select("*, company:entities!movements_company_entity_id_fkey(id, name), share_class:share_classes(class_name, total_shares_issued), from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name), created_by_profile:profiles!movements_created_by_fkey(full_name, email)")
-      .eq("id", id).single();
+    const [movRes, docsRes] = await Promise.all([
+      supabase.from("movements")
+        .select("*, company:entities!movements_company_entity_id_fkey(id, name), share_class:share_classes(class_name, total_shares_issued), from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name), created_by_profile:profiles!movements_created_by_fkey(full_name, email)")
+        .eq("id", id).single(),
+      supabase.from("movement_documents")
+        .select("*")
+        .eq("movement_id", id)
+        .order("uploaded_at", { ascending: false }),
+    ]);
+
+    const data = movRes.data;
     if (data && data.to_entity_id && data.status === "confirmed") {
       const { data: link } = await supabase.from("equity_links")
         .select("circular_ownership_type")
@@ -53,6 +65,7 @@ export default function MovementDetail() {
       if (link) (data as any).circular_exception_type = link.circular_ownership_type;
     }
     setMovement(data);
+    setMovementDocs(docsRes.data || []);
     setLoading(false);
   };
 
@@ -75,6 +88,25 @@ export default function MovementDetail() {
     toast.success("Movement voided");
     setVoidOpen(false); setVoidReason(""); setVoiding(false);
     fetchMovement();
+  };
+
+  const handleDocDownload = async (doc: any) => {
+    if (!doc.file_url) { toast.error("No file attached"); return; }
+    setDownloading(doc.id);
+    try {
+      // Movement docs don't have is_encrypted column — download via URL
+      const a = document.createElement("a");
+      a.href = doc.file_url;
+      a.download = `${doc.document_type}_${doc.id}`;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err: any) {
+      toast.error(err.message || "Download failed");
+    } finally {
+      setDownloading(null);
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
@@ -147,6 +179,42 @@ export default function MovementDetail() {
           </dl>
         </CardContent>
       </Card>
+
+      {/* Movement Documents */}
+      {movementDocs.length > 0 && (
+        <Card className="shadow-sm">
+          <CardHeader><CardTitle className="text-lg">Documents</CardTitle></CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Notes</TableHead>
+                  <TableHead>Uploaded</TableHead>
+                  <TableHead className="w-20">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {movementDocs.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell className="font-medium flex items-center gap-1.5">
+                      <Lock className="h-3 w-3 text-muted-foreground" />
+                      {d.document_type}
+                    </TableCell>
+                    <TableCell>{d.notes || "—"}</TableCell>
+                    <TableCell>{format(parseISO(d.uploaded_at), "dd MMM yyyy")}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDocDownload(d)} disabled={downloading === d.id}>
+                        {downloading === d.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Audit log */}
       <Card className="shadow-sm">

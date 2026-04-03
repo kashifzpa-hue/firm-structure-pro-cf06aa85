@@ -461,6 +461,39 @@ export default function BankAccountDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Document Upload Modal */}
+      <Dialog open={docUploadOpen} onOpenChange={v => { if (!v) { setDocUploadOpen(false); setDocFile(null); setDocType(""); setDocDesc(""); setDocNotes(""); setDocUploadStep(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Upload Bank Document</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Document Type *</Label>
+              <Select value={docType} onValueChange={setDocType}>
+                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                <SelectContent>
+                  {BANK_DOC_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Description</Label><Input value={docDesc} onChange={e => setDocDesc(e.target.value)} placeholder="Brief description" /></div>
+            <div><Label>File *</Label><Input type="file" onChange={e => setDocFile(e.target.files?.[0] || null)} /></div>
+            <div><Label>Notes</Label><Textarea value={docNotes} onChange={e => setDocNotes(e.target.value)} /></div>
+            {docUploadStep && (
+              <div className="flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{docUploadStep === "uploading" ? "Uploading..." : docUploadStep === "encrypting" ? "Encrypting..." : "Saved securely ✅"}</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDocUploadOpen(false)}>Cancel</Button>
+            <Button onClick={handleDocUpload} disabled={docUploading || !docType || !docFile}>
+              {docUploading ? "Uploading..." : "Upload"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
