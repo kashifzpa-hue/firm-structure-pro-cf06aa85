@@ -308,7 +308,7 @@ export default function BankAccountDetail() {
                 <h3 className="font-semibold">Signing Matrix — {bankDisplayName} — {account.company?.name}</h3>
                 <p className="text-sm text-muted-foreground">Defines valid signatory combinations and their transaction authorities</p>
               </div>
-              <Button size="sm" onClick={() => { setEditRule(null); setRuleFormOpen(true); }}><Plus className="h-3 w-3 mr-1" /> Add Rule</Button>
+              {isAdmin && <Button size="sm" onClick={() => { setEditRule(null); setRuleFormOpen(true); }}><Plus className="h-3 w-3 mr-1" /> Add Rule</Button>}
             </div>
 
             {emptyGroupWarnings.map(g => (
