@@ -30,6 +30,7 @@ import { BankingTab } from "@/components/banking/BankingTab";
 import { CapTableWaterfall } from "@/components/CapTableWaterfall";
 import { useBankingEnabled } from "@/hooks/use-banking-enabled";
 import { ArrowLeft, Building2, Download, Edit, ExternalLink, Linkedin, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark, RefreshCw, Clock } from "lucide-react";
+import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { DocumentRenewalModal } from "@/components/DocumentRenewalModal";
 import { DocumentVersionHistory } from "@/components/DocumentVersionHistory";
 import { getFrequencyLabel, RenewalFrequency } from "@/lib/renewal-utils";
