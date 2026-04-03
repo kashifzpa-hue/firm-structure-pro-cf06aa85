@@ -344,10 +344,12 @@ export default function BankAccountDetail() {
                         <TableCell>{formatLimit(rule.daily_limit, rule.limit_currency)}</TableCell>
                         <TableCell>{getAuthorityLabels(rule.applies_to || []).join(", ") || "—"}</TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(rule); setRuleFormOpen(true); }}><Edit className="h-3 w-3" /></Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteRule(rule)}><Trash2 className="h-3 w-3" /></Button>
-                          </div>
+                          {isAdmin && (
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRule(rule); setRuleFormOpen(true); }}><Edit className="h-3 w-3" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteRule(rule)}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
