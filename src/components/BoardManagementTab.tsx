@@ -20,7 +20,8 @@ interface Props {
 }
 
 export function BoardManagementTab({ companyEntityId, companyName }: Props) {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
