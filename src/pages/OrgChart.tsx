@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { GovernanceChart } from "@/components/orgchart/GovernanceChart";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link2, Users } from "lucide-react";
 import {
   ReactFlow,
   Background,
