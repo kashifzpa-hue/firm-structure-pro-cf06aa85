@@ -8,6 +8,7 @@ import { format, parseISO, differenceInDays } from "date-fns";
 interface Props {
   signatory: any;
   groupLabel?: string;
+  isAdmin?: boolean;
   onEdit: () => void;
   onRevoke: () => void;
 }
