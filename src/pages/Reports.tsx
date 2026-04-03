@@ -478,6 +478,9 @@ export default function Reports() {
         expiry_date: d.expiry_date,
         issue_date: d.issue_date,
         entity_id: d.entity_id,
+        renewal_cycle: d.renewal_frequency && d.renewal_frequency !== 'none'
+          ? (d.renewal_frequency === 'custom' && d.renewal_months ? `Every ${d.renewal_months}m` : { annual: 'Annual', biennial: '2 years', triennial: '3 years', quinquennial: '5 years', decennial: '10 years' }[d.renewal_frequency as string] || d.renewal_frequency)
+          : "—",
       });
 
       const expired = filtered.filter((d) => {
