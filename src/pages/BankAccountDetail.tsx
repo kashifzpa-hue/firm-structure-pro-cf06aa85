@@ -359,31 +359,47 @@ export default function BankAccountDetail() {
 
         {/* Tab 4: Documents */}
         <TabsContent value="documents">
-          <Card className="shadow-sm">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Upload Date</TableHead>
-                    <TableHead>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {docs.map(d => (
-                    <TableRow key={d.id}>
-                      <TableCell className="font-medium">{d.document_type}</TableCell>
-                      <TableCell>{d.description || "—"}</TableCell>
-                      <TableCell>{format(parseISO(d.uploaded_at), "dd MMM yyyy")}</TableCell>
-                      <TableCell>{d.notes || "—"}</TableCell>
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => setDocUploadOpen(true)}><Plus className="h-3 w-3 mr-1" /> Upload Document</Button>
+            </div>
+            <Card className="shadow-sm">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Upload Date</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="w-20">Actions</TableHead>
                     </TableRow>
-                  ))}
-                  {docs.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No documents uploaded</TableCell></TableRow>}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {docs.map(d => (
+                      <TableRow key={d.id}>
+                        <TableCell className="font-medium flex items-center gap-1.5">
+                          {d.file_url && <Lock className="h-3 w-3 text-muted-foreground" />}
+                          {d.document_type}
+                        </TableCell>
+                        <TableCell>{d.description || "—"}</TableCell>
+                        <TableCell>{format(parseISO(d.uploaded_at), "dd MMM yyyy")}</TableCell>
+                        <TableCell>{d.notes || "—"}</TableCell>
+                        <TableCell>
+                          {d.file_url && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDocDownload(d)} disabled={downloading === d.id}>
+                              {downloading === d.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {docs.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No documents uploaded</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Tab 5: Activity Log */}
