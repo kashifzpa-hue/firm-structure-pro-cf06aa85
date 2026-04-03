@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Users, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Users, AlertTriangle, Download, Loader2, Lock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { maskAccountNumber, maskIban, formatLimit, getAuthorityLabels, logBankingActivity, BANK_DOC_TYPES } from "@/lib/banking-utils";
@@ -19,6 +20,7 @@ import { BankAccountForm } from "@/components/banking/BankAccountForm";
 import { SignatoryForm } from "@/components/banking/SignatoryForm";
 import { SignatoryCard } from "@/components/banking/SignatoryCard";
 import { MatrixRuleForm } from "@/components/banking/MatrixRuleForm";
+import { encryptedUpload, encryptedDownload } from "@/lib/encryption";
 
 export default function BankAccountDetail() {
   const { id } = useParams();
@@ -46,6 +48,14 @@ export default function BankAccountDetail() {
   const [revokeSig, setRevokeSig] = useState<any>(null);
   const [revokeReason, setRevokeReason] = useState("");
   const [showRevoked, setShowRevoked] = useState(false);
+  const [docUploadOpen, setDocUploadOpen] = useState(false);
+  const [docType, setDocType] = useState("");
+  const [docDesc, setDocDesc] = useState("");
+  const [docNotes, setDocNotes] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docUploading, setDocUploading] = useState(false);
+  const [docUploadStep, setDocUploadStep] = useState<"" | "uploading" | "encrypting" | "done">("");
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const fetchAll = async () => {
     if (!id || !workspaceId) return;
@@ -101,6 +111,65 @@ export default function BankAccountDetail() {
     await logBankingActivity(id!, "matrix_rule_deleted", `Matrix rule "${rule.rule_name}" deleted`, profile?.id || "", workspaceId!);
     toast.success("Rule deleted");
     fetchAll();
+  };
+
+  const handleDocUpload = async () => {
+    if (!workspaceId || !docFile || !docType) return;
+    setDocUploading(true);
+    try {
+      const storagePath = `${workspaceId}/banking/${id}/${Date.now()}_${docFile.name}`;
+      const { data: inserted, error: insertErr } = await supabase.from("bank_account_documents").insert({
+        workspace_id: workspaceId,
+        bank_account_id: id!,
+        document_type: docType,
+        description: docDesc || null,
+        notes: docNotes || null,
+      }).select("id").single();
+      if (insertErr) throw insertErr;
+
+      const result = await encryptedUpload({
+        file: docFile,
+        storagePath,
+        onProgress: (step) => setDocUploadStep(step),
+      });
+
+      await supabase.from("bank_account_documents").update({
+        file_url: result.file_url,
+      }).eq("id", inserted.id);
+
+      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
+      await logBankingActivity(id!, "document_uploaded", `Document "${docType}" uploaded`, profile?.id || "", workspaceId);
+      toast.success("Document uploaded securely");
+      setDocUploadOpen(false);
+      setDocFile(null);
+      setDocType("");
+      setDocDesc("");
+      setDocNotes("");
+      setDocUploadStep("");
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setDocUploading(false);
+    }
+  };
+
+  const handleDocDownload = async (doc: any) => {
+    if (!doc.file_url) { toast.error("No file attached"); return; }
+    setDownloading(doc.id);
+    try {
+      const a = document.createElement("a");
+      a.href = doc.file_url;
+      a.download = `${doc.document_type}_${doc.id}`;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err: any) {
+      toast.error(err.message || "Download failed");
+    } finally {
+      setDownloading(null);
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
@@ -290,31 +359,47 @@ export default function BankAccountDetail() {
 
         {/* Tab 4: Documents */}
         <TabsContent value="documents">
-          <Card className="shadow-sm">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Upload Date</TableHead>
-                    <TableHead>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {docs.map(d => (
-                    <TableRow key={d.id}>
-                      <TableCell className="font-medium">{d.document_type}</TableCell>
-                      <TableCell>{d.description || "—"}</TableCell>
-                      <TableCell>{format(parseISO(d.uploaded_at), "dd MMM yyyy")}</TableCell>
-                      <TableCell>{d.notes || "—"}</TableCell>
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => setDocUploadOpen(true)}><Plus className="h-3 w-3 mr-1" /> Upload Document</Button>
+            </div>
+            <Card className="shadow-sm">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Upload Date</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="w-20">Actions</TableHead>
                     </TableRow>
-                  ))}
-                  {docs.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No documents uploaded</TableCell></TableRow>}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {docs.map(d => (
+                      <TableRow key={d.id}>
+                        <TableCell className="font-medium flex items-center gap-1.5">
+                          {d.file_url && <Lock className="h-3 w-3 text-muted-foreground" />}
+                          {d.document_type}
+                        </TableCell>
+                        <TableCell>{d.description || "—"}</TableCell>
+                        <TableCell>{format(parseISO(d.uploaded_at), "dd MMM yyyy")}</TableCell>
+                        <TableCell>{d.notes || "—"}</TableCell>
+                        <TableCell>
+                          {d.file_url && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDocDownload(d)} disabled={downloading === d.id}>
+                              {downloading === d.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {docs.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No documents uploaded</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Tab 5: Activity Log */}
@@ -373,6 +458,39 @@ export default function BankAccountDetail() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setRevokeOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleRevoke} disabled={!revokeReason}>Revoke</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Upload Modal */}
+      <Dialog open={docUploadOpen} onOpenChange={v => { if (!v) { setDocUploadOpen(false); setDocFile(null); setDocType(""); setDocDesc(""); setDocNotes(""); setDocUploadStep(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Upload Bank Document</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Document Type *</Label>
+              <Select value={docType} onValueChange={setDocType}>
+                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                <SelectContent>
+                  {BANK_DOC_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Description</Label><Input value={docDesc} onChange={e => setDocDesc(e.target.value)} placeholder="Brief description" /></div>
+            <div><Label>File *</Label><Input type="file" onChange={e => setDocFile(e.target.files?.[0] || null)} /></div>
+            <div><Label>Notes</Label><Textarea value={docNotes} onChange={e => setDocNotes(e.target.value)} /></div>
+            {docUploadStep && (
+              <div className="flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{docUploadStep === "uploading" ? "Uploading..." : docUploadStep === "encrypting" ? "Encrypting..." : "Saved securely ✅"}</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDocUploadOpen(false)}>Cancel</Button>
+            <Button onClick={handleDocUpload} disabled={docUploading || !docType || !docFile}>
+              {docUploading ? "Uploading..." : "Upload"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
