@@ -113,6 +113,65 @@ export default function BankAccountDetail() {
     fetchAll();
   };
 
+  const handleDocUpload = async () => {
+    if (!workspaceId || !docFile || !docType) return;
+    setDocUploading(true);
+    try {
+      const storagePath = `${workspaceId}/banking/${id}/${Date.now()}_${docFile.name}`;
+      const { data: inserted, error: insertErr } = await supabase.from("bank_account_documents").insert({
+        workspace_id: workspaceId,
+        bank_account_id: id!,
+        document_type: docType,
+        description: docDesc || null,
+        notes: docNotes || null,
+      }).select("id").single();
+      if (insertErr) throw insertErr;
+
+      const result = await encryptedUpload({
+        file: docFile,
+        storagePath,
+        onProgress: (step) => setDocUploadStep(step),
+      });
+
+      await supabase.from("bank_account_documents").update({
+        file_url: result.file_url,
+      }).eq("id", inserted.id);
+
+      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
+      await logBankingActivity(id!, "document_uploaded", `Document "${docType}" uploaded`, profile?.id || "", workspaceId);
+      toast.success("Document uploaded securely");
+      setDocUploadOpen(false);
+      setDocFile(null);
+      setDocType("");
+      setDocDesc("");
+      setDocNotes("");
+      setDocUploadStep("");
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setDocUploading(false);
+    }
+  };
+
+  const handleDocDownload = async (doc: any) => {
+    if (!doc.file_url) { toast.error("No file attached"); return; }
+    setDownloading(doc.id);
+    try {
+      const a = document.createElement("a");
+      a.href = doc.file_url;
+      a.download = `${doc.document_type}_${doc.id}`;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err: any) {
+      toast.error(err.message || "Download failed");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
   if (!account) return <div className="flex items-center justify-center h-64 text-muted-foreground">Account not found</div>;
 
