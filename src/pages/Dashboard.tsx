@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [unreadAlerts, setUnreadAlerts] = useState({ total: 0, critical: 0, warnings: 0 });
   const [bankingEnabled, setBankingEnabled] = useState(false);
   const [bankingStats, setBankingStats] = useState({ accounts: 0, signatories: 0, expiring: 0, pendingAck: 0 });
+  const [govStats, setGovStats] = useState({ boardAppts: 0, mgmtAppts: 0, companiesNoBoard: 0, totalCompanies: 0 });
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -179,6 +180,19 @@ export default function Dashboard() {
         });
       }
 
+      // Governance stats
+      const activeAppts = appointmentsRes.data || [];
+      const companyIds = entities.filter(e => e.type === "company").map(e => e.id);
+      const boardAppts = activeAppts.filter((a: any) => a.role_category === "board");
+      const mgmtAppts = activeAppts.filter((a: any) => a.role_category === "management");
+      const companiesWithBoard = new Set(boardAppts.map((a: any) => a.company_entity_id));
+      setGovStats({
+        boardAppts: boardAppts.length,
+        mgmtAppts: mgmtAppts.length,
+        companiesNoBoard: companyIds.filter(id => !companiesWithBoard.has(id)).length,
+        totalCompanies: companyIds.length,
+      });
+
       setLoading(false);
     };
     fetchData();
@@ -251,6 +265,39 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Governance Overview */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Governance Overview</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Board Appointments</CardTitle>
+              <Landmark className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent><div className="text-3xl font-bold">{govStats.boardAppts}</div></CardContent>
+          </Card>
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Management Appointments</CardTitle>
+              <Building2 className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent><div className="text-3xl font-bold">{govStats.mgmtAppts}</div></CardContent>
+          </Card>
+          <Card className={`shadow-sm ${govStats.companiesNoBoard > 0 ? "border-warning/30" : ""}`}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">No Board Recorded</CardTitle>
+              <AlertTriangle className={`h-5 w-5 ${govStats.companiesNoBoard > 0 ? "text-warning" : "text-muted-foreground"}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{govStats.companiesNoBoard}</div>
+              {govStats.companiesNoBoard > 0 && (
+                <button onClick={() => navigate("/org-chart")} className="text-xs text-primary hover:underline mt-1">View in Governance Chart →</button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* KYC Health Grid */}
       <KYCHealthGrid />
