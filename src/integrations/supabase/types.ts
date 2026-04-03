@@ -451,12 +451,17 @@ export type Database = {
           email: string | null
           entity_status: Database["public"]["Enums"]["entity_status"]
           id: string
+          languages_spoken: string[] | null
           name: string
           nationality_or_jurisdiction: string | null
           notes: string | null
           phone: string | null
           primary_contact_email: string | null
           primary_contact_name: string | null
+          professional_bio: string | null
+          profile_photo_thumb: string | null
+          profile_photo_url: string | null
+          qualifications: string | null
           registered_address: string | null
           registration_number: string | null
           type: Database["public"]["Enums"]["entity_type"]
@@ -473,12 +478,17 @@ export type Database = {
           email?: string | null
           entity_status?: Database["public"]["Enums"]["entity_status"]
           id?: string
+          languages_spoken?: string[] | null
           name: string
           nationality_or_jurisdiction?: string | null
           notes?: string | null
           phone?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
+          professional_bio?: string | null
+          profile_photo_thumb?: string | null
+          profile_photo_url?: string | null
+          qualifications?: string | null
           registered_address?: string | null
           registration_number?: string | null
           type: Database["public"]["Enums"]["entity_type"]
@@ -495,12 +505,17 @@ export type Database = {
           email?: string | null
           entity_status?: Database["public"]["Enums"]["entity_status"]
           id?: string
+          languages_spoken?: string[] | null
           name?: string
           nationality_or_jurisdiction?: string | null
           notes?: string | null
           phone?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
+          professional_bio?: string | null
+          profile_photo_thumb?: string | null
+          profile_photo_url?: string | null
+          qualifications?: string | null
           registered_address?: string | null
           registration_number?: string | null
           type?: Database["public"]["Enums"]["entity_type"]
@@ -889,6 +904,63 @@ export type Database = {
           },
           {
             foreignKeyName: "notifications_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      previous_positions: {
+        Row: {
+          company_name: string
+          created_at: string
+          display_order: number
+          entity_id: string
+          from_date: string | null
+          id: string
+          is_current: boolean
+          notes: string | null
+          role_title: string
+          to_date: string | null
+          workspace_id: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          display_order?: number
+          entity_id: string
+          from_date?: string | null
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          role_title: string
+          to_date?: string | null
+          workspace_id: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          display_order?: number
+          entity_id?: string
+          from_date?: string | null
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          role_title?: string
+          to_date?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "previous_positions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "previous_positions_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
