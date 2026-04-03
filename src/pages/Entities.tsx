@@ -189,9 +189,11 @@ export default function Entities() {
           <Building2 className="h-16 w-16 mb-4 opacity-20" />
           <p className="text-lg font-medium">No entities yet</p>
           <p className="text-sm mb-4">Add your first entity to get started.</p>
-          <Button onClick={() => navigate("/entities/new")}>
-            <Plus className="mr-2 h-4 w-4" /> Add Entity
-          </Button>
+          {userRole === "admin" && (
+            <Button onClick={() => navigate("/entities/new")}>
+              <Plus className="mr-2 h-4 w-4" /> Add Entity
+            </Button>
+          )}
         </div>
       ) : (
         <div className="rounded-lg border shadow-sm">

@@ -830,7 +830,7 @@ export default function EntityDetail() {
                                 </Button>
                               )}
                             </TableCell>
-                            {!isPerson && isSetupMode && (
+                            {!isPerson && isSetupMode && isAdmin && (
                               <TableCell>
                                 <div className="flex gap-1">
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingOwnershipLink(link); setOwnershipModalOpen(true); }}>
