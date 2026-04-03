@@ -115,9 +115,11 @@ export default function Ownership() {
           <Link2 className="h-16 w-16 mb-4 opacity-20" />
           <p className="text-lg font-medium">No ownership links found</p>
           <p className="text-sm mb-4">Add your first ownership link to get started.</p>
-          <Button onClick={() => { setEditingLink(null); setModalOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => { setEditingLink(null); setModalOpen(true); }}>
+              <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
+            </Button>
+          )}
         </div>
       ) : (
         <div className="rounded-lg border shadow-sm">
