@@ -180,6 +180,19 @@ export default function Dashboard() {
         });
       }
 
+      // Governance stats
+      const activeAppts = appointmentsRes.data || [];
+      const companyIds = entities.filter(e => e.type === "company").map(e => e.id);
+      const boardAppts = activeAppts.filter((a: any) => a.role_category === "board");
+      const mgmtAppts = activeAppts.filter((a: any) => a.role_category === "management");
+      const companiesWithBoard = new Set(boardAppts.map((a: any) => a.company_entity_id));
+      setGovStats({
+        boardAppts: boardAppts.length,
+        mgmtAppts: mgmtAppts.length,
+        companiesNoBoard: companyIds.filter(id => !companiesWithBoard.has(id)).length,
+        totalCompanies: companyIds.length,
+      });
+
       setLoading(false);
     };
     fetchData();
