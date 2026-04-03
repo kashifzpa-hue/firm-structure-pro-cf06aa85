@@ -241,6 +241,38 @@ export default function EntityDetail() {
     fetchAll();
   };
 
+  const handleDownloadPersonPdf = async () => {
+    if (!entity || !id || !workspaceId) return;
+    try {
+      const [posRes, apptRes, shRes] = await Promise.all([
+        supabase.from("previous_positions").select("*").eq("entity_id", id).eq("workspace_id", workspaceId).order("display_order").order("from_date", { ascending: false }),
+        supabase.from("appointments").select("*, company:entities!appointments_company_entity_id_fkey(name)").eq("person_entity_id", id).eq("workspace_id", workspaceId).is("resignation_date", null),
+        supabase.from("equity_links").select("*, owned:entities!equity_links_owned_entity_id_fkey(name), share_class:share_classes(class_name)").eq("owner_entity_id", id).eq("workspace_id", workspaceId).is("end_date", null),
+      ]);
+      const pdfData = {
+        entity,
+        positions: posRes.data || [],
+        appointments: (apptRes.data || []).map((a: any) => ({ ...a, company_name: a.company?.name })),
+        documents: docs,
+        shareholdings: (shRes.data || []).map((s: any) => ({
+          company_name: s.owned?.name,
+          share_class_name: s.share_class?.class_name,
+          shares_owned: s.shares_owned,
+          percentage: s.percentage,
+        })),
+      };
+      const blob = await pdf(<PersonProfilePdf data={pdfData} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${entity.name.replace(/\s+/g, "_")}_Profile.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
   if (!entity) return <div className="flex items-center justify-center h-64 text-muted-foreground">Entity not found.</div>;
 
