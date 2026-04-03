@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Building2, User, Search, Upload, Download, Ban } from "lucide-react";
+import { EntityAvatar } from "@/components/EntityAvatar";
 import { Switch } from "@/components/ui/switch";
 import { format, parseISO } from "date-fns";
 import { getDocumentStatus } from "@/lib/document-status";
