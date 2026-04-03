@@ -1,0 +1,1 @@
+DELETE FROM equity_links WHERE id = 'd97c650c-88d7-48cf-b7a5-96df5205509e';
