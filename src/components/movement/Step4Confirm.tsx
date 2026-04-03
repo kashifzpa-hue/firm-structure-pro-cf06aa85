@@ -55,8 +55,8 @@ export function Step4Confirm({ data, entities, companies, outOfOrderAcknowledged
     setCircularCheckError(false);
 
     supabase.rpc("check_circular_ownership", {
-      p_company_entity_id: data.company_entity_id,
-      p_potential_owner_id: data.to_entity_id,
+      p_company_entity_id: data.to_entity_id,
+      p_potential_owner_id: data.company_entity_id,
     }).then(({ data: isCircular, error }) => {
       setCircularChecking(false);
       if (error) {
