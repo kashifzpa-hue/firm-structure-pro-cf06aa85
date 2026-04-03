@@ -39,6 +39,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { encryptedDownload } from "@/lib/encryption";
 
 export default function EntityDetail() {
   const { id } = useParams();
