@@ -201,7 +201,17 @@ export function ProfessionalProfile({ entityId, entity, onUpdated }: Professiona
           />
         </div>
 
-        {/* Languages */}
+        {/* LinkedIn */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Linkedin className="h-4 w-4 text-[#0A66C2]" /> LinkedIn Profile
+          </Label>
+          <Input
+            value={linkedinUrl}
+            onChange={(e) => setLinkedinUrl(e.target.value)}
+            placeholder="https://linkedin.com/in/username"
+          />
+        </div>
         <div className="space-y-2">
           <Label>Languages</Label>
           {languages.length > 0 && (
