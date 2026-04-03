@@ -403,6 +403,23 @@ export default function EntityDetail() {
 
         <TabsContent value="profile">
           <div className="space-y-6">
+            {/* Photo upload for persons */}
+            {isPerson && (
+              <Card className="shadow-sm">
+                <CardContent className="pt-6">
+                  <ProfilePhotoUpload
+                    entityId={entity.id}
+                    entityName={entity.name}
+                    currentPhotoUrl={entity.profile_photo_url}
+                    currentThumbUrl={entity.profile_photo_thumb}
+                    onPhotoUpdated={(photoUrl, thumbUrl) => {
+                      setEntity({ ...entity, profile_photo_url: photoUrl, profile_photo_thumb: thumbUrl });
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="shadow-sm">
               <CardContent className="pt-6">
                 <dl className="grid grid-cols-2 gap-4">
@@ -477,6 +494,11 @@ export default function EntityDetail() {
                 </dl>
               </CardContent>
             </Card>
+
+            {/* Professional Profile for persons */}
+            {isPerson && (
+              <ProfessionalProfile entityId={entity.id} entity={entity} onUpdated={fetchAll} />
+            )}
 
             {/* Share Capital Section for companies */}
             {!isPerson && (
