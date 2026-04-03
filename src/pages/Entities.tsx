@@ -211,6 +211,13 @@ export default function Entities() {
                   <TableRow key={entity.id} className={`cursor-pointer hover:bg-muted/50 ${isInactive ? "opacity-50" : ""}`} onClick={() => navigate(`/entities/${entity.id}`)}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
+                        <EntityAvatar
+                          entityId={entity.id}
+                          name={entity.name}
+                          photoUrl={entity.type === "person" ? entity.profile_photo_thumb : null}
+                          size="sm"
+                          inactive={isInactive}
+                        />
                         {entity.name}
                         {isInactive && <Badge variant="outline" className="text-xs gap-1 border-muted-foreground/30"><Ban className="h-3 w-3" /> Inactive</Badge>}
                       </div>

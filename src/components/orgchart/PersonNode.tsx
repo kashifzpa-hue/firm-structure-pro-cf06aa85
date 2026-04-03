@@ -1,5 +1,5 @@
 import { Handle, Position } from "@xyflow/react";
-import { User } from "lucide-react";
+import { getAvatarColor, getInitials } from "@/lib/entity-avatar";
 
 interface PersonNodeData {
   label: string;
@@ -10,9 +10,33 @@ interface PersonNodeData {
   visibility: {
     personHoldings: boolean;
   };
+  entityId?: string;
+  profilePhotoThumb?: string | null;
 }
 
 const STATUS_COLORS = { green: "#22C55E", amber: "#F59E0B", red: "#EF4444" };
+
+function PersonAvatar({ entityId, name, photoUrl }: { entityId?: string; name: string; photoUrl?: string | null }) {
+  const initials = getInitials(name);
+  const bgColor = entityId ? getAvatarColor(entityId) : "#3B82F6";
+
+  return (
+    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-white/30">
+      {photoUrl ? (
+        <img src={photoUrl} alt={name} className="w-full h-full object-cover" onError={(e) => {
+          (e.target as HTMLImageElement).style.display = "none";
+          (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+        }} />
+      ) : null}
+      <div
+        className={`w-full h-full flex items-center justify-center text-white text-xs font-semibold ${photoUrl ? "hidden" : ""}`}
+        style={{ backgroundColor: bgColor }}
+      >
+        {initials}
+      </div>
+    </div>
+  );
+}
 
 export function PersonNode({ data }: { data: PersonNodeData }) {
   const visibleOwnerships = data.ownerships.slice(0, 3);
@@ -29,17 +53,21 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
     >
       <Handle type="target" position={Position.Top} className="!bg-blue-300 !w-2 !h-2" />
 
-      <div className="flex items-center justify-center gap-1.5 mb-1">
-        <span
-          className="inline-block w-2 h-2 rounded-full flex-shrink-0"
-          style={{ backgroundColor: STATUS_COLORS[data.docStatus] }}
-        />
-        <span className="font-semibold text-sm truncate">{data.label}</span>
+      <div className="flex items-center gap-2 mb-1">
+        <PersonAvatar entityId={data.entityId} name={data.label} photoUrl={data.profilePhotoThumb} />
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: STATUS_COLORS[data.docStatus] }}
+            />
+            <span className="font-semibold text-sm truncate">{data.label}</span>
+          </div>
+          {data.nationality && (
+            <div className="text-[11px] opacity-70 truncate">{data.nationality}</div>
+          )}
+        </div>
       </div>
-
-      {data.nationality && (
-        <div className="text-[11px] opacity-70">{data.nationality}</div>
-      )}
 
       {data.primaryRole && (
         <div className="text-[10px] opacity-80 mt-1 bg-white/10 rounded px-1.5 py-0.5 inline-block">
