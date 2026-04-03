@@ -309,8 +309,70 @@ export type Database = {
           },
         ]
       }
+      document_versions: {
+        Row: {
+          document_id: string
+          expiry_date: string | null
+          file_url: string | null
+          id: string
+          issue_date: string | null
+          notes: string | null
+          uploaded_at: string
+          uploaded_by: string | null
+          version_number: number
+          workspace_id: string
+        }
+        Insert: {
+          document_id: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          version_number?: number
+          workspace_id: string
+        }
+        Update: {
+          document_id?: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          version_number?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
+          auto_suggest_expiry: boolean
           country_of_issue: string | null
           created_at: string
           document_number: string | null
@@ -320,9 +382,14 @@ export type Database = {
           file_url: string | null
           id: string
           issue_date: string | null
+          renewal_frequency:
+            | Database["public"]["Enums"]["document_renewal_frequency"]
+            | null
+          renewal_months: number | null
           workspace_id: string
         }
         Insert: {
+          auto_suggest_expiry?: boolean
           country_of_issue?: string | null
           created_at?: string
           document_number?: string | null
@@ -332,9 +399,14 @@ export type Database = {
           file_url?: string | null
           id?: string
           issue_date?: string | null
+          renewal_frequency?:
+            | Database["public"]["Enums"]["document_renewal_frequency"]
+            | null
+          renewal_months?: number | null
           workspace_id: string
         }
         Update: {
+          auto_suggest_expiry?: boolean
           country_of_issue?: string | null
           created_at?: string
           document_number?: string | null
@@ -344,6 +416,10 @@ export type Database = {
           file_url?: string | null
           id?: string
           issue_date?: string | null
+          renewal_frequency?:
+            | Database["public"]["Enums"]["document_renewal_frequency"]
+            | null
+          renewal_months?: number | null
           workspace_id?: string
         }
         Relationships: [
@@ -1356,6 +1432,14 @@ export type Database = {
         | "call_deposit"
         | "trade_finance"
       captable_status: "setup" | "live"
+      document_renewal_frequency:
+        | "none"
+        | "annual"
+        | "biennial"
+        | "triennial"
+        | "quinquennial"
+        | "decennial"
+        | "custom"
       entity_status: "active" | "inactive" | "archived"
       entity_type: "person" | "company"
       movement_document_type:
@@ -1530,6 +1614,15 @@ export const Constants = {
         "trade_finance",
       ],
       captable_status: ["setup", "live"],
+      document_renewal_frequency: [
+        "none",
+        "annual",
+        "biennial",
+        "triennial",
+        "quinquennial",
+        "decennial",
+        "custom",
+      ],
       entity_status: ["active", "inactive", "archived"],
       entity_type: ["person", "company"],
       movement_document_type: [
