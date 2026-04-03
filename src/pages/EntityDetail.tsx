@@ -627,15 +627,15 @@ export default function EntityDetail() {
                                       <Download className="h-3.5 w-3.5" />
                                     </Button>
                                   )}
-                                  {hasRenewal ? (
+                                  {isAdmin && hasRenewal ? (
                                     <Button variant="ghost" size="sm" className={`h-7 px-2 gap-1 text-xs ${renewButtonClass}`} onClick={() => { setRenewingDoc(doc); setRenewModalOpen(true); }}>
                                       <RefreshCw className="h-3.5 w-3.5" /> Renew
                                     </Button>
-                                  ) : (
+                                  ) : isAdmin ? (
                                     <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => navigate(`/entities/${id}/edit`)}>
                                       <Edit className="h-3.5 w-3.5" /> Update
                                     </Button>
-                                  )}
+                                  ) : null}
                                   {vCount > 0 && (
                                     <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => setExpandedVersionDoc(expandedVersionDoc === doc.id ? null : doc.id)}>
                                       <Clock className="h-3.5 w-3.5" /> History
