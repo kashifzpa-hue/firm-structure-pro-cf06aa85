@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { getDocumentStatus } from "@/lib/document-status";
 import { getFrequencyLabel, RenewalFrequency } from "@/lib/renewal-utils";
 import { Download, FileText, RefreshCw } from "lucide-react";
+import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
