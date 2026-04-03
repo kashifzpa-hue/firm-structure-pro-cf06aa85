@@ -269,9 +269,9 @@ export default function BankAccountDetail() {
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{activeSigs.length} Active Signatories across {groups.length} Groups</p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setGroupFormOpen(true)}>Manage Groups</Button>
+                {isAdmin && <Button variant="outline" size="sm" onClick={() => setGroupFormOpen(true)}>Manage Groups</Button>}
                 <Button variant="outline" size="sm" onClick={() => setShowRevoked(!showRevoked)}>{showRevoked ? "Hide Revoked" : "Show Revoked"}</Button>
-                <Button size="sm" onClick={() => { setEditSig(null); setSigFormOpen(true); }}><Plus className="h-3 w-3 mr-1" /> Add Signatory</Button>
+                {isAdmin && <Button size="sm" onClick={() => { setEditSig(null); setSigFormOpen(true); }}><Plus className="h-3 w-3 mr-1" /> Add Signatory</Button>}
               </div>
             </div>
 
