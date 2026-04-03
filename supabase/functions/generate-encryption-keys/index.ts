@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const authHeader = req.headers.get("authorization")?.replace("Bearer ", "");
 
-    const isAuthorized = 
+    const isAuthorized =
       (internalSecret && providedSecret === internalSecret) ||
       (serviceRoleKey && authHeader === serviceRoleKey);
 
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { mode, workspace_id } = await req.json();
+    const { mode, workspace_id, enabled_by } = await req.json();
 
     if (!mode || !["seed_existing", "single"].includes(mode)) {
       return new Response(
@@ -51,10 +51,23 @@ Deno.serve(async (req) => {
     );
 
     if (mode === "single") {
-      const result = await generateKeyForWorkspace(supabaseAdmin, workspace_id);
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const { error } = await supabaseAdmin
+        .from("workspace_encryption_keys")
+        .upsert(
+          {
+            workspace_id,
+            encryption_version: 1,
+            enabled_by: enabled_by || null,
+          },
+          { onConflict: "workspace_id", ignoreDuplicates: true }
+        );
+
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({ success: true, workspace_id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // seed_existing
@@ -63,32 +76,33 @@ Deno.serve(async (req) => {
       .select("id");
     if (wsErr) throw wsErr;
 
-    const { data: existingKeys, error: ekErr } = await supabaseAdmin
+    const { data: existing, error: ekErr } = await supabaseAdmin
       .from("workspace_encryption_keys")
       .select("workspace_id");
     if (ekErr) throw ekErr;
 
-    const existingSet = new Set((existingKeys || []).map((k: any) => k.workspace_id));
-    let generated = 0;
-    const errors: string[] = [];
+    const existingSet = new Set((existing || []).map((k: any) => k.workspace_id));
+    let registered = 0;
 
     for (const ws of workspaces || []) {
       if (existingSet.has(ws.id)) continue;
-      const result = await generateKeyForWorkspace(supabaseAdmin, ws.id);
-      if (result.success) {
-        generated++;
-      } else {
-        errors.push(`${ws.id}: ${result.error}`);
-      }
+
+      const { error } = await supabaseAdmin
+        .from("workspace_encryption_keys")
+        .insert({
+          workspace_id: ws.id,
+          encryption_version: 1,
+        });
+
+      if (!error) registered++;
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        generated,
-        skipped: (workspaces?.length || 0) - generated - errors.length,
+        registered,
         total_workspaces: workspaces?.length || 0,
-        errors: errors.length > 0 ? errors : undefined,
+        already_registered: existingSet.size,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -99,54 +113,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-async function generateKeyForWorkspace(
-  supabaseAdmin: any,
-  workspaceId: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Idempotent: skip if key exists
-    const { data: existing } = await supabaseAdmin
-      .from("workspace_encryption_keys")
-      .select("id")
-      .eq("workspace_id", workspaceId)
-      .maybeSingle();
-
-    if (existing) {
-      return { success: true };
-    }
-
-    // Generate 256-bit key
-    const keyBytes = new Uint8Array(32);
-    crypto.getRandomValues(keyBytes);
-    const keyBase64 = btoa(String.fromCharCode(...keyBytes));
-    const keyName = `workspace_key_${workspaceId}`;
-
-    // Store in Vault via RPC
-    const { error: vaultErr } = await supabaseAdmin.rpc("vault_insert_secret", {
-      _name: keyName,
-      _secret: keyBase64,
-    });
-
-    if (vaultErr) {
-      throw new Error(`Vault insert failed: ${vaultErr.message}`);
-    }
-
-    // Record key reference
-    const { error: insertErr } = await supabaseAdmin
-      .from("workspace_encryption_keys")
-      .insert({
-        workspace_id: workspaceId,
-        key_reference: keyName,
-        encryption_version: 1,
-      });
-
-    if (insertErr) {
-      throw new Error(`Key reference insert failed: ${insertErr.message}`);
-    }
-
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
-}

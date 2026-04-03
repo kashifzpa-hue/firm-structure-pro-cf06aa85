@@ -1457,30 +1457,34 @@ export type Database = {
       }
       workspace_encryption_keys: {
         Row: {
-          created_at: string
+          enabled_at: string
+          enabled_by: string | null
           encryption_version: number
           id: string
-          key_reference: string
-          rotated_at: string | null
           workspace_id: string
         }
         Insert: {
-          created_at?: string
+          enabled_at?: string
+          enabled_by?: string | null
           encryption_version?: number
           id?: string
-          key_reference: string
-          rotated_at?: string | null
           workspace_id: string
         }
         Update: {
-          created_at?: string
+          enabled_at?: string
+          enabled_by?: string | null
           encryption_version?: number
           id?: string
-          key_reference?: string
-          rotated_at?: string | null
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspace_encryption_keys_enabled_by_fkey"
+            columns: ["enabled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspace_encryption_keys_workspace_id_fkey"
             columns: ["workspace_id"]
