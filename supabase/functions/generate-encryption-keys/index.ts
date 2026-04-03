@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify internal secret
     const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
     const providedSecret = req.headers.get("x-internal-secret");
 
@@ -39,7 +38,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Service role client
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -52,18 +50,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // seed_existing mode
+    // seed_existing
     const { data: workspaces, error: wsErr } = await supabaseAdmin
       .from("workspaces")
       .select("id");
-
     if (wsErr) throw wsErr;
 
-    // Get existing keys to skip
     const { data: existingKeys, error: ekErr } = await supabaseAdmin
       .from("workspace_encryption_keys")
       .select("workspace_id");
-
     if (ekErr) throw ekErr;
 
     const existingSet = new Set((existingKeys || []).map((k: any) => k.workspace_id));
@@ -72,7 +67,6 @@ Deno.serve(async (req) => {
 
     for (const ws of workspaces || []) {
       if (existingSet.has(ws.id)) continue;
-
       const result = await generateKeyForWorkspace(supabaseAdmin, ws.id);
       if (result.success) {
         generated++;
@@ -86,6 +80,7 @@ Deno.serve(async (req) => {
         success: true,
         generated,
         skipped: (workspaces?.length || 0) - generated - errors.length,
+        total_workspaces: workspaces?.length || 0,
         errors: errors.length > 0 ? errors : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -103,7 +98,7 @@ async function generateKeyForWorkspace(
   workspaceId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Check if key already exists (idempotent)
+    // Idempotent: skip if key exists
     const { data: existing } = await supabaseAdmin
       .from("workspace_encryption_keys")
       .select("id")
@@ -111,39 +106,23 @@ async function generateKeyForWorkspace(
       .maybeSingle();
 
     if (existing) {
-      return { success: true }; // Already has a key, skip
+      return { success: true };
     }
 
     // Generate 256-bit key
     const keyBytes = new Uint8Array(32);
     crypto.getRandomValues(keyBytes);
     const keyBase64 = btoa(String.fromCharCode(...keyBytes));
-
     const keyName = `workspace_key_${workspaceId}`;
 
-    // Store in Vault via SQL (service role has access)
+    // Store in Vault via RPC
     const { error: vaultErr } = await supabaseAdmin.rpc("vault_insert_secret", {
       _name: keyName,
       _secret: keyBase64,
     });
 
-    // If vault_insert_secret RPC doesn't exist, use raw SQL
     if (vaultErr) {
-      // Fallback: direct insert via postgres
-      const { error: sqlErr } = await supabaseAdmin
-        .from("workspace_encryption_keys")
-        .insert({
-          workspace_id: workspaceId,
-          key_reference: keyName,
-          encryption_version: 1,
-        });
-
-      if (sqlErr) throw sqlErr;
-
-      // Store the key as a column value instead of Vault
-      // We'll use a dedicated approach - store encrypted in the table
-      // For now, record the reference
-      return { success: true };
+      throw new Error(`Vault insert failed: ${vaultErr.message}`);
     }
 
     // Record key reference
@@ -155,7 +134,9 @@ async function generateKeyForWorkspace(
         encryption_version: 1,
       });
 
-    if (insertErr) throw insertErr;
+    if (insertErr) {
+      throw new Error(`Key reference insert failed: ${insertErr.message}`);
+    }
 
     return { success: true };
   } catch (err: any) {
