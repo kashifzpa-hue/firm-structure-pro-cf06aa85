@@ -38,6 +38,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading, userRole } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!session) return <Navigate to="/auth" replace />;
+  if (userRole !== "admin") {
+    toast("You don't have permission to perform this action. Contact your workspace admin.", { duration: 4000 });
+    return <Navigate to="/entities" replace />;
+  }
+  return <>{children}</>;
+}
+
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
