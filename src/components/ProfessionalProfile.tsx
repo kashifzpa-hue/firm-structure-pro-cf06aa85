@@ -124,6 +124,7 @@ export function ProfessionalProfile({ entityId, entity, onUpdated }: Professiona
         .update({
           professional_bio: bio || null,
           qualifications: qualifications || null,
+          linkedin_url: linkedinUrl.trim() || null,
           languages_spoken: languages.length > 0 ? languages : null,
         } as any)
         .eq("id", entityId);
