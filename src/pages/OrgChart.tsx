@@ -420,10 +420,21 @@ export default function OrgChart() {
 
   const rootEntity = entityMap[rootId];
 
+  const [chartView, setChartView] = useState<"ownership" | "governance">(() => {
+    try { return (localStorage.getItem("orgchart-view") as "ownership" | "governance") || "ownership"; } catch { return "ownership"; }
+  });
+  useEffect(() => { try { localStorage.setItem("orgchart-view", chartView); } catch {} }, [chartView]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Org Chart</h1>
+        <Tabs value={chartView} onValueChange={(v) => setChartView(v as "ownership" | "governance")}>
+          <TabsList>
+            <TabsTrigger value="ownership" className="gap-1.5"><Link2 className="h-4 w-4" /> Ownership Chart</TabsTrigger>
+            <TabsTrigger value="governance" className="gap-1.5"><Users className="h-4 w-4" /> Governance Chart</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {rootId && rootShareClasses.length > 0 && (
