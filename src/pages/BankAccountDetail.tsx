@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Users, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff, Users, AlertTriangle, Download, Loader2, Lock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { maskAccountNumber, maskIban, formatLimit, getAuthorityLabels, logBankingActivity, BANK_DOC_TYPES } from "@/lib/banking-utils";
@@ -19,6 +20,7 @@ import { BankAccountForm } from "@/components/banking/BankAccountForm";
 import { SignatoryForm } from "@/components/banking/SignatoryForm";
 import { SignatoryCard } from "@/components/banking/SignatoryCard";
 import { MatrixRuleForm } from "@/components/banking/MatrixRuleForm";
+import { encryptedUpload, encryptedDownload } from "@/lib/encryption";
 
 export default function BankAccountDetail() {
   const { id } = useParams();
