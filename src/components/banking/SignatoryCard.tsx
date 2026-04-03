@@ -13,7 +13,7 @@ interface Props {
   onRevoke: () => void;
 }
 
-export function SignatoryCard({ signatory, groupLabel, onEdit, onRevoke }: Props) {
+export function SignatoryCard({ signatory, groupLabel, isAdmin = true, onEdit, onRevoke }: Props) {
   const s = signatory;
   const isRevoked = s.status === "revoked";
   const isSuspended = s.status === "suspended";
