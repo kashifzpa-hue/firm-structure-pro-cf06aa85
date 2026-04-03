@@ -48,6 +48,14 @@ export default function BankAccountDetail() {
   const [revokeSig, setRevokeSig] = useState<any>(null);
   const [revokeReason, setRevokeReason] = useState("");
   const [showRevoked, setShowRevoked] = useState(false);
+  const [docUploadOpen, setDocUploadOpen] = useState(false);
+  const [docType, setDocType] = useState("");
+  const [docDesc, setDocDesc] = useState("");
+  const [docNotes, setDocNotes] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docUploading, setDocUploading] = useState(false);
+  const [docUploadStep, setDocUploadStep] = useState<"" | "uploading" | "encrypting" | "done">("");
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const fetchAll = async () => {
     if (!id || !workspaceId) return;
