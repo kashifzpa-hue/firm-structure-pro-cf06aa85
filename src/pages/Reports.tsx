@@ -196,6 +196,26 @@ export default function Reports() {
 
       const profileRes = await supabase.from("profiles").select("full_name").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
 
+      // Fetch circular ownership equity links for this company
+      const { data: circularLinks } = await supabase.from("equity_links")
+        .select("owner_entity_id, owned_entity_id, circular_ownership_type, circular_ownership_notes, disposal_required, disposal_deadline, disposal_jurisdiction, percentage, shares_owned")
+        .eq("workspace_id", workspaceId)
+        .not("circular_ownership_type", "is", null)
+        .is("end_date", null);
+      
+      const circularDisclosures = (circularLinks || [])
+        .filter((l: any) => l.owned_entity_id === corpCompanyId || l.owner_entity_id === corpCompanyId)
+        .map((l: any) => ({
+          ownerName: entityMap[l.owner_entity_id]?.name || "Unknown",
+          ownedName: entityMap[l.owned_entity_id]?.name || "Unknown",
+          exceptionType: l.circular_ownership_type?.replace(/_/g, " ") || "Unknown",
+          jurisdiction: l.disposal_jurisdiction || "—",
+          disposalRequired: l.disposal_required,
+          disposalDeadline: l.disposal_deadline,
+          notes: l.circular_ownership_notes,
+          percentage: l.percentage,
+        }));
+
       const doc = (
         <CorporateProfilePdf
           data={{
@@ -209,6 +229,7 @@ export default function Reports() {
             asOfDate: corpAsOfDate,
             generatedBy: profileRes.data?.full_name || "Unknown",
             sections: corpSections,
+            circularDisclosures,
           }}
         />
       );
