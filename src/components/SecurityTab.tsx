@@ -26,6 +26,7 @@ export function SecurityTab() {
   const [migrating, setMigrating] = useState(false);
   const [migrateProgress, setMigrateProgress] = useState({ current: 0, total: 0 });
   const [migrateComplete, setMigrateComplete] = useState(false);
+  const [migrateResult, setMigrateResult] = useState<{ encrypted_count: number; total_count: number; errors: any[] } | null>(null);
 
   const fetchStats = async () => {
     if (!workspaceId) return;
