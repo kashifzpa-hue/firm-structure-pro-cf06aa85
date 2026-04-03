@@ -678,12 +678,11 @@ export default function EntityDetail() {
                   <span className="text-amber-800">
                     <strong>Setup Mode</strong> — You can directly edit shareholdings and share classes. When your cap table is complete, activate Live Mode to enable the Movement Ledger.
                   </span>
-                   {isAdmin && (
-                     <Button size="sm" variant="outline" className="ml-4 shrink-0 border-amber-400 text-amber-700 hover:bg-amber-100" onClick={() => setActivateModalOpen(true)}>
-                       Activate Live Mode →
-                     </Button>
-                   )}
-                  </Button>
+                  {isAdmin && (
+                    <Button size="sm" variant="outline" className="ml-4 shrink-0 border-amber-400 text-amber-700 hover:bg-amber-100" onClick={() => setActivateModalOpen(true)}>
+                      Activate Live Mode →
+                    </Button>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
