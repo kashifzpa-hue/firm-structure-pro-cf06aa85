@@ -135,7 +135,10 @@ export default function BankAccountDetail() {
 
       await supabase.from("bank_account_documents").update({
         file_url: result.file_url,
-      }).eq("id", inserted.id);
+        is_encrypted: result.is_encrypted,
+        iv: result.iv,
+        encryption_version: result.encryption_version,
+      } as any).eq("id", inserted.id);
 
       const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
       await logBankingActivity(id!, "document_uploaded", `Document "${docType}" uploaded`, profile?.id || "", workspaceId);
