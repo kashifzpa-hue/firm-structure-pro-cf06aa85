@@ -1,0 +1,1 @@
+ALTER TABLE public.entities ADD COLUMN linkedin_url text;

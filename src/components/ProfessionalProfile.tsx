@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, GripVertical, Loader2, X } from "lucide-react";
+import { Plus, Trash2, GripVertical, Loader2, X, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 
 const LANGUAGE_SUGGESTIONS = [
@@ -38,6 +38,7 @@ export function ProfessionalProfile({ entityId, entity, onUpdated }: Professiona
   const { workspaceId } = useAuth();
   const [bio, setBio] = useState(entity?.professional_bio || "");
   const [qualifications, setQualifications] = useState(entity?.qualifications || "");
+  const [linkedinUrl, setLinkedinUrl] = useState(entity?.linkedin_url || "");
   const [languages, setLanguages] = useState<string[]>(entity?.languages_spoken || []);
   const [langInput, setLangInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -49,6 +50,7 @@ export function ProfessionalProfile({ entityId, entity, onUpdated }: Professiona
   useEffect(() => {
     setBio(entity?.professional_bio || "");
     setQualifications(entity?.qualifications || "");
+    setLinkedinUrl(entity?.linkedin_url || "");
     setLanguages(entity?.languages_spoken || []);
   }, [entity]);
 
@@ -122,6 +124,7 @@ export function ProfessionalProfile({ entityId, entity, onUpdated }: Professiona
         .update({
           professional_bio: bio || null,
           qualifications: qualifications || null,
+          linkedin_url: linkedinUrl.trim() || null,
           languages_spoken: languages.length > 0 ? languages : null,
         } as any)
         .eq("id", entityId);
@@ -198,7 +201,17 @@ export function ProfessionalProfile({ entityId, entity, onUpdated }: Professiona
           />
         </div>
 
-        {/* Languages */}
+        {/* LinkedIn */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Linkedin className="h-4 w-4 text-[#0A66C2]" /> LinkedIn Profile
+          </Label>
+          <Input
+            value={linkedinUrl}
+            onChange={(e) => setLinkedinUrl(e.target.value)}
+            placeholder="https://linkedin.com/in/username"
+          />
+        </div>
         <div className="space-y-2">
           <Label>Languages</Label>
           {languages.length > 0 && (

@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { pdf } from "@react-pdf/renderer";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { EntityAvatar } from "@/components/EntityAvatar";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfessionalProfile } from "@/components/ProfessionalProfile";
+import { PersonProfilePdf } from "@/components/reports/PersonProfilePdf";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +29,7 @@ import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
 import { BankingTab } from "@/components/banking/BankingTab";
 import { CapTableWaterfall } from "@/components/CapTableWaterfall";
 import { useBankingEnabled } from "@/hooks/use-banking-enabled";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark, RefreshCw, Clock } from "lucide-react";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Linkedin, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark, RefreshCw, Clock } from "lucide-react";
 import { DocumentRenewalModal } from "@/components/DocumentRenewalModal";
 import { DocumentVersionHistory } from "@/components/DocumentVersionHistory";
 import { getFrequencyLabel, RenewalFrequency } from "@/lib/renewal-utils";
@@ -239,6 +241,38 @@ export default function EntityDetail() {
     fetchAll();
   };
 
+  const handleDownloadPersonPdf = async () => {
+    if (!entity || !id || !workspaceId) return;
+    try {
+      const [posRes, apptRes, shRes] = await Promise.all([
+        supabase.from("previous_positions").select("*").eq("entity_id", id).eq("workspace_id", workspaceId).order("display_order").order("from_date", { ascending: false }),
+        supabase.from("appointments").select("*, company:entities!appointments_company_entity_id_fkey(name)").eq("person_entity_id", id).eq("workspace_id", workspaceId).is("resignation_date", null),
+        supabase.from("equity_links").select("*, owned:entities!equity_links_owned_entity_id_fkey(name), share_class:share_classes(class_name)").eq("owner_entity_id", id).eq("workspace_id", workspaceId).is("end_date", null),
+      ]);
+      const pdfData = {
+        entity,
+        positions: posRes.data || [],
+        appointments: (apptRes.data || []).map((a: any) => ({ ...a, company_name: a.company?.name })),
+        documents: docs,
+        shareholdings: (shRes.data || []).map((s: any) => ({
+          company_name: s.owned?.name,
+          share_class_name: s.share_class?.class_name,
+          shares_owned: s.shares_owned,
+          percentage: s.percentage,
+        })),
+      };
+      const blob = await pdf(<PersonProfilePdf data={pdfData} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${entity.name.replace(/\s+/g, "_")}_Profile.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
   if (!entity) return <div className="flex items-center justify-center h-64 text-muted-foreground">Entity not found.</div>;
 
@@ -337,15 +371,28 @@ export default function EntityDetail() {
           {isPerson && primaryRole && (
             <div className="text-sm text-muted-foreground mt-0.5">{primaryRole}</div>
           )}
-          {isPerson && (entity.email || entity.phone) && (
+          {isPerson && (entity.email || entity.phone || entity.linkedin_url) && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
               {entity.email && <span>{entity.email}</span>}
               {entity.email && entity.phone && <span>·</span>}
               {entity.phone && <span>{entity.phone}</span>}
+              {entity.linkedin_url && (
+                <>
+                  {(entity.email || entity.phone) && <span>·</span>}
+                  <a href={entity.linkedin_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#0A66C2] hover:underline">
+                    <Linkedin className="h-3.5 w-3.5" /> LinkedIn
+                  </a>
+                </>
+              )}
             </div>
           )}
         </div>
         <div className="flex gap-2">
+          {isPerson && (
+            <Button variant="outline" onClick={handleDownloadPersonPdf}>
+              <Download className="mr-2 h-4 w-4" /> Download PDF
+            </Button>
+          )}
           {!isPerson && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
