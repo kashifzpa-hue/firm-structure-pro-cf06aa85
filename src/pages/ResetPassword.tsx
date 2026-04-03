@@ -21,11 +21,21 @@ export default function ResetPassword() {
         setReady(true);
       }
     });
-    // Also check if we already have a session with recovery type from URL hash
+
+    // Check URL for recovery indicators (hash or query params from PKCE flow)
     const hash = window.location.hash;
-    if (hash.includes("type=recovery")) {
+    const params = new URLSearchParams(window.location.search);
+    if (hash.includes("type=recovery") || params.get("type") === "recovery") {
       setReady(true);
     }
+
+    // Also check if we already have a session (recovery link was already processed)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setReady(true);
+      }
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
