@@ -610,8 +610,9 @@ export default function EntityDetail() {
                                   </Badge>
                                 )}
                               </TableCell>
-                              <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
-                              <TableCell>
+                               <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
+                               <TableCell><EncryptionLockIcon isEncrypted={doc.is_encrypted} /></TableCell>
+                               <TableCell>
                                 <div className="flex items-center gap-1">
                                   {doc.file_url && (
                                     <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={async (e) => {

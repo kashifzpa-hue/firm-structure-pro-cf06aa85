@@ -381,7 +381,7 @@ export default function BankAccountDetail() {
                     {docs.map(d => (
                       <TableRow key={d.id}>
                         <TableCell className="font-medium flex items-center gap-1.5">
-                          {d.file_url && <Lock className="h-3 w-3 text-muted-foreground" />}
+                          <EncryptionLockIcon isEncrypted={d.is_encrypted} className="h-3 w-3" />
                           {d.document_type}
                         </TableCell>
                         <TableCell>{d.description || "—"}</TableCell>

@@ -38,6 +38,7 @@ export function DocumentVersionHistory({ documentId }: Props) {
           <div className="absolute -left-[5px] top-3 h-2 w-2 rounded-full bg-primary" />
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2">
+              <EncryptionLockIcon isEncrypted={v.is_encrypted} className="h-3 w-3" />
               <span className="font-medium text-sm">Version {v.version_number}</span>
               {i === 0 && (
                 <Badge variant="default" className="text-xs">Current</Badge>

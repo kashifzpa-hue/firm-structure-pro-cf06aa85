@@ -196,7 +196,7 @@ export default function MovementDetail() {
                 {movementDocs.map(d => (
                   <TableRow key={d.id}>
                     <TableCell className="font-medium flex items-center gap-1.5">
-                      <Lock className="h-3 w-3 text-muted-foreground" />
+                      <EncryptionLockIcon isEncrypted={d.is_encrypted} className="h-3 w-3" />
                       {d.document_type}
                     </TableCell>
                     <TableCell>{d.notes || "—"}</TableCell>
