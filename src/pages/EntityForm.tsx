@@ -21,6 +21,9 @@ const personDocTypes = ["National ID", "Passport", "Driving License", "Other"];
 const companyDocTypes = ["Trade License", "Certificate of Incorporation", "Memorandum of Association", "Articles of Association", "Tax Registration Certificate", "Power of Attorney", "Other"];
 const companyTypes = ["LLC", "Free Zone LLC", "Holding Company", "Offshore", "Joint Stock", "Other"];
 
+import { RenewalFrequency, RENEWAL_OPTIONS, DOC_TYPE_PRESETS, calculateNextExpiry, getFrequencyLabel, getFrequencyMonths } from "@/lib/renewal-utils";
+import { Switch } from "@/components/ui/switch";
+
 interface DocRow {
   id?: string;
   document_type: string;
@@ -31,6 +34,9 @@ interface DocRow {
   expiry_date: string;
   file: File | null;
   file_url: string;
+  renewal_frequency: RenewalFrequency | "";
+  renewal_months: number | "";
+  auto_suggest_expiry: boolean;
 }
 
 const emptyDoc = (): DocRow => ({
@@ -42,6 +48,9 @@ const emptyDoc = (): DocRow => ({
   expiry_date: "",
   file: null,
   file_url: "",
+  renewal_frequency: "",
+  renewal_months: "",
+  auto_suggest_expiry: true,
 });
 
 export default function EntityForm() {
