@@ -1,4 +1,4 @@
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import { PdfPageWrapper, PdfSection, PdfTable, PdfStyles } from "@/components/pdf/PdfLayout";
 import { formatDateTime } from "@/lib/report-helpers";
 
@@ -12,6 +12,13 @@ const s = StyleSheet.create({
   posSub: { fontSize: 8, color: "#64748B", marginTop: 2 },
   langBadge: { fontSize: 8, backgroundColor: "#F1F5F9", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginRight: 4, marginBottom: 4, color: "#334155" },
   langRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 4 },
+  headerRow: { flexDirection: "row", marginBottom: 12, paddingHorizontal: 8 },
+  photo: { width: 80, height: 80, borderRadius: 40, marginRight: 12 },
+  initialsCircle: { width: 80, height: 80, borderRadius: 40, marginRight: 12, backgroundColor: "#1E40AF", justifyContent: "center", alignItems: "center" },
+  initials: { fontSize: 24, color: "#FFFFFF", fontFamily: "Helvetica-Bold" },
+  headerDetails: { flex: 1, justifyContent: "center" },
+  headerName: { fontSize: 14, fontFamily: "Helvetica-Bold", color: "#1E293B", marginBottom: 4 },
+  headerSub: { fontSize: 9, color: "#64748B", marginBottom: 2 },
 });
 
 interface PersonProfileData {
@@ -31,9 +38,33 @@ export function PersonProfilePdf({ data }: { data: PersonProfileData }) {
     try { return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); } catch { return d; }
   };
 
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
   return (
     <Document>
       <PdfPageWrapper reportTitle="Person Profile" generationDate={genDate}>
+        {/* Header with Photo */}
+        <View style={s.headerRow}>
+          {entity.profile_photo_url ? (
+            <Image src={entity.profile_photo_url} style={s.photo} />
+          ) : (
+            <View style={s.initialsCircle}>
+              <Text style={s.initials}>{getInitials(entity.name)}</Text>
+            </View>
+          )}
+          <View style={s.headerDetails}>
+            <Text style={s.headerName}>{entity.name}</Text>
+            <Text style={s.headerSub}>{entity.nationality_or_jurisdiction || ""}{entity.nationality_or_jurisdiction && entity.date_of_birth_or_incorporation ? " · " : ""}{entity.date_of_birth_or_incorporation ? `DOB: ${formatDate(entity.date_of_birth_or_incorporation)}` : ""}</Text>
+            {entity.email && <Text style={s.headerSub}>{entity.email}{entity.phone ? ` · ${entity.phone}` : ""}</Text>}
+            {entity.linkedin_url && <Text style={s.headerSub}>{entity.linkedin_url}</Text>}
+          </View>
+        </View>
+
         {/* Personal Details */}
         <PdfSection title="Personal Details" />
         <View style={{ paddingHorizontal: 8 }}>
