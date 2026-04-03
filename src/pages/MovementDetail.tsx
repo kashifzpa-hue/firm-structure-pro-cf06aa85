@@ -40,6 +40,18 @@ export default function MovementDetail() {
     const { data } = await supabase.from("movements")
       .select("*, company:entities!movements_company_entity_id_fkey(id, name), share_class:share_classes(class_name, total_shares_issued), from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name), created_by_profile:profiles!movements_created_by_fkey(full_name, email)")
       .eq("id", id).single();
+    if (data && data.to_entity_id && data.status === "confirmed") {
+      const { data: link } = await supabase.from("equity_links")
+        .select("circular_ownership_type")
+        .eq("owner_entity_id", data.to_entity_id)
+        .eq("owned_entity_id", data.company_entity_id)
+        .eq("share_class_id", data.share_class_id)
+        .eq("workspace_id", workspaceId)
+        .not("circular_ownership_type", "is", null)
+        .limit(1)
+        .maybeSingle();
+      if (link) data.circular_exception_type = link.circular_ownership_type;
+    }
     setMovement(data);
     setLoading(false);
   };
