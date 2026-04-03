@@ -135,7 +135,10 @@ export default function BankAccountDetail() {
 
       await supabase.from("bank_account_documents").update({
         file_url: result.file_url,
-      }).eq("id", inserted.id);
+        is_encrypted: result.is_encrypted,
+        iv: result.iv,
+        encryption_version: result.encryption_version,
+      } as any).eq("id", inserted.id);
 
       const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
       await logBankingActivity(id!, "document_uploaded", `Document "${docType}" uploaded`, profile?.id || "", workspaceId);
@@ -158,13 +161,11 @@ export default function BankAccountDetail() {
     if (!doc.file_url) { toast.error("No file attached"); return; }
     setDownloading(doc.id);
     try {
-      const a = document.createElement("a");
-      a.href = doc.file_url;
-      a.download = `${doc.document_type}_${doc.id}`;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      await encryptedDownload({
+        documentId: doc.id,
+        table: "bank_account_documents",
+        filename: `${doc.document_type}_${doc.id}`,
+      });
     } catch (err: any) {
       toast.error(err.message || "Download failed");
     } finally {

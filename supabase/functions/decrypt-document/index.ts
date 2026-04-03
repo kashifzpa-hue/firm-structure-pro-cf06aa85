@@ -29,7 +29,6 @@ async function deriveKey(masterKeyBase64: string, workspaceId: string): Promise<
   return crypto.subtle.importKey("raw", derivedBits, "AES-GCM", false, ["decrypt"]);
 }
 
-// Map common file extensions to MIME types
 function guessMimeType(url: string): string {
   const ext = url.split(".").pop()?.toLowerCase();
   const map: Record<string, string> = {
@@ -100,51 +99,69 @@ Deno.serve(async (req) => {
       table?: string;
     };
 
-    const isVersion = table === "document_versions" && version_id;
-    const lookupId = isVersion ? version_id : document_id;
+    // ---- Unified document lookup across all tables ----
+    let record: any = null;
 
-    if (!lookupId) return json({ error: "document_id or version_id required" }, 400);
-
-    // ---- 1c. Fetch document record & verify workspace ----
-    let record: any;
-
-    if (isVersion) {
-      const { data, error } = await supabaseAdmin
+    if (table === "document_versions" && version_id) {
+      const { data } = await supabaseAdmin
         .from("document_versions")
         .select("*, documents!inner(document_type, document_number, workspace_id)")
         .eq("id", version_id)
         .eq("workspace_id", workspaceId)
         .single();
 
-      if (error || !data) {
-        console.warn(`[decrypt] Access denied: version=${version_id} ws=${workspaceId}`);
-        return json({ error: "Forbidden" }, 403);
+      if (data) {
+        record = {
+          ...data,
+          document_type: (data as any).documents?.document_type,
+          document_number: (data as any).documents?.document_number,
+        };
       }
-      record = {
-        ...data,
-        document_type: (data as any).documents?.document_type,
-        document_number: (data as any).documents?.document_number,
-      };
-    } else {
-      const { data, error } = await supabaseAdmin
+    } else if (table === "bank_account_documents" && document_id) {
+      const { data } = await supabaseAdmin
+        .from("bank_account_documents")
+        .select("*")
+        .eq("id", document_id)
+        .eq("workspace_id", workspaceId)
+        .single();
+
+      if (data) {
+        record = { ...data, document_type: data.document_type, document_number: null };
+      }
+    } else if (table === "movement_documents" && document_id) {
+      const { data } = await supabaseAdmin
+        .from("movement_documents")
+        .select("*")
+        .eq("id", document_id)
+        .eq("workspace_id", workspaceId)
+        .single();
+
+      if (data) {
+        record = { ...data, document_type: data.document_type, document_number: null };
+      }
+    } else if (document_id) {
+      // Default: check documents table
+      const { data } = await supabaseAdmin
         .from("documents")
         .select("*")
         .eq("id", document_id)
         .eq("workspace_id", workspaceId)
         .single();
 
-      if (error || !data) {
-        console.warn(`[decrypt] Access denied: doc=${document_id} ws=${workspaceId}`);
-        return json({ error: "Forbidden" }, 403);
+      if (data) {
+        record = data;
       }
-      record = data;
+    }
+
+    if (!record) {
+      console.warn(`[decrypt] Access denied or not found: id=${document_id || version_id} table=${table} ws=${workspaceId}`);
+      return json({ error: "Forbidden" }, 403);
     }
 
     const fileUrl = record.file_url;
     if (!fileUrl) return json({ error: "No file attached" }, 404);
 
     // ---- Extract storage path from URL ----
-    // file_url is like: https://.../storage/v1/object/public/documents/path
     const bucketPrefix = "/storage/v1/object/public/documents/";
     const idx = fileUrl.indexOf(bucketPrefix);
     let storagePath: string;
@@ -152,19 +169,17 @@ Deno.serve(async (req) => {
     if (idx >= 0) {
       storagePath = decodeURIComponent(fileUrl.substring(idx + bucketPrefix.length));
     } else {
-      // Try signed URL pattern or direct path
       const signedPrefix = "/storage/v1/object/sign/documents/";
       const sIdx = fileUrl.indexOf(signedPrefix);
       if (sIdx >= 0) {
         const pathWithQuery = fileUrl.substring(sIdx + signedPrefix.length);
         storagePath = decodeURIComponent(pathWithQuery.split("?")[0]);
       } else {
-        // Assume it's already a path
         storagePath = fileUrl;
       }
     }
 
-    // ---- 3. Legacy documents (not encrypted) → serve directly ----
+    // ---- Legacy documents (not encrypted) → serve directly ----
     if (!record.is_encrypted) {
       const { data: fileData, error: dlErr } = await supabaseAdmin.storage
         .from("documents")
@@ -188,7 +203,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ---- 2. Encrypted document ----
+    // ---- Encrypted document ----
     const masterKey = Deno.env.get("ENCRYPTION_MASTER_KEY");
     if (!masterKey) {
       console.error("[decrypt] ENCRYPTION_MASTER_KEY not configured");
@@ -197,21 +212,19 @@ Deno.serve(async (req) => {
 
     const iv = record.iv;
     if (!iv) {
-      console.error(`[decrypt] No IV for record ${lookupId}`);
+      console.error(`[decrypt] No IV for record ${document_id || version_id}`);
       return json(
         { error: "Document could not be decrypted. Please contact support." },
         422
       );
     }
 
-    // Download encrypted bytes
     const { data: encData, error: dlErr } = await supabaseAdmin.storage
       .from("documents")
       .download(storagePath);
 
     if (dlErr || !encData) return json({ error: "File not found" }, 404);
 
-    // Derive key & decrypt
     try {
       const key = await deriveKey(masterKey, workspaceId);
       const ivBytes = Uint8Array.from(atob(iv), (c) => c.charCodeAt(0));
@@ -238,7 +251,7 @@ Deno.serve(async (req) => {
         },
       });
     } catch (decryptErr) {
-      console.error(`[decrypt] Decryption failed for ${lookupId}:`, decryptErr);
+      console.error(`[decrypt] Decryption failed for ${document_id || version_id}:`, decryptErr);
       return json(
         { error: "Document could not be decrypted. Please contact support." },
         422

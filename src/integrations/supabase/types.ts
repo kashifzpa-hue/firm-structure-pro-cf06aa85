@@ -130,8 +130,11 @@ export type Database = {
           bank_account_id: string
           description: string | null
           document_type: string
+          encryption_version: number
           file_url: string | null
           id: string
+          is_encrypted: boolean
+          iv: string | null
           notes: string | null
           uploaded_at: string
           workspace_id: string
@@ -140,8 +143,11 @@ export type Database = {
           bank_account_id: string
           description?: string | null
           document_type: string
+          encryption_version?: number
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
+          iv?: string | null
           notes?: string | null
           uploaded_at?: string
           workspace_id: string
@@ -150,8 +156,11 @@ export type Database = {
           bank_account_id?: string
           description?: string | null
           document_type?: string
+          encryption_version?: number
           file_url?: string | null
           id?: string
+          is_encrypted?: boolean
+          iv?: string | null
           notes?: string | null
           uploaded_at?: string
           workspace_id?: string
@@ -718,8 +727,11 @@ export type Database = {
       movement_documents: {
         Row: {
           document_type: Database["public"]["Enums"]["movement_document_type"]
+          encryption_version: number
           file_url: string
           id: string
+          is_encrypted: boolean
+          iv: string | null
           movement_id: string
           notes: string | null
           uploaded_at: string
@@ -727,8 +739,11 @@ export type Database = {
         }
         Insert: {
           document_type?: Database["public"]["Enums"]["movement_document_type"]
+          encryption_version?: number
           file_url: string
           id?: string
+          is_encrypted?: boolean
+          iv?: string | null
           movement_id: string
           notes?: string | null
           uploaded_at?: string
@@ -736,8 +751,11 @@ export type Database = {
         }
         Update: {
           document_type?: Database["public"]["Enums"]["movement_document_type"]
+          encryption_version?: number
           file_url?: string
           id?: string
+          is_encrypted?: boolean
+          iv?: string | null
           movement_id?: string
           notes?: string | null
           uploaded_at?: string

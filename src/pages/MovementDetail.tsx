@@ -94,14 +94,11 @@ export default function MovementDetail() {
     if (!doc.file_url) { toast.error("No file attached"); return; }
     setDownloading(doc.id);
     try {
-      // Movement docs don't have is_encrypted column — download via URL
-      const a = document.createElement("a");
-      a.href = doc.file_url;
-      a.download = `${doc.document_type}_${doc.id}`;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      await encryptedDownload({
+        documentId: doc.id,
+        table: "movement_documents",
+        filename: `${doc.document_type}_${doc.id}`,
+      });
     } catch (err: any) {
       toast.error(err.message || "Download failed");
     } finally {
