@@ -137,7 +137,7 @@ export default function Ledger() {
         <h1 className="text-2xl font-bold tracking-tight">Movement Ledger</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportCSV}><Download className="mr-2 h-4 w-4" /> Export CSV</Button>
-          <Button onClick={() => { setEditingMovement(null); setWizardOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Record Movement</Button>
+          {isAdmin && <Button onClick={() => { setEditingMovement(null); setWizardOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Record Movement</Button>}
         </div>
       </div>
 
