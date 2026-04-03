@@ -257,6 +257,7 @@ export default function EntityForm() {
         issue_date: doc.issue_date || null,
         expiry_date: doc.expiry_date || null,
         file_url: fileUrl || null,
+        ...encryptionMeta,
         renewal_frequency: doc.renewal_frequency || null,
         renewal_months: doc.renewal_frequency === 'custom' && doc.renewal_months ? Number(doc.renewal_months) : null,
         auto_suggest_expiry: doc.auto_suggest_expiry,

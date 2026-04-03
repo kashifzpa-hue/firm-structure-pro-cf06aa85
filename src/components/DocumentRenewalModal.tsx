@@ -62,12 +62,10 @@ export function DocumentRenewalModal({ open, onOpenChange, document: doc, onRene
     setSaving(true);
 
     try {
-      // Upload file
+      // Upload and encrypt file
       const filePath = `${workspaceId}/${doc.entity_id}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("documents").upload(filePath, file);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(filePath);
-      const fileUrl = urlData.publicUrl;
+      const encResult = await encryptedUpload({ file, storagePath: filePath });
+      const fileUrl = encResult.file_url;
 
       // Get current max version
       const { data: versions } = await supabase
@@ -92,14 +90,20 @@ export function DocumentRenewalModal({ open, onOpenChange, document: doc, onRene
         file_url: fileUrl,
         uploaded_by: profile?.id || null,
         notes: notes || null,
-      });
+        is_encrypted: encResult.is_encrypted,
+        encryption_version: encResult.encryption_version,
+        iv: encResult.iv,
+      } as any);
 
       // Update parent document
       await supabase.from("documents").update({
         issue_date: issueDate || null,
         expiry_date: expiryDate || null,
         file_url: fileUrl,
-      }).eq("id", doc.id);
+        is_encrypted: encResult.is_encrypted,
+        encryption_version: encResult.encryption_version,
+        iv: encResult.iv,
+      } as any).eq("id", doc.id);
 
       toast.success(`Document renewed — Version ${nextVersion}`);
       onOpenChange(false);

@@ -71,10 +71,15 @@ export function CircularOwnershipModal({
     let docUrl: string | null = null;
     if (docFile && workspaceId) {
       setUploading(true);
-      const path = `${workspaceId}/circular-exceptions/${Date.now()}_${docFile.name}`;
-      const { error } = await supabase.storage.from("documents").upload(path, docFile);
-      if (error) { toast.error("Failed to upload document"); setUploading(false); return; }
-      docUrl = path;
+      try {
+        const path = `${workspaceId}/circular-exceptions/${Date.now()}_${docFile.name}`;
+        const result = await encryptedUpload({ file: docFile, storagePath: path });
+        docUrl = result.file_url;
+      } catch (err: any) {
+        toast.error("Failed to upload document: " + err.message);
+        setUploading(false);
+        return;
+      }
       setUploading(false);
     }
 
