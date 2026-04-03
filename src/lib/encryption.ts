@@ -11,7 +11,7 @@ export async function encryptedUpload(opts: {
   storagePath: string;
   documentId?: string;
   versionId?: string;
-  table?: "documents" | "document_versions";
+  table?: "documents" | "document_versions" | "bank_account_documents" | "movement_documents";
   onProgress?: (step: "uploading" | "encrypting" | "done") => void;
 }): Promise<{
   file_url: string;
