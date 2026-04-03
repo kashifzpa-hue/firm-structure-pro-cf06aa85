@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { EntityAvatar } from "@/components/EntityAvatar";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfessionalProfile } from "@/components/ProfessionalProfile";
+import { PersonProfilePdf } from "@/components/reports/PersonProfilePdf";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
