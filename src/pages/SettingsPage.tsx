@@ -246,6 +246,10 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="security" className="mt-4">
+          <SecurityTab />
+        </TabsContent>
       </Tabs>
 
       <Dialog open={!!removeUser} onOpenChange={() => setRemoveUser(null)}>
