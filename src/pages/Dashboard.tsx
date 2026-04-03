@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [unreadAlerts, setUnreadAlerts] = useState({ total: 0, critical: 0, warnings: 0 });
   const [bankingEnabled, setBankingEnabled] = useState(false);
   const [bankingStats, setBankingStats] = useState({ accounts: 0, signatories: 0, expiring: 0, pendingAck: 0 });
+  const [govStats, setGovStats] = useState({ boardAppts: 0, mgmtAppts: 0, companiesNoBoard: 0, totalCompanies: 0 });
 
   useEffect(() => {
     if (!workspaceId) return;
