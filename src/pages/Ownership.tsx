@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 
 export default function Ownership() {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const [links, setLinks] = useState<any[]>([]);
   const [entities, setEntities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
