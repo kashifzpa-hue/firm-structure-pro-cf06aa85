@@ -601,7 +601,15 @@ export type Database = {
       }
       equity_links: {
         Row: {
+          circular_ownership_doc_url: string | null
+          circular_ownership_notes: string | null
+          circular_ownership_type:
+            | Database["public"]["Enums"]["circular_ownership_exception_type"]
+            | null
           created_at: string
+          disposal_deadline: string | null
+          disposal_jurisdiction: string | null
+          disposal_required: boolean
           effective_date: string
           end_date: string | null
           id: string
@@ -615,7 +623,15 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          circular_ownership_doc_url?: string | null
+          circular_ownership_notes?: string | null
+          circular_ownership_type?:
+            | Database["public"]["Enums"]["circular_ownership_exception_type"]
+            | null
           created_at?: string
+          disposal_deadline?: string | null
+          disposal_jurisdiction?: string | null
+          disposal_required?: boolean
           effective_date?: string
           end_date?: string | null
           id?: string
@@ -629,7 +645,15 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          circular_ownership_doc_url?: string | null
+          circular_ownership_notes?: string | null
+          circular_ownership_type?:
+            | Database["public"]["Enums"]["circular_ownership_exception_type"]
+            | null
           created_at?: string
+          disposal_deadline?: string | null
+          disposal_jurisdiction?: string | null
+          disposal_required?: boolean
           effective_date?: string
           end_date?: string | null
           id?: string
@@ -1300,6 +1324,7 @@ export type Database = {
           calculated_at: string
           calculation_error: boolean
           circular_detected: boolean
+          circular_type: Database["public"]["Enums"]["circular_type"] | null
           company_entity_id: string
           effective_economic_pct: number
           effective_voting_pct: number
@@ -1318,6 +1343,7 @@ export type Database = {
           calculated_at?: string
           calculation_error?: boolean
           circular_detected?: boolean
+          circular_type?: Database["public"]["Enums"]["circular_type"] | null
           company_entity_id: string
           effective_economic_pct?: number
           effective_voting_pct?: number
@@ -1336,6 +1362,7 @@ export type Database = {
           calculated_at?: string
           calculation_error?: boolean
           circular_detected?: boolean
+          circular_type?: Database["public"]["Enums"]["circular_type"] | null
           company_entity_id?: string
           effective_economic_pct?: number
           effective_voting_pct?: number
@@ -1477,6 +1504,10 @@ export type Database = {
       accept_invitation: { Args: { _email: string }; Returns: string }
       activate_live_mode: { Args: { p_entity_id: string }; Returns: undefined }
       calculate_ubo: { Args: { p_company_entity_id: string }; Returns: Json }
+      check_circular_ownership: {
+        Args: { p_company_entity_id: string; p_potential_owner_id: string }
+        Returns: boolean
+      }
       confirm_movement: { Args: { p_movement_id: string }; Returns: undefined }
       create_workspace: { Args: { _name: string }; Returns: string }
       get_user_workspace_id: { Args: never; Returns: string }
@@ -1507,6 +1538,12 @@ export type Database = {
         | "call_deposit"
         | "trade_finance"
       captable_status: "setup" | "live"
+      circular_ownership_exception_type:
+        | "legal_representative"
+        | "trustee"
+        | "pre_existing"
+        | "other"
+      circular_type: "illegal" | "legal_exception"
       document_renewal_frequency:
         | "none"
         | "annual"
@@ -1689,6 +1726,13 @@ export const Constants = {
         "trade_finance",
       ],
       captable_status: ["setup", "live"],
+      circular_ownership_exception_type: [
+        "legal_representative",
+        "trustee",
+        "pre_existing",
+        "other",
+      ],
+      circular_type: ["illegal", "legal_exception"],
       document_renewal_frequency: [
         "none",
         "annual",
