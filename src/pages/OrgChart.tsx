@@ -437,159 +437,165 @@ export default function OrgChart() {
         </Tabs>
       </div>
 
-      {rootId && rootShareClasses.length > 0 && (
-        <ShareSummaryPanel
-          shareClasses={rootShareClasses}
-          allLinks={allLinks}
-          rootId={rootId}
-          selectedShareClass={selectedShareClass}
-          onShareClassChange={setSelectedShareClass}
-        />
-      )}
-
-      <div className="rounded-lg border shadow-sm" style={{ height: "55vh", background: "#F8FAFC" }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeClick={onNodeClick}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          fitView
-          attributionPosition="bottom-left"
-        >
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#CBD5E1" />
-          <Controls showInteractive={false} />
-          {showMinimap && (
-            <MiniMap
-              style={{ backgroundColor: "#F8FAFC" }}
-              nodeColor={(node) => (node.type === "personNode" ? "#3B82F6" : "#0F172A")}
-              maskColor="rgba(0,0,0,0.1)"
+      {chartView === "governance" ? (
+        <GovernanceChart />
+      ) : (
+        <>
+          {rootId && rootShareClasses.length > 0 && (
+            <ShareSummaryPanel
+              shareClasses={rootShareClasses}
+              allLinks={allLinks}
+              rootId={rootId}
+              selectedShareClass={selectedShareClass}
+              onShareClassChange={setSelectedShareClass}
             />
           )}
-          <Panel position="top-left">
-            <div className="bg-background border rounded-lg p-2 shadow-sm">
-              <Select value={rootId} onValueChange={(v) => { setSearchParams({ root: v }); setSelectedShareClass("all"); }}>
-                <SelectTrigger className="w-64"><SelectValue placeholder="View from entity..." /></SelectTrigger>
-                <SelectContent>
-                  {companyEntities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </Panel>
-          <Panel position="top-right">
-            <ChartControls
-              layoutDirection={layoutDirection}
-              onLayoutChange={setLayoutDirection}
-              visibility={visibility}
-              onVisibilityChange={setVisibility}
-              showMinimap={showMinimap}
-              onMinimapToggle={() => setShowMinimap((v) => !v)}
-              onExportPng={handleExportPng}
+
+          <div className="rounded-lg border shadow-sm" style={{ height: "55vh", background: "#F8FAFC" }}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onNodeClick={onNodeClick}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              fitView
+              attributionPosition="bottom-left"
+            >
+              <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#CBD5E1" />
+              <Controls showInteractive={false} />
+              {showMinimap && (
+                <MiniMap
+                  style={{ backgroundColor: "#F8FAFC" }}
+                  nodeColor={(node) => (node.type === "personNode" ? "#3B82F6" : "#0F172A")}
+                  maskColor="rgba(0,0,0,0.1)"
+                />
+              )}
+              <Panel position="top-left">
+                <div className="bg-background border rounded-lg p-2 shadow-sm">
+                  <Select value={rootId} onValueChange={(v) => { setSearchParams({ root: v }); setSelectedShareClass("all"); }}>
+                    <SelectTrigger className="w-64"><SelectValue placeholder="View from entity..." /></SelectTrigger>
+                    <SelectContent>
+                      {companyEntities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </Panel>
+              <Panel position="top-right">
+                <ChartControls
+                  layoutDirection={layoutDirection}
+                  onLayoutChange={setLayoutDirection}
+                  visibility={visibility}
+                  onVisibilityChange={setVisibility}
+                  showMinimap={showMinimap}
+                  onMinimapToggle={() => setShowMinimap((v) => !v)}
+                  onExportPng={handleExportPng}
+                />
+              </Panel>
+              {!rootId && (
+                <Panel position="top-center" className="mt-32">
+                  <div className="text-muted-foreground text-center">
+                    <Building2 className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg font-medium">Select a company above to view its ownership structure.</p>
+                  </div>
+                </Panel>
+              )}
+            </ReactFlow>
+          </div>
+
+          {rootId && rootEntity && (
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Direct Shareholders of {rootEntity.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {directShareholders.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No direct shareholders found.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Entity Name</TableHead>
+                        <TableHead>Share Class</TableHead>
+                        <TableHead>Shares</TableHead>
+                        <TableHead>Direct %</TableHead>
+                        <TableHead>Voting</TableHead>
+                        <TableHead>Type</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {directShareholders.map((s) => (
+                        <TableRow key={s.id}>
+                          <TableCell className="font-medium">{s.entity.name}</TableCell>
+                          <TableCell>{s.shareClass?.class_name || "—"}</TableCell>
+                          <TableCell>{s.shares_owned ? s.shares_owned.toLocaleString() : "—"}</TableCell>
+                          <TableCell>{Number(s.percentage).toFixed(2)}%</TableCell>
+                          <TableCell>
+                            {s.shareClass ? (
+                              s.shareClass.voting_rights ? <Badge className="bg-success/20 text-success border-0 text-xs">Yes</Badge> : <Badge variant="secondary" className="text-xs">Non-voting</Badge>
+                            ) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="gap-1">
+                              {s.entity.type === "person" ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                              {s.entity.type === "person" ? "Person" : "Company"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {rootId && rootEntity && (
+            <UnallocatedReport
+              rootId={rootId}
+              rootEntity={rootEntity}
+              shareClasses={rootShareClasses}
+              allLinks={allLinks}
+              entityMap={entityMap}
             />
-          </Panel>
-          {!rootId && (
-            <Panel position="top-center" className="mt-32">
-              <div className="text-muted-foreground text-center">
-                <Building2 className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                <p className="text-lg font-medium">Select a company above to view its ownership structure.</p>
-              </div>
-            </Panel>
           )}
-        </ReactFlow>
-      </div>
 
-      {rootId && rootEntity && (
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Direct Shareholders of {rootEntity.name}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {directShareholders.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No direct shareholders found.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Entity Name</TableHead>
-                    <TableHead>Share Class</TableHead>
-                    <TableHead>Shares</TableHead>
-                    <TableHead>Direct %</TableHead>
-                    <TableHead>Voting</TableHead>
-                    <TableHead>Type</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {directShareholders.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-medium">{s.entity.name}</TableCell>
-                      <TableCell>{s.shareClass?.class_name || "—"}</TableCell>
-                      <TableCell>{s.shares_owned ? s.shares_owned.toLocaleString() : "—"}</TableCell>
-                      <TableCell>{Number(s.percentage).toFixed(2)}%</TableCell>
-                      <TableCell>
-                        {s.shareClass ? (
-                          s.shareClass.voting_rights ? <Badge className="bg-success/20 text-success border-0 text-xs">Yes</Badge> : <Badge variant="secondary" className="text-xs">Non-voting</Badge>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="gap-1">
-                          {s.entity.type === "person" ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
-                          {s.entity.type === "person" ? "Person" : "Company"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {rootId && rootEntity && (
-        <UnallocatedReport
-          rootId={rootId}
-          rootEntity={rootEntity}
-          shareClasses={rootShareClasses}
-          allLinks={allLinks}
-          entityMap={entityMap}
-        />
-      )}
-
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              {selectedEntity?.type === "person" ? <User className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
-              {selectedEntity?.name}
-            </SheetTitle>
-          </SheetHeader>
-          {selectedEntity && (
-            <div className="mt-6 space-y-4">
-              <div>
-                <span className="text-sm text-muted-foreground">Type</span>
-                <p className="font-medium">{selectedEntity.type === "person" ? "Person" : "Company"}</p>
-              </div>
-              {selectedEntity.nationality_or_jurisdiction && (
-                <div>
-                  <span className="text-sm text-muted-foreground">{selectedEntity.type === "person" ? "Nationality" : "Jurisdiction"}</span>
-                  <p className="font-medium">{selectedEntity.nationality_or_jurisdiction}</p>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  {selectedEntity?.type === "person" ? <User className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
+                  {selectedEntity?.name}
+                </SheetTitle>
+              </SheetHeader>
+              {selectedEntity && (
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <span className="text-sm text-muted-foreground">Type</span>
+                    <p className="font-medium">{selectedEntity.type === "person" ? "Person" : "Company"}</p>
+                  </div>
+                  {selectedEntity.nationality_or_jurisdiction && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">{selectedEntity.type === "person" ? "Nationality" : "Jurisdiction"}</span>
+                      <p className="font-medium">{selectedEntity.nationality_or_jurisdiction}</p>
+                    </div>
+                  )}
+                  {selectedEntity.company_type && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Company Type</span>
+                      <p className="font-medium">{selectedEntity.company_type}</p>
+                    </div>
+                  )}
+                  <Button className="w-full mt-4" onClick={() => { setSheetOpen(false); navigate(`/entities/${selectedEntity.id}`); }}>
+                    View Full Profile
+                  </Button>
                 </div>
               )}
-              {selectedEntity.company_type && (
-                <div>
-                  <span className="text-sm text-muted-foreground">Company Type</span>
-                  <p className="font-medium">{selectedEntity.company_type}</p>
-                </div>
-              )}
-              <Button className="w-full mt-4" onClick={() => { setSheetOpen(false); navigate(`/entities/${selectedEntity.id}`); }}>
-                View Full Profile
-              </Button>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+            </SheetContent>
+          </Sheet>
+        </>
+      )}
     </div>
   );
 }
