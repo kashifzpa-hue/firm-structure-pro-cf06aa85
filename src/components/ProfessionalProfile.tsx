@@ -50,6 +50,7 @@ export function ProfessionalProfile({ entityId, entity, onUpdated }: Professiona
   useEffect(() => {
     setBio(entity?.professional_bio || "");
     setQualifications(entity?.qualifications || "");
+    setLinkedinUrl(entity?.linkedin_url || "");
     setLanguages(entity?.languages_spoken || []);
   }, [entity]);
 
