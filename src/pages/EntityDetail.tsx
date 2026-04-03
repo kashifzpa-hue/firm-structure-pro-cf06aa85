@@ -697,7 +697,7 @@ export default function EntityDetail() {
             )}
 
             {/* Add Ownership Link button - Setup mode only for this company's "Owned By" */}
-            {!isPerson && isSetupMode && (
+            {!isPerson && isSetupMode && isAdmin && (
               <div className="flex justify-end">
                 <Button onClick={() => { setEditingOwnershipLink(null); setOwnershipModalOpen(true); }}>
                   <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
