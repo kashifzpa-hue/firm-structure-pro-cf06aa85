@@ -1,9 +1,14 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { pdf } from "@react-pdf/renderer";
-import { Download, Loader2 } from "lucide-react";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/esm/Page/AnnotationLayer.css";
+import "react-pdf/dist/esm/Page/TextLayer.css";
+import { Download, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PdfPreviewModalProps {
   open: boolean;
@@ -12,23 +17,18 @@ interface PdfPreviewModalProps {
   filename: string;
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
 export function PdfPreviewModal({ open, onClose, document: pdfDoc, filename }: PdfPreviewModalProps) {
   const [downloading, setDownloading] = useState(false);
-  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
   const [loading, setLoading] = useState(false);
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!open) {
-      setPreviewDataUrl(null);
+      setPdfData(null);
+      setCurrentPage(1);
+      setNumPages(0);
       return;
     }
 
@@ -37,13 +37,10 @@ export function PdfPreviewModal({ open, onClose, document: pdfDoc, filename }: P
 
     pdf(pdfDoc)
       .toBlob()
-      .then((blob) => {
+      .then((blob) => blob.arrayBuffer())
+      .then((buffer) => {
         if (cancelled) return;
-        return blobToDataUrl(new Blob([blob], { type: "application/pdf" }));
-      })
-      .then((dataUrl) => {
-        if (cancelled || !dataUrl) return;
-        setPreviewDataUrl(dataUrl);
+        setPdfData(new Uint8Array(buffer));
       })
       .catch(() => {
         if (!cancelled) toast.error("Failed to generate preview");
@@ -52,10 +49,13 @@ export function PdfPreviewModal({ open, onClose, document: pdfDoc, filename }: P
         if (!cancelled) setLoading(false);
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [open, pdfDoc]);
+
+  const onDocumentLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
+    setNumPages(n);
+    setCurrentPage(1);
+  }, []);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -82,26 +82,64 @@ export function PdfPreviewModal({ open, onClose, document: pdfDoc, filename }: P
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Report Preview</span>
-            <Button onClick={handleDownload} disabled={downloading} size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              {downloading ? "Downloading..." : "Download PDF"}
-            </Button>
+            <div className="flex items-center gap-2">
+              {numPages > 1 && (
+                <div className="flex items-center gap-1 text-sm font-normal">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="min-w-[60px] text-center">
+                    {currentPage} / {numPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={currentPage >= numPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <Button onClick={handleDownload} disabled={downloading} size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                {downloading ? "Downloading..." : "Download PDF"}
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-auto flex justify-center bg-muted/50 rounded">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full w-full">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Generating preview…</span>
             </div>
-          ) : previewDataUrl ? (
-            <embed
-              src={previewDataUrl}
-              type="application/pdf"
-              className="w-full h-full rounded"
-            />
+          ) : pdfData ? (
+            <Document
+              file={{ data: pdfData }}
+              onLoadSuccess={onDocumentLoadSuccess}
+              loading={
+                <div className="flex items-center justify-center h-full w-full">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              }
+            >
+              <Page
+                pageNumber={currentPage}
+                width={700}
+                renderTextLayer
+                renderAnnotationLayer
+              />
+            </Document>
           ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
+            <div className="flex items-center justify-center h-full w-full text-muted-foreground">
               Preview unavailable — use Download PDF instead.
             </div>
           )}
