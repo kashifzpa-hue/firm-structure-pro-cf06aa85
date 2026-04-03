@@ -34,7 +34,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function Ledger() {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [movements, setMovements] = useState<any[]>([]);
