@@ -45,7 +45,8 @@ import { encryptedDownload } from "@/lib/encryption";
 export default function EntityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const { bankingEnabled } = useBankingEnabled();
   const [entity, setEntity] = useState<any>(null);
   const [docs, setDocs] = useState<any[]>([]);
@@ -410,19 +411,21 @@ export default function EntityDetail() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {!isInactive && (
+          {isAdmin && !isInactive && (
             <Button variant="outline" onClick={() => navigate(`/entities/${id}/edit`)}>
               <Edit className="mr-2 h-4 w-4" /> Edit
             </Button>
           )}
-          {isInactive && (
+          {isAdmin && isInactive && (
             <Button variant="outline" onClick={handleReactivate}>
               <CheckCircle className="mr-2 h-4 w-4" /> Reactivate
             </Button>
           )}
-          <Button variant="destructive" onClick={handleDeleteClick}>
-            <Trash2 className="mr-2 h-4 w-4" /> Delete
-          </Button>
+          {isAdmin && (
+            <Button variant="destructive" onClick={handleDeleteClick}>
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </Button>
+          )}
         </div>
       </div>
 
@@ -624,15 +627,15 @@ export default function EntityDetail() {
                                       <Download className="h-3.5 w-3.5" />
                                     </Button>
                                   )}
-                                  {hasRenewal ? (
+                                  {isAdmin && hasRenewal ? (
                                     <Button variant="ghost" size="sm" className={`h-7 px-2 gap-1 text-xs ${renewButtonClass}`} onClick={() => { setRenewingDoc(doc); setRenewModalOpen(true); }}>
                                       <RefreshCw className="h-3.5 w-3.5" /> Renew
                                     </Button>
-                                  ) : (
+                                  ) : isAdmin ? (
                                     <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => navigate(`/entities/${id}/edit`)}>
                                       <Edit className="h-3.5 w-3.5" /> Update
                                     </Button>
-                                  )}
+                                  ) : null}
                                   {vCount > 0 && (
                                     <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => setExpandedVersionDoc(expandedVersionDoc === doc.id ? null : doc.id)}>
                                       <Clock className="h-3.5 w-3.5" /> History
@@ -675,9 +678,11 @@ export default function EntityDetail() {
                   <span className="text-amber-800">
                     <strong>Setup Mode</strong> — You can directly edit shareholdings and share classes. When your cap table is complete, activate Live Mode to enable the Movement Ledger.
                   </span>
-                  <Button size="sm" variant="outline" className="ml-4 shrink-0 border-amber-400 text-amber-700 hover:bg-amber-100" onClick={() => setActivateModalOpen(true)}>
-                    Activate Live Mode →
-                  </Button>
+                  {isAdmin && (
+                    <Button size="sm" variant="outline" className="ml-4 shrink-0 border-amber-400 text-amber-700 hover:bg-amber-100" onClick={() => setActivateModalOpen(true)}>
+                      Activate Live Mode →
+                    </Button>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
@@ -691,7 +696,7 @@ export default function EntityDetail() {
             )}
 
             {/* Add Ownership Link button - Setup mode only for this company's "Owned By" */}
-            {!isPerson && isSetupMode && (
+            {!isPerson && isSetupMode && isAdmin && (
               <div className="flex justify-end">
                 <Button onClick={() => { setEditingOwnershipLink(null); setOwnershipModalOpen(true); }}>
                   <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
@@ -824,7 +829,7 @@ export default function EntityDetail() {
                                 </Button>
                               )}
                             </TableCell>
-                            {!isPerson && isSetupMode && (
+                            {!isPerson && isSetupMode && isAdmin && (
                               <TableCell>
                                 <div className="flex gap-1">
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingOwnershipLink(link); setOwnershipModalOpen(true); }}>

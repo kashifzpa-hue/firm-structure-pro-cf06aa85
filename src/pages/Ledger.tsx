@@ -34,7 +34,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function Ledger() {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [movements, setMovements] = useState<any[]>([]);
@@ -136,7 +137,7 @@ export default function Ledger() {
         <h1 className="text-2xl font-bold tracking-tight">Movement Ledger</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportCSV}><Download className="mr-2 h-4 w-4" /> Export CSV</Button>
-          <Button onClick={() => { setEditingMovement(null); setWizardOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Record Movement</Button>
+          {isAdmin && <Button onClick={() => { setEditingMovement(null); setWizardOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Record Movement</Button>}
         </div>
       </div>
 
@@ -215,7 +216,7 @@ export default function Ledger() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/ledger/${m.id}`)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {m.status === "draft" && (
+                        {isAdmin && m.status === "draft" && (
                           <>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingMovement(m); setWizardOpen(true); }}>
                               <Pencil className="h-4 w-4" />
@@ -225,7 +226,7 @@ export default function Ledger() {
                             </Button>
                           </>
                         )}
-                        {m.status === "confirmed" && (
+                        {isAdmin && m.status === "confirmed" && (
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setVoidingId(m.id); setVoidOpen(true); }}>
                             <XCircle className="h-4 w-4" />
                           </Button>

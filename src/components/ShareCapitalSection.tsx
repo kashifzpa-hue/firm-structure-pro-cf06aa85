@@ -18,7 +18,8 @@ interface Props {
 }
 
 export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode = false }: Props) {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const [shareClasses, setShareClasses] = useState<any[]>([]);
   const [allocations, setAllocations] = useState<Record<string, number>>({});
   const [modalOpen, setModalOpen] = useState(false);
@@ -81,7 +82,7 @@ export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode =
             </p>
           )}
         </div>
-        {!isLiveMode && (
+        {!isLiveMode && isAdmin && (
           <Button size="sm" onClick={() => { setEditingClass(null); setModalOpen(true); }}>
             <Plus className="mr-1 h-4 w-4" /> Add Share Class
           </Button>
@@ -103,7 +104,7 @@ export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode =
                 <TableHead>Allocated</TableHead>
                 <TableHead>Unallocated</TableHead>
                 <TableHead>% Allocated</TableHead>
-                {!isLiveMode && <TableHead>Actions</TableHead>}
+                {!isLiveMode && isAdmin && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -138,7 +139,7 @@ export function ShareCapitalSection({ companyEntityId, companyName, isLiveMode =
                         <span className="text-xs text-muted-foreground">{pctAllocated.toFixed(0)}%</span>
                       </div>
                     </TableCell>
-                    {!isLiveMode && (
+                    {!isLiveMode && isAdmin && (
                       <TableCell>
                         <div className="flex gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingClass(sc); setModalOpen(true); }}>

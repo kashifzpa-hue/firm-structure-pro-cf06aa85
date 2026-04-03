@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 
 export default function Ownership() {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const [links, setLinks] = useState<any[]>([]);
   const [entities, setEntities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,9 +85,11 @@ export default function Ownership() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Ownership Links</h1>
-        <Button onClick={() => { setEditingLink(null); setModalOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => { setEditingLink(null); setModalOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-4 items-center">
@@ -112,9 +115,11 @@ export default function Ownership() {
           <Link2 className="h-16 w-16 mb-4 opacity-20" />
           <p className="text-lg font-medium">No ownership links found</p>
           <p className="text-sm mb-4">Add your first ownership link to get started.</p>
-          <Button onClick={() => { setEditingLink(null); setModalOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => { setEditingLink(null); setModalOpen(true); }}>
+              <Plus className="mr-2 h-4 w-4" /> Add Ownership Link
+            </Button>
+          )}
         </div>
       ) : (
         <div className="rounded-lg border shadow-sm">
@@ -188,12 +193,16 @@ export default function Ownership() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { setEditingLink(link); setModalOpen(true); }}>Edit</Button>
-                        {isActive && !canDelete && (
-                          <Button variant="outline" size="sm" onClick={() => { setClosingLink(link); setCloseDate(format(new Date(), "yyyy-MM-dd")); setCloseDialogOpen(true); }}>Close</Button>
-                        )}
-                        {canDelete && (
-                          <Button variant="destructive" size="sm" onClick={() => { setDeletingLink(link); setDeleteDialogOpen(true); }}>Delete</Button>
+                        {isAdmin && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => { setEditingLink(link); setModalOpen(true); }}>Edit</Button>
+                            {isActive && !canDelete && (
+                              <Button variant="outline" size="sm" onClick={() => { setClosingLink(link); setCloseDate(format(new Date(), "yyyy-MM-dd")); setCloseDialogOpen(true); }}>Close</Button>
+                            )}
+                            {canDelete && (
+                              <Button variant="destructive" size="sm" onClick={() => { setDeletingLink(link); setDeleteDialogOpen(true); }}>Delete</Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </TableCell>

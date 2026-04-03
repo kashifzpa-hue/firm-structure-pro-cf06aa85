@@ -20,7 +20,8 @@ interface Props {
 }
 
 export function BoardManagementTab({ companyEntityId, companyName }: Props) {
-  const { workspaceId } = useAuth();
+  const { workspaceId, userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +112,7 @@ export function BoardManagementTab({ companyEntityId, companyName }: Props) {
               </TableCell>
               <TableCell>
                 <div className="flex gap-1">
-                  {!appt.resignation_date && (
+                {isAdmin && !appt.resignation_date && (
                     <>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(appt); setFormCategory(category); setFormOpen(true); }}>
                         <Edit className="h-4 w-4" />
@@ -121,7 +122,7 @@ export function BoardManagementTab({ companyEntityId, companyName }: Props) {
                       </Button>
                     </>
                   )}
-                  {isToday(appt.appointment_date) && (
+                  {isAdmin && isToday(appt.appointment_date) && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setDeleteTarget(appt); setDeleteOpen(true); }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -150,9 +151,11 @@ export function BoardManagementTab({ companyEntityId, companyName }: Props) {
       <div className="space-y-3">
         <div className="flex items-center justify-between border-b pb-2">
           <h3 className="text-base font-semibold">Board of Directors</h3>
-          <Button size="sm" onClick={() => { setEditing(null); setFormCategory("board"); setFormOpen(true); }}>
-            <Plus className="mr-1 h-4 w-4" /> Add Director
-          </Button>
+          {isAdmin && (
+            <Button size="sm" onClick={() => { setEditing(null); setFormCategory("board"); setFormOpen(true); }}>
+              <Plus className="mr-1 h-4 w-4" /> Add Director
+            </Button>
+          )}
         </div>
         {renderTable(boardAppts, "board")}
       </div>
@@ -161,9 +164,11 @@ export function BoardManagementTab({ companyEntityId, companyName }: Props) {
       <div className="space-y-3">
         <div className="flex items-center justify-between border-b pb-2">
           <h3 className="text-base font-semibold">Key Management Personnel</h3>
-          <Button size="sm" onClick={() => { setEditing(null); setFormCategory("management"); setFormOpen(true); }}>
-            <Plus className="mr-1 h-4 w-4" /> Add Management
-          </Button>
+          {isAdmin && (
+            <Button size="sm" onClick={() => { setEditing(null); setFormCategory("management"); setFormOpen(true); }}>
+              <Plus className="mr-1 h-4 w-4" /> Add Management
+            </Button>
+          )}
         </div>
         {renderTable(mgmtAppts, "management")}
       </div>
