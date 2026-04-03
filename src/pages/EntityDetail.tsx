@@ -78,6 +78,9 @@ export default function EntityDetail() {
   const [renewingDoc, setRenewingDoc] = useState<any>(null);
   const [versionCounts, setVersionCounts] = useState<Record<string, number>>({});
   const [expandedVersionDoc, setExpandedVersionDoc] = useState<string | null>(null);
+  
+  // Person primary role
+  const [primaryRole, setPrimaryRole] = useState<string | null>(null);
 
   const fetchAll = async () => {
     if (!id || !workspaceId) return;
