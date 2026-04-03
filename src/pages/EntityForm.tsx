@@ -445,6 +445,12 @@ export default function EntityForm() {
                       <Select value={doc.document_type} onValueChange={(v) => {
                         updateDoc(i, "document_type", v);
                         if (v !== "Other") updateDoc(i, "custom_document_type", "");
+                        // Auto-populate renewal frequency from presets
+                        const preset = DOC_TYPE_PRESETS[v];
+                        if (preset) {
+                          updateDoc(i, "renewal_frequency", preset.frequency);
+                          if (preset.months) updateDoc(i, "renewal_months", preset.months);
+                        }
                       }}>
                         <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                         <SelectContent>
