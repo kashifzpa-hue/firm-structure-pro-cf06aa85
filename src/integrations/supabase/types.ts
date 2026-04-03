@@ -1594,6 +1594,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_workspace_admin: { Args: never; Returns: boolean }
       trigger_ubo_recalculate_for_company: {
         Args: { p_company_id: string }
         Returns: undefined
