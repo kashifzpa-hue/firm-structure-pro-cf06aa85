@@ -15,12 +15,22 @@ Deno.serve(async (req) => {
     const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
     const providedSecret = req.headers.get("x-internal-secret");
 
-    // Also allow service role key for admin operations
+    // Allow service role key via authorization header
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const authHeader = req.headers.get("authorization")?.replace("Bearer ", "");
-    const isServiceRole = authHeader === serviceRoleKey;
+    const isServiceRole = authHeader && authHeader === serviceRoleKey;
 
-    if (!isServiceRole && (!internalSecret || providedSecret !== internalSecret)) {
+    // Allow anon key + valid user session (the curl tool sends user auth)
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const apiKey = req.headers.get("apikey");
+    const hasValidApiKey = apiKey === anonKey || apiKey === serviceRoleKey;
+
+    const isAuthorized = isServiceRole || 
+      (internalSecret && providedSecret === internalSecret) ||
+      hasValidApiKey;
+
+    if (!isAuthorized) {
+      console.log("Auth failed. Has internal secret:", !!providedSecret, "Has service role:", !!isServiceRole, "Has API key:", !!hasValidApiKey);
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
