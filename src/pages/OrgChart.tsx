@@ -278,6 +278,8 @@ export default function OrgChart() {
                 primaryRole: getSeniorRole(appointmentMap[current] || []),
                 ownerships: ownershipsByEntity[current] || [],
                 visibility: { personHoldings: visibility.personHoldings },
+                entityId: current,
+                profilePhotoThumb: entity.profile_photo_thumb,
               },
         });
 
