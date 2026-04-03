@@ -131,8 +131,8 @@ Deno.serve(async (req: Request) => {
           
           // Add renewal frequency context
           const freq = (doc as any).renewal_frequency;
+          const freqLabels: Record<string, string> = { annual: 'annual', biennial: '2-year', triennial: '3-year', quinquennial: '5-year', decennial: '10-year', custom: 'custom' };
           if (freq && freq !== 'none') {
-            const freqLabels: Record<string, string> = { annual: 'annual', biennial: '2-year', triennial: '3-year', quinquennial: '5-year', decennial: '10-year', custom: 'custom' };
             const label = freqLabels[freq] || freq;
             body += ` This document has a ${label} renewal cycle.`;
           }
