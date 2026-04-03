@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 interface Step4Props {
   data: any;
@@ -12,16 +12,23 @@ interface Step4Props {
   companies: any[];
   outOfOrderAcknowledged: boolean;
   onOutOfOrderChange: (v: boolean) => void;
+  onCircularDetected: (detected: boolean) => void;
 }
 
-export function Step4Confirm({ data, entities, companies, outOfOrderAcknowledged, onOutOfOrderChange }: Step4Props) {
+const CIRCULAR_CHECK_TYPES = ["TRANSFER", "ISSUANCE", "CAPITAL_INCREASE"];
+
+export function Step4Confirm({ data, entities, companies, outOfOrderAcknowledged, onOutOfOrderChange, onCircularDetected }: Step4Props) {
   const { workspaceId } = useAuth();
   const [hasEarlierDrafts, setHasEarlierDrafts] = useState(false);
+  const [circularChecking, setCircularChecking] = useState(false);
+  const [circularDetected, setCircularDetected] = useState(false);
+  const [circularCheckError, setCircularCheckError] = useState(false);
   const isFuture = data.movement_date && new Date(data.movement_date) > new Date();
 
   const entityName = (id: string) => entities.find(e => e.id === id)?.name || "—";
   const companyName = companies.find(c => c.id === data.company_entity_id)?.name || "—";
 
+  // Check for earlier drafts
   useEffect(() => {
     if (!data.company_entity_id || !data.share_class_id || !data.movement_date || !workspaceId) return;
     supabase.from("movements").select("id")
@@ -33,6 +40,36 @@ export function Step4Confirm({ data, entities, companies, outOfOrderAcknowledged
       .limit(1)
       .then(({ data: drafts }) => setHasEarlierDrafts((drafts || []).length > 0));
   }, [data.company_entity_id, data.share_class_id, data.movement_date, workspaceId]);
+
+  // Circular ownership check
+  useEffect(() => {
+    const shouldCheck = CIRCULAR_CHECK_TYPES.includes(data.movement_type) && data.to_entity_id && data.company_entity_id;
+    if (!shouldCheck) {
+      setCircularDetected(false);
+      setCircularCheckError(false);
+      onCircularDetected(false);
+      return;
+    }
+
+    setCircularChecking(true);
+    setCircularCheckError(false);
+
+    supabase.rpc("check_circular_ownership", {
+      p_company_entity_id: data.company_entity_id,
+      p_potential_owner_id: data.to_entity_id,
+    }).then(({ data: isCircular, error }) => {
+      setCircularChecking(false);
+      if (error) {
+        console.error("Circular check failed:", error);
+        setCircularCheckError(true);
+        setCircularDetected(false);
+        onCircularDetected(false);
+        return;
+      }
+      setCircularDetected(!!isCircular);
+      onCircularDetected(!!isCircular);
+    });
+  }, [data.company_entity_id, data.to_entity_id, data.movement_type]);
 
   return (
     <div className="space-y-6">
@@ -50,6 +87,34 @@ export function Step4Confirm({ data, entities, companies, outOfOrderAcknowledged
           {data.reference_number && <div><span className="text-muted-foreground">Reference:</span> <span className="font-medium">{data.reference_number}</span></div>}
         </div>
       </div>
+
+      {circularChecking && (
+        <Alert className="border-blue-300 bg-blue-50">
+          <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+          <AlertDescription className="text-blue-800 text-sm">
+            Checking ownership structure...
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {circularCheckError && (
+        <Alert className="border-amber-300 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 text-sm">
+            Could not verify ownership chain. Proceed with caution.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {circularDetected && !circularChecking && (
+        <Alert className="border-destructive bg-destructive/5">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-destructive text-sm">
+            <strong>Circular ownership detected.</strong> {entityName(data.to_entity_id)} already appears in the ownership chain above {companyName}.
+            The Confirm button is blocked — use "Confirm with Exception" if a legal exception applies.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {isFuture && (
         <Alert className="border-amber-300 bg-amber-50">

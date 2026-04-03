@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
@@ -39,6 +40,18 @@ export default function MovementDetail() {
     const { data } = await supabase.from("movements")
       .select("*, company:entities!movements_company_entity_id_fkey(id, name), share_class:share_classes(class_name, total_shares_issued), from_entity:entities!movements_from_entity_id_fkey(name), to_entity:entities!movements_to_entity_id_fkey(name), created_by_profile:profiles!movements_created_by_fkey(full_name, email)")
       .eq("id", id).single();
+    if (data && data.to_entity_id && data.status === "confirmed") {
+      const { data: link } = await supabase.from("equity_links")
+        .select("circular_ownership_type")
+        .eq("owner_entity_id", data.to_entity_id)
+        .eq("owned_entity_id", data.company_entity_id)
+        .eq("share_class_id", data.share_class_id)
+        .eq("workspace_id", workspaceId)
+        .not("circular_ownership_type", "is", null)
+        .limit(1)
+        .maybeSingle();
+      if (link) (data as any).circular_exception_type = link.circular_ownership_type;
+    }
     setMovement(data);
     setLoading(false);
   };
@@ -95,6 +108,15 @@ export default function MovementDetail() {
           )}
         </div>
       </div>
+
+      {movement.circular_exception_type && (
+        <Alert className="border-amber-300 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 text-sm">
+            ⚠ This movement resulted in a circular ownership arrangement. Exception type: <strong>{movement.circular_exception_type.replace(/_/g, " ")}</strong>. See equity link for full details.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {movement.status === "voided" && (
         <div className="relative">
