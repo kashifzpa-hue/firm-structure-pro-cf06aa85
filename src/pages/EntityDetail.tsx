@@ -337,11 +337,19 @@ export default function EntityDetail() {
           {isPerson && primaryRole && (
             <div className="text-sm text-muted-foreground mt-0.5">{primaryRole}</div>
           )}
-          {isPerson && (entity.email || entity.phone) && (
+          {isPerson && (entity.email || entity.phone || entity.linkedin_url) && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
               {entity.email && <span>{entity.email}</span>}
               {entity.email && entity.phone && <span>·</span>}
               {entity.phone && <span>{entity.phone}</span>}
+              {entity.linkedin_url && (
+                <>
+                  {(entity.email || entity.phone) && <span>·</span>}
+                  <a href={entity.linkedin_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#0A66C2] hover:underline">
+                    <Linkedin className="h-3.5 w-3.5" /> LinkedIn
+                  </a>
+                </>
+              )}
             </div>
           )}
         </div>
