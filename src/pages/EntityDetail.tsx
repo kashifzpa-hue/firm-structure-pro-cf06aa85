@@ -449,41 +449,100 @@ export default function EntityDetail() {
                   <p>No documents attached to this entity.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Document Type</TableHead>
-                      <TableHead>Document Number</TableHead>
-                      <TableHead>Country of Issue</TableHead>
-                      <TableHead>Issue Date</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>File</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {docs.map((doc) => (
-                      <TableRow key={doc.id}>
-                        <TableCell className="font-medium">{doc.document_type}</TableCell>
-                        <TableCell>{doc.document_number || "—"}</TableCell>
-                        <TableCell>{doc.country_of_issue || "—"}</TableCell>
-                        <TableCell>{doc.issue_date ? format(parseISO(doc.issue_date), "MMM dd, yyyy") : "—"}</TableCell>
-                        <TableCell>{doc.expiry_date ? format(parseISO(doc.expiry_date), "MMM dd, yyyy") : "—"}</TableCell>
-                        <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
-                        <TableCell>
-                          {doc.file_url ? (
-                            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline text-sm">
-                              <Download className="h-4 w-4" /> Download
-                            </a>
-                          ) : "—"}
-                        </TableCell>
+                <div className="space-y-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Document Type</TableHead>
+                        <TableHead>Document Number</TableHead>
+                        <TableHead>Issue Date</TableHead>
+                        <TableHead>Expiry Date</TableHead>
+                        <TableHead>Renewal Cycle</TableHead>
+                        <TableHead>Versions</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {docs.map((doc) => {
+                        const status = getDocumentStatus(doc.expiry_date);
+                        const hasRenewal = doc.renewal_frequency && doc.renewal_frequency !== 'none';
+                        const vCount = versionCounts[doc.id] || 0;
+                        const renewButtonClass = status === 'expired' 
+                          ? 'text-destructive hover:text-destructive' 
+                          : status === 'expiring_soon' 
+                            ? 'text-warning hover:text-warning' 
+                            : 'text-muted-foreground hover:text-foreground';
+                        return (
+                          <React.Fragment key={doc.id}>
+                            <TableRow>
+                              <TableCell className="font-medium">{doc.document_type}</TableCell>
+                              <TableCell>{doc.document_number || "—"}</TableCell>
+                              <TableCell>{doc.issue_date ? format(parseISO(doc.issue_date), "MMM dd, yyyy") : "—"}</TableCell>
+                              <TableCell>{doc.expiry_date ? format(parseISO(doc.expiry_date), "MMM dd, yyyy") : "—"}</TableCell>
+                              <TableCell>
+                                {hasRenewal ? (
+                                  <Badge variant="outline" className="text-xs">
+                                    {getFrequencyLabel(doc.renewal_frequency as RenewalFrequency, doc.renewal_months)}
+                                  </Badge>
+                                ) : "—"}
+                              </TableCell>
+                              <TableCell>
+                                {vCount > 0 && (
+                                  <Badge variant="secondary" className="text-xs cursor-pointer" onClick={() => setExpandedVersionDoc(expandedVersionDoc === doc.id ? null : doc.id)}>
+                                    v{vCount}
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  {doc.file_url && (
+                                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                      <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs">
+                                        <Download className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </a>
+                                  )}
+                                  {hasRenewal ? (
+                                    <Button variant="ghost" size="sm" className={`h-7 px-2 gap-1 text-xs ${renewButtonClass}`} onClick={() => { setRenewingDoc(doc); setRenewModalOpen(true); }}>
+                                      <RefreshCw className="h-3.5 w-3.5" /> Renew
+                                    </Button>
+                                  ) : (
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => navigate(`/entities/${id}/edit`)}>
+                                      <Edit className="h-3.5 w-3.5" /> Update
+                                    </Button>
+                                  )}
+                                  {vCount > 0 && (
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => setExpandedVersionDoc(expandedVersionDoc === doc.id ? null : doc.id)}>
+                                      <Clock className="h-3.5 w-3.5" /> History
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            {expandedVersionDoc === doc.id && (
+                              <TableRow>
+                                <TableCell colSpan={8} className="bg-muted/30 py-4 px-6">
+                                  <DocumentVersionHistory documentId={doc.id} />
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
+          <DocumentRenewalModal
+            open={renewModalOpen}
+            onOpenChange={setRenewModalOpen}
+            document={renewingDoc}
+            onRenewed={fetchAll}
+          />
         </TabsContent>
 
         <TabsContent value="ownership">
