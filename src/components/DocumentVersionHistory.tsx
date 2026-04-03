@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Clock } from "lucide-react";
+import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { format, parseISO } from "date-fns";
 
 interface Props {
