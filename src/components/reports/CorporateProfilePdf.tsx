@@ -127,20 +127,18 @@ export function CorporateProfilePdf({ data }: { data: CorporateProfileData }) {
                 No board members recorded.
               </Text>
             ) : (
-              <PdfTable
-                columns={[
-                  { label: "Name", width: "30%" },
-                  { label: "Role Title", width: "30%" },
-                  { label: "Nationality", width: "20%" },
-                  { label: "Appointment Date", width: "20%" },
-                ]}
-                rows={data.boardMembers.map((b) => [
-                  b.person_name,
-                  b.role_title,
-                  b.nationality || "[Not recorded]",
-                  formatReportDate(b.appointment_date),
-                ])}
-              />
+              data.boardMembers.map((b: any, i: number) => (
+                <View key={i} style={{ flexDirection: "row", marginBottom: 8, padding: 8, backgroundColor: i % 2 === 0 ? "#F8FAFC" : "#FFFFFF", borderRadius: 4 }}>
+                  <View style={{ width: "100%" }}>
+                    <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", color: "#1E293B", marginBottom: 2 }}>{b.person_name}</Text>
+                    <Text style={{ fontSize: 9, color: "#64748B" }}>{b.role_title} · {b.nationality || "[Not recorded]"}</Text>
+                    <Text style={{ fontSize: 8, color: "#94A3B8", marginTop: 2 }}>Appointed: {formatReportDate(b.appointment_date)}</Text>
+                    {b.qualifications && <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>{b.qualifications}</Text>}
+                    {b.languages_spoken?.length > 0 && <Text style={{ fontSize: 8, color: "#64748B" }}>Languages: {b.languages_spoken.join(", ")}</Text>}
+                    {b.professional_bio && <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>Background: {b.professional_bio}</Text>}
+                  </View>
+                </View>
+              ))
             )}
           </>
         )}
