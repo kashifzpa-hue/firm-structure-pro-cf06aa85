@@ -105,6 +105,19 @@ export default function EntityDetail() {
     setEntities(entitiesRes.data || []);
     setFieldHistory(historyRes.data || []);
     setLoading(false);
+    
+    // Fetch version counts for each document
+    if (docsRes.data?.length) {
+      const { data: versions } = await supabase
+        .from("document_versions")
+        .select("document_id, version_number")
+        .in("document_id", docsRes.data.map((d: any) => d.id));
+      const counts: Record<string, number> = {};
+      (versions || []).forEach((v: any) => {
+        counts[v.document_id] = Math.max(counts[v.document_id] || 0, v.version_number);
+      });
+      setVersionCounts(counts);
+    }
   };
 
   useEffect(() => { fetchAll(); }, [id, workspaceId]);
