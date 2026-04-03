@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { encryptedDownload } from "@/lib/encryption";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ import { getFrequencyLabel, RenewalFrequency } from "@/lib/renewal-utils";
 import { Download, FileText, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
 
 export default function Documents() {
   const { workspaceId } = useAuth();
@@ -136,9 +138,14 @@ export default function Documents() {
                     <TableCell><StatusBadge expiryDate={doc.expiry_date} /></TableCell>
                     <TableCell>
                       {doc.file_url ? (
-                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline text-sm" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" className="inline-flex items-center gap-1 text-primary text-sm h-auto p-0" onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await encryptedDownload({ documentId: doc.id, filename: `${doc.document_type}_${doc.document_number || ""}` });
+                          } catch (err: any) { toast.error(err.message); }
+                        }}>
                           <Download className="h-4 w-4" /> Download
-                        </a>
+                        </Button>
                       ) : "—"}
                     </TableCell>
                   </TableRow>

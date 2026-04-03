@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { encryptedUpload } from "@/lib/encryption";
 import { BoardManagementTab } from "@/components/BoardManagementTab";
 import { ShareCapitalSection } from "@/components/ShareCapitalSection";
 import { useNavigate, useParams } from "react-router-dom";
@@ -233,12 +234,17 @@ export default function EntityForm() {
     // Handle documents
     for (const doc of docs) {
       let fileUrl = doc.file_url;
+      let encryptionMeta: { iv?: string; is_encrypted?: boolean; encryption_version?: number } = {};
       if (doc.file) {
         const filePath = `${workspaceId}/${entityId}/${Date.now()}_${doc.file.name}`;
-        const { error: uploadError } = await supabase.storage.from("documents").upload(filePath, doc.file);
-        if (uploadError) { toast.error("File upload failed: " + uploadError.message); continue; }
-        const { data: urlData } = supabase.storage.from("documents").getPublicUrl(filePath);
-        fileUrl = urlData.publicUrl;
+        try {
+          const result = await encryptedUpload({ file: doc.file, storagePath: filePath });
+          fileUrl = result.file_url;
+          encryptionMeta = { iv: result.iv, is_encrypted: result.is_encrypted, encryption_version: result.encryption_version };
+        } catch (uploadErr: any) {
+          toast.error("File upload failed: " + uploadErr.message);
+          continue;
+        }
       }
 
       const resolvedDocType = doc.document_type === "Other" && doc.custom_document_type ? doc.custom_document_type : doc.document_type;
@@ -251,6 +257,7 @@ export default function EntityForm() {
         issue_date: doc.issue_date || null,
         expiry_date: doc.expiry_date || null,
         file_url: fileUrl || null,
+        ...encryptionMeta,
         renewal_frequency: doc.renewal_frequency || null,
         renewal_months: doc.renewal_frequency === 'custom' && doc.renewal_months ? Number(doc.renewal_months) : null,
         auto_suggest_expiry: doc.auto_suggest_expiry,

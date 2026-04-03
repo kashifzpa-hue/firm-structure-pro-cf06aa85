@@ -39,6 +39,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { encryptedDownload } from "@/lib/encryption";
 
 export default function EntityDetail() {
   const { id } = useParams();
@@ -611,11 +612,14 @@ export default function EntityDetail() {
                               <TableCell>
                                 <div className="flex items-center gap-1">
                                   {doc.file_url && (
-                                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                                      <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs">
-                                        <Download className="h-3.5 w-3.5" />
-                                      </Button>
-                                    </a>
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        await encryptedDownload({ documentId: doc.id, filename: `${doc.document_type}_${doc.document_number || ""}` });
+                                      } catch (err: any) { toast.error(err.message); }
+                                    }}>
+                                      <Download className="h-3.5 w-3.5" />
+                                    </Button>
                                   )}
                                   {hasRenewal ? (
                                     <Button variant="ghost" size="sm" className={`h-7 px-2 gap-1 text-xs ${renewButtonClass}`} onClick={() => { setRenewingDoc(doc); setRenewModalOpen(true); }}>
