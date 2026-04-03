@@ -574,8 +574,9 @@ export default function EntityDetail() {
                         <TableHead>Expiry Date</TableHead>
                         <TableHead>Renewal Cycle</TableHead>
                         <TableHead>Versions</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
+                         <TableHead>Status</TableHead>
+                         <TableHead>🔒</TableHead>
+                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
