@@ -15,7 +15,12 @@ Deno.serve(async (req) => {
     const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
     const providedSecret = req.headers.get("x-internal-secret");
 
-    if (!internalSecret || providedSecret !== internalSecret) {
+    // Also allow service role key for admin operations
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const authHeader = req.headers.get("authorization")?.replace("Bearer ", "");
+    const isServiceRole = authHeader === serviceRoleKey;
+
+    if (!isServiceRole && (!internalSecret || providedSecret !== internalSecret)) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
