@@ -50,7 +50,7 @@ export default function MovementDetail() {
         .not("circular_ownership_type", "is", null)
         .limit(1)
         .maybeSingle();
-      if (link) data.circular_exception_type = link.circular_ownership_type;
+      if (link) (data as any).circular_exception_type = link.circular_ownership_type;
     }
     setMovement(data);
     setLoading(false);
