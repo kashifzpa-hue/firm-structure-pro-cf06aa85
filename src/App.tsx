@@ -71,6 +71,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/setup-workspace" element={<SetupWorkspace />} />
+            <Route path="/demo" element={<Demo />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/entities" element={<Entities />} />
