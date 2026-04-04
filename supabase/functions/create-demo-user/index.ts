@@ -5,123 +5,262 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const DEMO_EMAIL = "demo@corpsync.app";
+const DEMO_NAME = "Demo Viewer";
+const PUBLIC_DEMO_PASSWORD = "CorpSync-Demo-2026";
+
+type DemoCredentialCheck = {
+  ok: boolean;
+  status: number;
+  message?: string;
+};
+
+async function verifyDemoCredentials(
+  supabaseUrl: string,
+  anonKey: string,
+  email: string,
+  password: string,
+): Promise<DemoCredentialCheck> {
+  const response = await fetch(`${supabaseUrl.replace(/\/$/, "")}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const responseText = await response.text();
+
+  if (response.ok) {
+    return { ok: true, status: response.status };
+  }
+
+  return {
+    ok: false,
+    status: response.status,
+    message: responseText,
+  };
+}
+
+async function ensureDemoProfileAndRole(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  workspaceId: string,
+) {
+  const { data: existingProfile, error: profileLookupError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (profileLookupError) {
+    throw profileLookupError;
+  }
+
+  if (existingProfile) {
+    const { error: profileUpdateError } = await supabase
+      .from("profiles")
+      .update({
+        email: DEMO_EMAIL,
+        full_name: DEMO_NAME,
+        workspace_id: workspaceId,
+      })
+      .eq("user_id", userId);
+
+    if (profileUpdateError) {
+      throw profileUpdateError;
+    }
+  } else {
+    const { error: profileInsertError } = await supabase.from("profiles").insert({
+      user_id: userId,
+      email: DEMO_EMAIL,
+      full_name: DEMO_NAME,
+      workspace_id: workspaceId,
+    });
+
+    if (profileInsertError) {
+      throw profileInsertError;
+    }
+  }
+
+  const { data: existingRole, error: roleLookupError } = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (roleLookupError) {
+    throw roleLookupError;
+  }
+
+  if (!existingRole) {
+    const { error: roleInsertError } = await supabase
+      .from("user_roles")
+      .insert({ user_id: userId, workspace_id: workspaceId, role: "viewer" });
+
+    if (roleInsertError) {
+      throw roleInsertError;
+    }
+  }
+}
+
+async function recreateDemoUser(
+  supabase: ReturnType<typeof createClient>,
+  workspaceId: string,
+  existingUserId?: string,
+) {
+  if (existingUserId) {
+    const { error: roleDeleteError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", existingUserId);
+
+    if (roleDeleteError) {
+      throw roleDeleteError;
+    }
+
+    const { error: profileDeleteError } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("user_id", existingUserId);
+
+    if (profileDeleteError) {
+      throw profileDeleteError;
+    }
+
+    const { error: deleteUserError } = await supabase.auth.admin.deleteUser(existingUserId, false);
+
+    if (deleteUserError) {
+      throw deleteUserError;
+    }
+  }
+
+  const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+    email: DEMO_EMAIL,
+    password: PUBLIC_DEMO_PASSWORD,
+    email_confirm: true,
+    user_metadata: { full_name: DEMO_NAME },
+  });
+
+  if (createError || !newUser?.user?.id) {
+    throw createError ?? new Error("Failed to create demo user");
+  }
+
+  await ensureDemoProfileAndRole(supabase, newUser.user.id, workspaceId);
+  return newUser.user.id;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const demoPassword = Deno.env.get("DEMO_USER_PASSWORD");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const configuredPassword = Deno.env.get("DEMO_USER_PASSWORD")?.trim();
 
-    if (!demoPassword) {
-      return new Response(JSON.stringify({ error: "DEMO_USER_PASSWORD secret not configured" }), {
+    if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+      return new Response(JSON.stringify({ error: "Required demo auth configuration is missing" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (configuredPassword && configuredPassword !== PUBLIC_DEMO_PASSWORD) {
+      console.warn("DEMO_USER_PASSWORD does not match the public demo password; using the public demo password constant.");
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const demoEmail = "demo@corpsync.app";
-
-    // Check if demo user already exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find((u: any) => u.email === demoEmail);
-
-    let userId: string;
-
-    if (existingUser) {
-      userId = existingUser.id;
-      console.log("Demo user already exists, updating password:", userId);
-      // Always update password to ensure it matches the secret
-      const { error: updateErr } = await supabase.auth.admin.updateUserById(userId, {
-        password: demoPassword,
-      });
-      if (updateErr) {
-        console.error("Failed to update password:", updateErr.message);
-      }
-    } else {
-      // Create the auth user
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: demoEmail,
-        password: demoPassword,
-        email_confirm: true,
-        user_metadata: { full_name: "Demo Viewer" },
-      });
-
-      if (createError) {
-        return new Response(JSON.stringify({ error: createError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      userId = newUser.user.id;
-      console.log("Created demo user:", userId);
-
-      // Wait for handle_new_user trigger to create profile
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-
-    // Get the existing workspace (first workspace found)
-    const { data: workspaces, error: wsError } = await supabase
+    const { data: workspace, error: workspaceError } = await supabase
       .from("workspaces")
       .select("id, name")
       .limit(1)
       .single();
 
-    if (wsError || !workspaces) {
+    if (workspaceError || !workspace) {
       return new Response(JSON.stringify({ error: "No workspace found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const workspaceId = workspaces.id;
+    const { data: existingUsers, error: listUsersError } = await supabase.auth.admin.listUsers();
 
-    // Update profile to link to workspace
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ workspace_id: workspaceId })
-      .eq("user_id", userId);
-
-    if (profileError) {
-      console.error("Profile update error:", profileError);
+    if (listUsersError) {
+      throw listUsersError;
     }
 
-    // Upsert viewer role
-    const { data: existingRole } = await supabase
-      .from("user_roles")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("workspace_id", workspaceId)
-      .maybeSingle();
+    const existingUser = existingUsers?.users?.find((user) => user.email === DEMO_EMAIL);
+    let userId = existingUser?.id;
 
-    if (!existingRole) {
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({ user_id: userId, workspace_id: workspaceId, role: "viewer" });
+    if (existingUser) {
+      console.log("Demo user already exists, updating password:", existingUser.id);
+      const { error: updateError } = await supabase.auth.admin.updateUserById(existingUser.id, {
+        password: PUBLIC_DEMO_PASSWORD,
+        email_confirm: true,
+        user_metadata: { full_name: DEMO_NAME },
+      });
 
-      if (roleError) {
-        console.error("Role insert error:", roleError);
+      if (updateError) {
+        throw updateError;
       }
+
+      await ensureDemoProfileAndRole(supabase, existingUser.id, workspace.id);
+    } else {
+      userId = await recreateDemoUser(supabase, workspace.id);
+    }
+
+    let verification = await verifyDemoCredentials(
+      supabaseUrl,
+      anonKey,
+      DEMO_EMAIL,
+      PUBLIC_DEMO_PASSWORD,
+    );
+
+    if (!verification.ok) {
+      console.warn("Demo credentials failed verification after update; recreating the demo user.", verification);
+      userId = await recreateDemoUser(supabase, workspace.id, userId);
+      verification = await verifyDemoCredentials(
+        supabaseUrl,
+        anonKey,
+        DEMO_EMAIL,
+        PUBLIC_DEMO_PASSWORD,
+      );
+    }
+
+    if (!verification.ok || !userId) {
+      return new Response(
+        JSON.stringify({
+          error: "Demo account verification failed",
+          verification_status: verification.status,
+          verification_message: verification.message,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     return new Response(
       JSON.stringify({
         success: true,
         user_id: userId,
-        workspace_id: workspaceId,
-        workspace_name: workspaces.name,
+        workspace_id: workspace.id,
+        workspace_name: workspace.name,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
