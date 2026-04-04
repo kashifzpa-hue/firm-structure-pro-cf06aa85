@@ -18,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   workspaceId: null,
   userRole: null,
+  isDemoUser: false,
   signOut: async () => {},
 });
 
