@@ -26,6 +26,8 @@ import SetupWorkspace from "./pages/SetupWorkspace";
 import BankAccounts from "./pages/BankAccounts";
 import BankAccountDetail from "./pages/BankAccountDetail";
 import SignatoryRegister from "./pages/SignatoryRegister";
+import Demo from "./pages/Demo";
+import DemoAdmin from "./pages/DemoAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +71,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/setup-workspace" element={<SetupWorkspace />} />
+            <Route path="/demo" element={<Demo />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/entities" element={<Entities />} />
@@ -87,6 +90,7 @@ const App = () => (
               <Route path="/bank-accounts" element={<BankAccounts />} />
               <Route path="/bank-accounts/:id" element={<BankAccountDetail />} />
               <Route path="/signatory-register" element={<SignatoryRegister />} />
+              <Route path="/demo-admin" element={<AdminRoute><DemoAdmin /></AdminRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   workspaceId: string | null;
   userRole: "admin" | "viewer" | null;
+  isDemoUser: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   workspaceId: null,
   userRole: null,
+  isDemoUser: false,
   signOut: async () => {},
 });
 
@@ -95,8 +97,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserRole(null);
   };
 
+  const isDemoUser = session?.user?.email === "demo@corpsync.app";
+
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, workspaceId, userRole, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, workspaceId, userRole, isDemoUser, signOut }}>
       {children}
     </AuthContext.Provider>
   );

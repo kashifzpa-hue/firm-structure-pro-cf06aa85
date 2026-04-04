@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock } from "lucide-react";
+import { LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,8 +37,9 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { signOut } = useAuth();
+  const { signOut, userRole } = useAuth();
   const { bankingEnabled } = useBankingEnabled();
+  const isAdmin = userRole === "admin";
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -103,6 +104,29 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Demo Admin — admin only */}
+        {isAdmin && (
+          <SidebarGroup>
+            {!collapsed && <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">Demo</SidebarGroupLabel>}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/demo-admin"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                    >
+                      <Monitor className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>Demo Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="bg-sidebar">
