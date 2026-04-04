@@ -35,9 +35,20 @@ export default function Demo() {
   const loginAsDemo = async () => {
     setStatus("logging-in");
     setError(null);
+
     try {
-      // Sign out first if there's an existing session
       await supabase.auth.signOut();
+
+      const { data: syncData, error: syncError } = await supabase.functions.invoke<{
+        success?: boolean;
+        error?: string;
+      }>("create-demo-user");
+
+      if (syncError || !syncData?.success) {
+        setError(syncError?.message || syncData?.error || "Demo account is temporarily unavailable");
+        setStatus("ready");
+        return;
+      }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: DEMO_EMAIL,
@@ -52,7 +63,7 @@ export default function Demo() {
 
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Demo login failed");
       setStatus("ready");
     }
   };
