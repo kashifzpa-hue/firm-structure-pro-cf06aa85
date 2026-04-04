@@ -97,8 +97,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserRole(null);
   };
 
+  const isDemoUser = session?.user?.email === "demo@corpsync.app";
+
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, workspaceId, userRole, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, workspaceId, userRole, isDemoUser, signOut }}>
       {children}
     </AuthContext.Provider>
   );

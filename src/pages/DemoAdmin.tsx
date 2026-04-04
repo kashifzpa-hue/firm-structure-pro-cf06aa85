@@ -73,7 +73,7 @@ export default function DemoAdmin() {
 
   const handleDocUpload = async (docId: string, entityId: string, file: File) => {
     try {
-      const result = await encryptedUpload(file, `${workspaceId}/${entityId}/${Date.now()}_${file.name}`, workspaceId!);
+      const result = await encryptedUpload({ file, storagePath: `${workspaceId}/${entityId}/${Date.now()}_${file.name}` });
       const { error } = await supabase
         .from("documents")
         .update({ file_url: result.file_url, iv: result.iv, is_encrypted: result.is_encrypted })
