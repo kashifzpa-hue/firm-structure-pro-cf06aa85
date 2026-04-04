@@ -36,7 +36,14 @@ Deno.serve(async (req) => {
 
     if (existingUser) {
       userId = existingUser.id;
-      console.log("Demo user already exists:", userId);
+      console.log("Demo user already exists, updating password:", userId);
+      // Always update password to ensure it matches the secret
+      const { error: updateErr } = await supabase.auth.admin.updateUserById(userId, {
+        password: demoPassword,
+      });
+      if (updateErr) {
+        console.error("Failed to update password:", updateErr.message);
+      }
     } else {
       // Create the auth user
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
