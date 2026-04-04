@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   workspaceId: string | null;
   userRole: "admin" | "viewer" | null;
+  isDemoUser: boolean;
   signOut: () => Promise<void>;
 }
 
