@@ -26,6 +26,8 @@ import SetupWorkspace from "./pages/SetupWorkspace";
 import BankAccounts from "./pages/BankAccounts";
 import BankAccountDetail from "./pages/BankAccountDetail";
 import SignatoryRegister from "./pages/SignatoryRegister";
+import Demo from "./pages/Demo";
+import DemoAdmin from "./pages/DemoAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
