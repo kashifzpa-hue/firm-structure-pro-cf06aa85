@@ -90,6 +90,7 @@ const App = () => (
               <Route path="/bank-accounts" element={<BankAccounts />} />
               <Route path="/bank-accounts/:id" element={<BankAccountDetail />} />
               <Route path="/signatory-register" element={<SignatoryRegister />} />
+              <Route path="/demo-admin" element={<AdminRoute><DemoAdmin /></AdminRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
