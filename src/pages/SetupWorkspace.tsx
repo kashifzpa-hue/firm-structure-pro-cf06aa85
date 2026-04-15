@@ -44,7 +44,7 @@ export default function SetupWorkspace() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">CS</div>
+          <img src="/logo-icon.png" alt="CorpSync" className="mx-auto mb-4 h-12 w-12 rounded-xl" />
           <CardTitle>Create Your Workspace</CardTitle>
           <CardDescription>Enter your organization's name to get started.</CardDescription>
         </CardHeader>
