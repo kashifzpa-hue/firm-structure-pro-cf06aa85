@@ -80,9 +80,7 @@ export default function Demo() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur">
         <CardHeader className="text-center space-y-3">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-            CS
-          </div>
+          <img src="/logo-icon.png" alt="CorpSync" className="mx-auto h-14 w-14 rounded-xl" />
           <CardTitle className="text-2xl">CorpSync Demo</CardTitle>
           <CardDescription className="text-sm">
             Explore the platform with sample corporate structure data. Read-only access — no changes can be made.

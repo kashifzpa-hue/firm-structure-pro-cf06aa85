@@ -93,9 +93,7 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-            CS
-          </div>
+          <img src="/logo-icon.png" alt="CorpSync" className="mx-auto mb-4 h-12 w-12 rounded-xl" />
           <h1 className="text-2xl font-bold tracking-tight">CorpSync</h1>
           <p className="mt-1 text-muted-foreground">Entity Management System</p>
         </div>
