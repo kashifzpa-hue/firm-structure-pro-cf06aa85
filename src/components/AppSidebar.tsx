@@ -45,9 +45,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarContent className="bg-sidebar">
         <div className="flex items-center gap-2 px-4 py-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold text-sm">
-            CS
-          </div>
+          <img src="/logo-icon.png" alt="CorpSync" className="h-8 w-8 rounded-lg" />
           {!collapsed && (
             <span className="text-lg font-semibold text-sidebar-foreground">CorpSync</span>
           )}
