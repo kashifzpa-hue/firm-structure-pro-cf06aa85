@@ -1,4 +1,4 @@
-import { BookOpen, LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor } from "lucide-react";
+import { Bot, BookOpen, LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,7 @@ const navItems = [
   { title: "UBO Registry", url: "/ubo", icon: Shield },
   { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Documents", url: "/documents", icon: FileText },
+  { title: "AI Copilot", url: "/assistant", icon: Bot },
   { title: "User Manual", url: "/manual", icon: BookOpen },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
