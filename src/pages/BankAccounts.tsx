@@ -19,9 +19,6 @@ export default function BankAccounts() {
   const { workspaceId, userRole } = useAuth();
   const { bankingEnabled } = useBankingEnabled();
   const navigate = useNavigate();
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCompany, setFilterCompany] = useState("all");
@@ -29,30 +26,28 @@ export default function BankAccounts() {
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const isAdmin = userRole === "admin";
 
-  const fetchData = async () => {
-    if (!workspaceId) return;
-    const [accRes, compRes, sigRes] = await Promise.all([
-      supabase.from("bank_accounts").select("*, company:entities!bank_accounts_company_entity_id_fkey(id, name)").eq("workspace_id", workspaceId).order("created_at", { ascending: false }),
-      supabase.from("entities").select("id, name").eq("workspace_id", workspaceId).eq("type", "company").eq("entity_status", "active").order("name"),
-      supabase.from("signatories").select("id, bank_account_id, status, expiry_date").eq("workspace_id", workspaceId),
-    ]);
-    setAccounts(accRes.data || []);
-    setCompanies(compRes.data || []);
-    setLoading(false);
-
-    // Attach counts
-    const sigData = sigRes.data || [];
-    const withCounts = (accRes.data || []).map((acc: any) => {
-      const sigs = sigData.filter((s: any) => s.bank_account_id === acc.id);
-      return {
+  const { data, isLoading: loading, refetch } = useQuery({
+    queryKey: ["bank-accounts", workspaceId],
+    enabled: !!workspaceId,
+    queryFn: async () => {
+      const [accRes, compRes, sigRes] = await Promise.all([
+        supabase.from("bank_accounts").select("*, company:entities!bank_accounts_company_entity_id_fkey(id, name)").eq("workspace_id", workspaceId!).order("created_at", { ascending: false }),
+        supabase.from("entities").select("id, name").eq("workspace_id", workspaceId!).eq("type", "company").eq("entity_status", "active").order("name"),
+        supabase.from("signatories").select("id, bank_account_id, status, expiry_date").eq("workspace_id", workspaceId!),
+      ]);
+      const sigData = sigRes.data || [];
+      const accounts = (accRes.data || []).map((acc: any) => ({
         ...acc,
-        activeSignatories: sigs.filter((s: any) => s.status === "active").length,
-      };
-    });
-    setAccounts(withCounts);
-  };
+        activeSignatories: sigData.filter((s: any) => s.bank_account_id === acc.id && s.status === "active").length,
+      }));
+      return { accounts, companies: (compRes.data || []) as any[] };
+    },
+  });
 
-  useEffect(() => { fetchData(); }, [workspaceId]);
+  const accounts = data?.accounts ?? [];
+  const companies = data?.companies ?? [];
+  const fetchData = () => { refetch(); };
+
 
   const toggleReveal = (id: string) => {
     setRevealedIds(prev => {

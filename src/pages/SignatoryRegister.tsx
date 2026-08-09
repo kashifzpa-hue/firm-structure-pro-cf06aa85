@@ -18,24 +18,22 @@ export default function SignatoryRegister() {
   const { workspaceId } = useAuth();
   const { bankingEnabled } = useBankingEnabled();
   const navigate = useNavigate();
-  const [signatories, setSignatories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterExpiry, setFilterExpiry] = useState("all");
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    const fetch = async () => {
+  const { data: signatories = [], isLoading: loading } = useQuery({
+    queryKey: ["signatory-register", workspaceId],
+    enabled: !!workspaceId,
+    queryFn: async () => {
       const { data } = await supabase.from("signatories")
         .select("*, person:entities!signatories_person_entity_id_fkey(id, name), bank_account:bank_accounts!signatories_bank_account_id_fkey(id, bank_name, bank_name_custom, account_number, company:entities!bank_accounts_company_entity_id_fkey(id, name)), group:signatory_groups!signatories_signatory_group_id_fkey(group_label)")
-        .eq("workspace_id", workspaceId)
+        .eq("workspace_id", workspaceId!)
         .order("created_at", { ascending: false });
-      setSignatories(data || []);
-      setLoading(false);
-    };
-    fetch();
-  }, [workspaceId]);
+      return (data || []) as any[];
+    },
+  });
+
 
   const today = new Date();
   const totalActive = signatories.filter(s => s.status === "active").length;

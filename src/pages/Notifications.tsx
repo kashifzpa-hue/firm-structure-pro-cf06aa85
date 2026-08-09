@@ -26,30 +26,31 @@ const typeLabels: Record<string, { label: string; icon: any; color: string }> = 
 export default function Notifications() {
   const { workspaceId } = useAuth();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const fetchNotifications = async () => {
-    if (!workspaceId) return;
-    let query = supabase
-      .from("notifications")
-      .select("*, entity:entities(name)")
-      .eq("workspace_id", workspaceId)
-      .order("created_at", { ascending: false })
-      .limit(200);
+  const { data: notifications = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["notifications", workspaceId, typeFilter, statusFilter],
+    enabled: !!workspaceId,
+    queryFn: async () => {
+      let query = supabase
+        .from("notifications")
+        .select("*, entity:entities(name)")
+        .eq("workspace_id", workspaceId!)
+        .order("created_at", { ascending: false })
+        .limit(200);
 
-    if (typeFilter !== "all") query = query.eq("notification_type", typeFilter as any);
-    if (statusFilter === "unread") query = query.eq("is_read", false);
-    if (statusFilter === "read") query = query.eq("is_read", true);
+      if (typeFilter !== "all") query = query.eq("notification_type", typeFilter as any);
+      if (statusFilter === "unread") query = query.eq("is_read", false);
+      if (statusFilter === "read") query = query.eq("is_read", true);
 
-    const { data } = await query;
-    setNotifications(data || []);
-    setLoading(false);
-  };
+      const { data } = await query;
+      return (data || []) as any[];
+    },
+  });
 
-  useEffect(() => { fetchNotifications(); }, [workspaceId, typeFilter, statusFilter]);
+  const fetchNotifications = () => { refetch(); };
+
 
   const markAllRead = async () => {
     const unread = notifications.filter(n => !n.is_read).map(n => n.id);
