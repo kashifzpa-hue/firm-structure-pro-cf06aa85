@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Building2, Download, Eye, Map, Landmark, Briefcase } from "lucide-react";
-import { toPng } from "html-to-image";
+import { exportFlowPng } from "@/lib/exportFlowPng";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -416,14 +416,8 @@ export function GovernanceChart({ height = "55vh" }: GovernanceChartProps) {
   }, [entityMap, appointments]);
 
   const handleExportPng = useCallback(() => {
-    const el = document.querySelector(".react-flow") as HTMLElement;
-    if (!el) return;
-    toPng(el, { backgroundColor: "#F8FAFC", width: el.scrollWidth, height: el.scrollHeight }).then((url) => {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "governance-chart.png";
-      a.click();
-    });
+    const el = document.querySelector(".react-flow") as HTMLElement | null;
+    exportFlowPng(el, "governance-chart.png");
   }, []);
 
   const toggleVis = (key: keyof GovVisibility) => setVisibility((v) => ({ ...v, [key]: !v[key] }));
