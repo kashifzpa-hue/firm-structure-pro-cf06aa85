@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, Download, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+// Loaded on demand: the spreadsheet library is ~400 kB and only needed for import/template.
+const loadXLSX = () => import("xlsx");
+
 
 interface Props {
   open: boolean;
