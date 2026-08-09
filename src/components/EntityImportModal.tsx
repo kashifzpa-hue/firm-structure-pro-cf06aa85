@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, Download, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+// Loaded on demand: the spreadsheet library is ~400 kB and only needed for import/template.
+const loadXLSX = () => import("xlsx");
+
 
 interface Props {
   open: boolean;
@@ -63,8 +65,10 @@ export function EntityImportModal({ open, onOpenChange, onImported }: Props) {
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<"upload" | "preview">("upload");
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadTemplate = async () => {
+    const XLSX = await loadXLSX();
     const wb = XLSX.utils.book_new();
+
 
     const ws1 = XLSX.utils.aoa_to_sheet([
       ENTITY_COLUMNS,
@@ -90,9 +94,11 @@ export function EntityImportModal({ open, onOpenChange, onImported }: Props) {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
+        const XLSX = await loadXLSX();
         const wb = XLSX.read(evt.target?.result, { type: "binary" });
+
         const rowErrors: string[] = [];
 
         // Parse Entities sheet

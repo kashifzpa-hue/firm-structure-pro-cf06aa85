@@ -3,6 +3,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet } from "react-router-dom";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
 import { Badge } from "@/components/ui/badge";
 import { Shield, Eye } from "lucide-react";
 
@@ -43,8 +45,11 @@ export function AppLayout() {
               <NotificationBell />
             </header>
             <main className="flex-1 p-6 overflow-auto">
-              <Outlet />
+              <ErrorBoundary>
+                <Outlet />
+              </ErrorBoundary>
             </main>
+
           </div>
         </div>
       </div>

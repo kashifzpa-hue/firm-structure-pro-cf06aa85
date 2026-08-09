@@ -1,9 +1,6 @@
+import { corsFor } from "../_shared/http.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 const DEMO_EMAIL = "demo@corpsync.app";
 const DEMO_NAME = "Demo Viewer";
@@ -153,10 +150,35 @@ async function recreateDemoUser(
   return newUser.user.id;
 }
 
+// Simple per-instance throttle: this endpoint is unauthenticated by design
+// (it provisions/repairs the public demo account) but performs admin auth work,
+// so it must not be callable in a tight loop.
+const RATE_LIMIT_WINDOW_MS = 30_000;
+const RATE_LIMIT_MAX = 5;
+const callTimestamps: number[] = [];
+
+function isRateLimited(): boolean {
+  const now = Date.now();
+  while (callTimestamps.length && now - callTimestamps[0] > RATE_LIMIT_WINDOW_MS) callTimestamps.shift();
+  if (callTimestamps.length >= RATE_LIMIT_MAX) return true;
+  callTimestamps.push(now);
+  return false;
+}
+
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  if (isRateLimited()) {
+    return new Response(JSON.stringify({ error: "Too many demo requests, please retry shortly" }), {
+      status: 429,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "30" },
+    });
+  }
+
+
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");

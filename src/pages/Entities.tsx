@@ -13,7 +13,9 @@ import { Switch } from "@/components/ui/switch";
 import { format, parseISO } from "date-fns";
 import { getDocumentStatus } from "@/lib/document-status";
 import { EntityImportModal } from "@/components/EntityImportModal";
-import * as XLSX from "xlsx";
+// Loaded on demand: the spreadsheet library is ~400 kB and only needed on export.
+const loadXLSX = () => import("xlsx");
+
 
 export default function Entities() {
   const { workspaceId, userRole } = useAuth();
@@ -94,7 +96,9 @@ export default function Entities() {
       "Notes": sc.notes || "",
     }));
 
+    const XLSX = await loadXLSX();
     const wb = XLSX.utils.book_new();
+
 
     const ws1 = XLSX.utils.json_to_sheet(exportData);
     ws1["!cols"] = Object.keys(exportData[0] || {}).map(() => ({ wch: 22 }));
