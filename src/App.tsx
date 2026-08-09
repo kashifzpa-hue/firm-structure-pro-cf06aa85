@@ -21,6 +21,7 @@ import MovementDetail from "./pages/MovementDetail";
 import UBORegistry from "./pages/UBORegistry";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
+import UserManual from "./pages/UserManual";
 import Notifications from "./pages/Notifications";
 import SetupWorkspace from "./pages/SetupWorkspace";
 import BankAccounts from "./pages/BankAccounts";
@@ -87,6 +88,7 @@ const App = () => (
               <Route path="/reports" element={<Reports />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/manual" element={<UserManual />} />
               <Route path="/bank-accounts" element={<BankAccounts />} />
               <Route path="/bank-accounts/:id" element={<BankAccountDetail />} />
               <Route path="/signatory-register" element={<SignatoryRegister />} />
