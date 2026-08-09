@@ -65,8 +65,10 @@ export function EntityImportModal({ open, onOpenChange, onImported }: Props) {
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<"upload" | "preview">("upload");
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadTemplate = async () => {
+    const XLSX = await loadXLSX();
     const wb = XLSX.utils.book_new();
+
 
     const ws1 = XLSX.utils.aoa_to_sheet([
       ENTITY_COLUMNS,
