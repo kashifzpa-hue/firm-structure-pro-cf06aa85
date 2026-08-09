@@ -96,7 +96,9 @@ export default function Entities() {
       "Notes": sc.notes || "",
     }));
 
+    const XLSX = await loadXLSX();
     const wb = XLSX.utils.book_new();
+
 
     const ws1 = XLSX.utils.json_to_sheet(exportData);
     ws1["!cols"] = Object.keys(exportData[0] || {}).map(() => ({ wch: 22 }));
