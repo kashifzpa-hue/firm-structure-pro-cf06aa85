@@ -19,39 +19,38 @@ import { toast } from "sonner";
 export default function Documents() {
   const { workspaceId } = useAuth();
   const navigate = useNavigate();
-  const [docs, setDocs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [entityTypeFilter, setEntityTypeFilter] = useState("all");
   const [docTypeFilter, setDocTypeFilter] = useState("all");
-  const [versionCounts, setVersionCounts] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    const fetchData = async () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ["documents", workspaceId],
+    enabled: !!workspaceId,
+    queryFn: async () => {
       const { data } = await supabase
         .from("documents")
         .select("*, entities!inner(name, type)")
-        .eq("workspace_id", workspaceId);
+        .eq("workspace_id", workspaceId!);
       const allDocs = data || [];
-      setDocs(allDocs);
 
-      // Fetch version counts
+      const counts: Record<string, number> = {};
       if (allDocs.length > 0) {
         const { data: versions } = await supabase
           .from("document_versions")
           .select("document_id, version_number")
           .in("document_id", allDocs.map((d: any) => d.id));
-        const counts: Record<string, number> = {};
         (versions || []).forEach((v: any) => {
           counts[v.document_id] = Math.max(counts[v.document_id] || 0, v.version_number);
         });
-        setVersionCounts(counts);
       }
-      setLoading(false);
-    };
-    fetchData();
-  }, [workspaceId]);
+      return { docs: allDocs as any[], versionCounts: counts };
+    },
+  });
+
+  const docs = data?.docs ?? [];
+  const versionCounts = data?.versionCounts ?? {};
+  const loading = isLoading;
+
 
   const docTypes = [...new Set(docs.map((d) => d.document_type))].sort();
 
