@@ -27,7 +27,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Building2, User } from "lucide-react";
-import { toPng } from "html-to-image";
+import { exportFlowPng } from "@/lib/exportFlowPng";
 import { ShareSummaryPanel } from "@/components/orgchart/ShareSummaryPanel";
 import { UnallocatedReport } from "@/components/orgchart/UnallocatedReport";
 import { CompanyNode } from "@/components/orgchart/CompanyNode";
@@ -424,14 +424,8 @@ export default function OrgChart() {
   }, [entityMap]);
 
   const handleExportPng = useCallback(() => {
-    const el = document.querySelector(".react-flow") as HTMLElement;
-    if (!el) return;
-    toPng(el, { backgroundColor: "#F8FAFC", width: el.scrollWidth, height: el.scrollHeight }).then((url) => {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "org-chart.png";
-      a.click();
-    });
+    const el = document.querySelector(".react-flow") as HTMLElement | null;
+    exportFlowPng(el, "org-chart.png");
   }, []);
 
   const directShareholders = useMemo(() => {
