@@ -18,9 +18,6 @@ import { OwnershipFormModal } from "@/components/OwnershipFormModal";
 export default function Ownership() {
   const { workspaceId, userRole } = useAuth();
   const isAdmin = userRole === "admin";
-  const [links, setLinks] = useState<any[]>([]);
-  const [entities, setEntities] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeOnly, setActiveOnly] = useState(true);
   const [entityFilter, setEntityFilter] = useState("all");
@@ -32,22 +29,27 @@ export default function Ownership() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingLink, setDeletingLink] = useState<any>(null);
 
-  const fetchData = async () => {
-    if (!workspaceId) return;
-    const [linksRes, entitiesRes] = await Promise.all([
-      supabase
-        .from("equity_links")
-        .select("*, owner:entities!equity_links_owner_entity_id_fkey(*), owned:entities!equity_links_owned_entity_id_fkey(*), share_class:share_classes(*)")
-        .eq("workspace_id", workspaceId)
-        .order("created_at", { ascending: false }),
-      supabase.from("entities").select("id, name, type").eq("workspace_id", workspaceId).order("name"),
-    ]);
-    setLinks(linksRes.data || []);
-    setEntities(entitiesRes.data || []);
-    setLoading(false);
-  };
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["ownership", workspaceId],
+    enabled: !!workspaceId,
+    queryFn: async () => {
+      const [linksRes, entitiesRes] = await Promise.all([
+        supabase
+          .from("equity_links")
+          .select("*, owner:entities!equity_links_owner_entity_id_fkey(*), owned:entities!equity_links_owned_entity_id_fkey(*), share_class:share_classes(*)")
+          .eq("workspace_id", workspaceId!)
+          .order("created_at", { ascending: false }),
+        supabase.from("entities").select("id, name, type").eq("workspace_id", workspaceId!).order("name"),
+      ]);
+      return { links: linksRes.data || [], entities: entitiesRes.data || [] };
+    },
+  });
 
-  useEffect(() => { fetchData(); }, [workspaceId]);
+  const links = data?.links ?? [];
+  const entities = data?.entities ?? [];
+  const loading = isLoading;
+  const fetchData = () => { refetch(); };
+
 
   const filtered = useMemo(() => {
     return links.filter((l) => {
