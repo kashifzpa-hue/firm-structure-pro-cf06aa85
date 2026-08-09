@@ -804,6 +804,24 @@ export type Database = {
           },
         ]
       }
+      internal_secrets: {
+        Row: {
+          created_at: string
+          name: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          value?: string
+        }
+        Relationships: []
+      }
       movement_documents: {
         Row: {
           document_type: Database["public"]["Enums"]["movement_document_type"]
