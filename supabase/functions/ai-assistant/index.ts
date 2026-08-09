@@ -1,13 +1,10 @@
+import { corsFor } from "../_shared/http.ts";
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "npm:ai@^7";
 import { createOpenAI } from "npm:@ai-sdk/openai@^4";
 import { createClient } from "npm:@supabase/supabase-js@^2";
 import { z } from "npm:zod@^4";
 import { createLovableAiGatewayRunIdFetch, getLovableAiGatewayRunId } from "../_shared/ai-gateway.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 const PRODUCT_GUIDE = `
 CorpSync is a multi-tenant corporate entity management platform for law firms and corporate service providers.
@@ -52,6 +49,7 @@ function docStatus(expiry: string | null) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

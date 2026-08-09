@@ -1,10 +1,6 @@
+import { corsFor } from "../_shared/http.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const INFO_V1 = new TextEncoder().encode("corpsync-document-encryption-v1");
 
@@ -36,6 +32,7 @@ async function deriveKey(masterKeyBase64: string, workspaceId: string): Promise<
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
