@@ -94,9 +94,11 @@ export function EntityImportModal({ open, onOpenChange, onImported }: Props) {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
+        const XLSX = await loadXLSX();
         const wb = XLSX.read(evt.target?.result, { type: "binary" });
+
         const rowErrors: string[] = [];
 
         // Parse Entities sheet
