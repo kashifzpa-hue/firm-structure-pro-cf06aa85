@@ -42,7 +42,10 @@ export function corsFor(req: Request, extraHeaders = ""): Record<string, string>
  *
  * Returns a 403 Response when the caller is not authorised, otherwise null.
  */
-export function requireInternalAuth(req: Request, corsHeaders: Record<string, string>): Response | null {
+export async function requireInternalAuth(
+  req: Request,
+  corsHeaders: Record<string, string>,
+): Promise<Response | null> {
   const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const providedSecret = req.headers.get("x-internal-secret");
@@ -52,6 +55,26 @@ export function requireInternalAuth(req: Request, corsHeaders: Record<string, st
     (!!internalSecret && providedSecret === internalSecret) || (!!serviceRoleKey && bearer === serviceRoleKey);
 
   if (authorized) return null;
+
+  // The scheduler authenticates with a secret kept in the internal_secrets
+  // table, which is unreachable from the Data API for app users.
+  if (providedSecret) {
+    const url = Deno.env.get("SUPABASE_URL");
+    if (url && serviceRoleKey) {
+      try {
+        const res = await fetch(
+          `${url}/rest/v1/internal_secrets?select=value&name=eq.CRON_SECRET`,
+          { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
+        );
+        if (res.ok) {
+          const rows = (await res.json()) as Array<{ value: string }>;
+          if (rows[0]?.value && rows[0].value === providedSecret) return null;
+        }
+      } catch (err) {
+        console.error("[internal-auth] secret lookup failed", err);
+      }
+    }
+  }
 
   return new Response(JSON.stringify({ error: "Forbidden" }), {
     status: 403,

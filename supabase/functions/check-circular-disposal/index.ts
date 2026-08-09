@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   }
 
   // Scheduled job: operates across all workspaces with the service role.
-  const denied = requireInternalAuth(req, corsHeaders);
+  const denied = await requireInternalAuth(req, corsHeaders);
   if (denied) return denied;
 
   try {
