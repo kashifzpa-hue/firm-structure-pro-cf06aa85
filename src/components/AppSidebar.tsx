@@ -36,6 +36,7 @@ const navItems: { title: string; url: string; icon: LucideIcon; adminOnly?: bool
 const bankingItems = [
   { title: "Bank Accounts", url: "/bank-accounts", icon: Landmark },
   { title: "Signatory Register", url: "/signatory-register", icon: PenLine },
+  { title: "Signatory Matrix", url: "/signatory-matrix", icon: Grid3x3 },
 ];
 
 export function AppSidebar() {
