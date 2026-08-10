@@ -1160,16 +1160,27 @@ export default function EntityDetail() {
                 </AlertDescription>
               </Alert>
             )}
+            {/* Offboarding gate */}
+            {isPerson && !deactivationGate.allowed && (
+              <Alert className="border-destructive/50 bg-destructive/5">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-sm">
+                  Deactivation is blocked — {deactivationGate.reason} Complete the checklist on the{" "}
+                  <strong>Offboarding</strong> tab first.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeactivateOpen(false)}>Cancel</Button>
             <Button
               onClick={handleDeactivate}
-              disabled={!deactivateReason || (deactivateReason === "Other" && !deactivateNotes.trim()) || deactivating}
+              disabled={!deactivateReason || (deactivateReason === "Other" && !deactivateNotes.trim()) || deactivating || (isPerson && !deactivationGate.allowed)}
               className="bg-warning text-warning-foreground hover:bg-warning/90"
             >
               {deactivating ? "Deactivating..." : "Deactivate Entity"}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
