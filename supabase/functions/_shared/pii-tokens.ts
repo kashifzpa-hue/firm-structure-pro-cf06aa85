@@ -285,7 +285,7 @@ export async function createTokenizer(
           keep = buffer.slice(open);
           buffer = buffer.slice(0, open);
         }
-        if (buffer) controller.enqueue(encoder.encode(detokenizeText(buffer)));
+        if (buffer) controller.enqueue(encoder.encode(detokenizeText(buffer, true)));
         buffer = keep;
       },
       flush(controller) {
