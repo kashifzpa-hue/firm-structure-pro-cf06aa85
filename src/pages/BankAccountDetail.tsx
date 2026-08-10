@@ -364,9 +364,20 @@ export default function BankAccountDetail() {
           </div>
         </TabsContent>
 
+        {/* Facilities & Limits */}
+        <TabsContent value="facilities">
+          <FacilitiesTab bankAccountId={id!} persons={persons} entities={companies} isAdmin={isAdmin} />
+        </TabsContent>
+
+        {/* Service Requests */}
+        <TabsContent value="requests">
+          <ServiceRequestsTab bankAccountId={id!} isAdmin={isAdmin} />
+        </TabsContent>
+
         {/* Tab 4: Documents */}
         <TabsContent value="documents">
           <div className="space-y-4">
+
             <div className="flex justify-end">
               {isAdmin && <Button size="sm" onClick={() => setDocUploadOpen(true)}><Plus className="h-3 w-3 mr-1" /> Upload Document</Button>}
             </div>
