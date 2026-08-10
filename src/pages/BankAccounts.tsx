@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Landmark, Plus, Eye, EyeOff, Building2, Users, AlertTriangle, Search } from "lucide-react";
 import { maskAccountNumber, maskIban, ACCOUNT_STATUSES } from "@/lib/banking-utils";
 import { BankAccountForm } from "@/components/banking/BankAccountForm";
+import { BankRelationshipForm } from "@/components/banking/BankRelationshipForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { differenceInDays, parseISO } from "date-fns";
 
 export default function BankAccounts() {
@@ -20,6 +22,7 @@ export default function BankAccounts() {
   const { bankingEnabled } = useBankingEnabled();
   const navigate = useNavigate();
   const [formOpen, setFormOpen] = useState(false);
+  const [relFormOpen, setRelFormOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCompany, setFilterCompany] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -30,22 +33,24 @@ export default function BankAccounts() {
     queryKey: ["bank-accounts", workspaceId],
     enabled: !!workspaceId,
     queryFn: async () => {
-      const [accRes, compRes, sigRes] = await Promise.all([
+      const [accRes, compRes, sigRes, relRes] = await Promise.all([
         supabase.from("bank_accounts").select("*, company:entities!bank_accounts_company_entity_id_fkey(id, name)").eq("workspace_id", workspaceId!).order("created_at", { ascending: false }),
         supabase.from("entities").select("id, name").eq("workspace_id", workspaceId!).eq("type", "company").eq("entity_status", "active").order("name"),
         supabase.from("signatories").select("id, bank_account_id, status, expiry_date").eq("workspace_id", workspaceId!),
+        supabase.from("bank_relationships" as any).select("*, company:entities!bank_relationships_company_entity_id_fkey(id, name)").eq("workspace_id", workspaceId!).order("bank_name"),
       ]);
       const sigData = sigRes.data || [];
       const accounts = (accRes.data || []).map((acc: any) => ({
         ...acc,
         activeSignatories: sigData.filter((s: any) => s.bank_account_id === acc.id && s.status === "active").length,
       }));
-      return { accounts, companies: (compRes.data || []) as any[] };
+      return { accounts, companies: (compRes.data || []) as any[], relationships: (relRes.data || []) as any[] };
     },
   });
 
   const accounts = data?.accounts ?? [];
   const companies = data?.companies ?? [];
+  const relationships = (data as any)?.relationships ?? [];
   const fetchData = () => { refetch(); };
 
 
@@ -86,7 +91,12 @@ export default function BankAccounts() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Bank Accounts</h1>
-        {isAdmin && <Button onClick={() => setFormOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Bank Account</Button>}
+        {isAdmin && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setRelFormOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Relationship (CIF)</Button>
+            <Button onClick={() => setFormOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Bank Account</Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -117,6 +127,52 @@ export default function BankAccounts() {
         </Select>
       </div>
 
+      <Tabs defaultValue="accounts">
+        <TabsList>
+          <TabsTrigger value="accounts">Accounts ({accounts.length})</TabsTrigger>
+          <TabsTrigger value="relationships">Relationships / CIF ({relationships.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="relationships">
+          <Card className="shadow-sm">
+            <CardContent className="p-0">
+              {relationships.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Landmark className="h-12 w-12 mb-4 opacity-30" />
+                  <p className="text-lg font-medium">No bank relationships yet</p>
+                  <p className="text-sm">A CIF groups all accounts, facilities and limits held with one bank.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Bank</TableHead>
+                      <TableHead>CIF Number</TableHead>
+                      <TableHead>Accounts</TableHead>
+                      <TableHead>Relationship Manager</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {relationships.map((r: any) => (
+                      <TableRow key={r.id} className="cursor-pointer" onClick={() => navigate(`/bank-relationships/${r.id}`)}>
+                        <TableCell className="font-medium">{r.company?.name || "—"}</TableCell>
+                        <TableCell>{r.bank_name === "Other" ? r.bank_name_custom || "Other" : r.bank_name}</TableCell>
+                        <TableCell className="font-mono text-sm">{r.cif_number || "—"}</TableCell>
+                        <TableCell>{accounts.filter((a: any) => a.cif_id === r.id).length}</TableCell>
+                        <TableCell>{r.relationship_manager || "—"}</TableCell>
+                        <TableCell><Badge variant="secondary">{r.status}</Badge></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="accounts">
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {loading ? <div className="py-12 text-center text-muted-foreground">Loading...</div> : filtered.length === 0 ? (
@@ -177,7 +233,11 @@ export default function BankAccounts() {
         </CardContent>
       </Card>
 
-      <BankAccountForm open={formOpen} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} companies={companies} />
+        </TabsContent>
+      </Tabs>
+
+      <BankRelationshipForm open={relFormOpen} onClose={() => setRelFormOpen(false)} onSaved={() => { setRelFormOpen(false); fetchData(); }} companies={companies} />
+      <BankAccountForm relationships={relationships} open={formOpen} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} companies={companies} />
     </div>
   );
 }
