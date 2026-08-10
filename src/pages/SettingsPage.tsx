@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, Mail, Clock, Shield } from "lucide-react";
+import { Trash2, Mail, Clock, Shield, Landmark } from "lucide-react";
 import { AlertRulesTab } from "@/components/AlertRulesTab";
 import { SecurityTab } from "@/components/SecurityTab";
+import { BanksSettingsTab } from "@/components/banking/BanksSettingsTab";
 
 export default function SettingsPage() {
   const { workspaceId, userRole, user } = useAuth();
@@ -130,6 +131,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="workspace">Workspace</TabsTrigger>
           <TabsTrigger value="alert-rules">Alert Rules</TabsTrigger>
+          <TabsTrigger value="banks"><Landmark className="h-3.5 w-3.5 mr-1.5" />Banks</TabsTrigger>
           <TabsTrigger value="security"><Shield className="h-3.5 w-3.5 mr-1.5" />Security</TabsTrigger>
         </TabsList>
 
