@@ -379,20 +379,93 @@ Deno.serve(async (req) => {
       fetch: runIdFetch.fetch,
     });
 
+    const MODEL_ID = "openai/gpt-5.6-sol";
+    const providerOptions = {
+      openai: {
+        forceReasoning: true,
+        reasoningEffort: "low",
+        reasoningSummary: "auto",
+        store: false,
+        include: ["reasoning.encrypted_content"],
+      },
+    } as const;
+
+    const modelMessages = await convertToModelMessages(messages);
+
+    // Service-role client used only for the prompt audit log (table is insert-restricted).
+    const logClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+
+    let promptLogId: string | null = null;
+    const startedAt = Date.now();
+    try {
+      const { data: logRow, error: logError } = await logClient
+        .from("ai_prompt_logs")
+        .insert({
+          workspace_id: workspaceId,
+          thread_id: threadId,
+          user_id: user.id,
+          user_email: user.email ?? null,
+          model: MODEL_ID,
+          run_id: initialRunId ?? null,
+          system_prompt: SYSTEM_PROMPT,
+          sent_messages: modelMessages,
+          provider_options: providerOptions,
+          available_tools: Object.keys(tools),
+          status: "pending",
+        })
+        .select("id")
+        .maybeSingle();
+      if (logError) console.error("Failed to write prompt log:", logError.message);
+      promptLogId = logRow?.id ?? null;
+    } catch (e) {
+      console.error("Prompt log insert failed:", e);
+    }
+
+    const finalizeLog = async (patch: Record<string, unknown>) => {
+      if (!promptLogId) return;
+      const { error } = await logClient
+        .from("ai_prompt_logs")
+        .update({ duration_ms: Date.now() - startedAt, ...patch })
+        .eq("id", promptLogId);
+      if (error) console.error("Failed to update prompt log:", error.message);
+    };
+
     const result = streamText({
-      model: lovable.responses("openai/gpt-5.6-sol"),
+      model: lovable.responses(MODEL_ID),
       system: SYSTEM_PROMPT,
-      messages: await convertToModelMessages(messages),
+      messages: modelMessages,
       tools,
       stopWhen: stepCountIs(50),
-      providerOptions: {
-        openai: {
-          forceReasoning: true,
-          reasoningEffort: "low",
-          reasoningSummary: "auto",
-          store: false,
-          include: ["reasoning.encrypted_content"],
-        },
+      providerOptions,
+      onError: async ({ error }) => {
+        console.error("streamText error:", error);
+        await finalizeLog({
+          status: "error",
+          error_message: error instanceof Error ? error.message : String(error),
+        });
+      },
+      onFinish: async ({ text, finishReason, usage, steps }) => {
+        const toolCalls = (steps ?? []).flatMap((step) =>
+          (step.toolCalls ?? []).map((call, i) => ({
+            tool: call.toolName,
+            input: call.input,
+            output: step.toolResults?.[i]?.output ?? null,
+          })),
+        );
+        await finalizeLog({
+          status: "success",
+          response_text: text ?? null,
+          finish_reason: finishReason ?? null,
+          tool_calls: toolCalls,
+          input_tokens: usage?.inputTokens ?? null,
+          output_tokens: usage?.outputTokens ?? null,
+          total_tokens: usage?.totalTokens ?? null,
+          run_id: runIdFetch.getRunId() ?? initialRunId ?? null,
+        });
       },
     });
 

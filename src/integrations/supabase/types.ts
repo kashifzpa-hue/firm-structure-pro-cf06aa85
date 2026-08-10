@@ -59,6 +59,96 @@ export type Database = {
           },
         ]
       }
+      ai_prompt_logs: {
+        Row: {
+          available_tools: string[]
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          finish_reason: string | null
+          id: string
+          input_tokens: number | null
+          model: string
+          output_tokens: number | null
+          provider: string
+          provider_options: Json
+          response_text: string | null
+          run_id: string | null
+          sent_messages: Json
+          status: string
+          system_prompt: string | null
+          thread_id: string | null
+          tool_calls: Json
+          total_tokens: number | null
+          user_email: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          available_tools?: string[]
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finish_reason?: string | null
+          id?: string
+          input_tokens?: number | null
+          model: string
+          output_tokens?: number | null
+          provider?: string
+          provider_options?: Json
+          response_text?: string | null
+          run_id?: string | null
+          sent_messages?: Json
+          status?: string
+          system_prompt?: string | null
+          thread_id?: string | null
+          tool_calls?: Json
+          total_tokens?: number | null
+          user_email?: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          available_tools?: string[]
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finish_reason?: string | null
+          id?: string
+          input_tokens?: number | null
+          model?: string
+          output_tokens?: number | null
+          provider?: string
+          provider_options?: Json
+          response_text?: string | null
+          run_id?: string | null
+          sent_messages?: Json
+          status?: string
+          system_prompt?: string | null
+          thread_id?: string | null
+          tool_calls?: Json
+          total_tokens?: number | null
+          user_email?: string | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_prompt_logs_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ai_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_prompt_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_threads: {
         Row: {
           created_at: string
