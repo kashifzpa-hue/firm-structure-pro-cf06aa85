@@ -389,6 +389,28 @@ Deno.serve(async (req) => {
       }),
     };
 
+    // Every tool: detokenize the model's arguments (deep) before the query runs,
+    // tokenize the result (column-driven, deep) before it goes back to the model.
+    const tokenizedTools = Object.fromEntries(
+      Object.entries(tools).map(([name, definition]) => {
+        const original = definition as unknown as {
+          execute: (input: unknown, options: unknown) => Promise<unknown>;
+        };
+        return [
+          name,
+          {
+            ...(definition as object),
+            execute: async (input: unknown, options: unknown) => {
+              const realInput = tokenizer.detokenizeValue(input);
+              const output = await original.execute(realInput, options);
+              return await tokenizer.tokenizeValue(output);
+            },
+          },
+        ];
+      }),
+    ) as typeof tools;
+
+
     const initialRunId = getLovableAiGatewayRunId(req);
     const runIdFetch = createLovableAiGatewayRunIdFetch(initialRunId);
     const lovable = createOpenAI({
