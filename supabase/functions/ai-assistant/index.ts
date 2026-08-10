@@ -35,6 +35,8 @@ You do three things:
 
 Rules:
 - Always call tools to answer data questions; never guess numbers, names or dates.
+- Banking questions have dedicated tools: list_bank_relationships (CIFs), list_bank_accounts, list_signatories, list_signing_rules, list_bank_facilities, list_credit_limits, list_bank_service_requests. Board and management roles come from list_appointments. Before saying data is unavailable, call the relevant tool — e.g. to check whether a person signs on any account, call list_signatories with that person's id and no account filter.
+
 - Privacy: personal and account data is replaced by opaque placeholders such as [PERSON_K3XQ9AB], [COMPANY_2M4TZQD] or [EMAIL_9PWB3RC]. Treat each placeholder as the identity of that record: reuse it verbatim, exactly as given, in your answers and in tool arguments. Never shorten, reformat, translate or invent a placeholder, and never claim you cannot see a name — the user sees the real value.
 - Before creating or updating anything, restate exactly what you will create and ask the user to confirm, unless they already gave an explicit instruction with all required details.
 - Only admins can create or update records. If a write tool returns a permission error, explain the user needs admin rights.
@@ -282,6 +284,204 @@ Deno.serve(async (req) => {
           return { count: data?.length ?? 0, ubos: data };
         },
       }),
+
+      list_bank_accounts: tool({
+        description:
+          "List bank accounts, with their bank relationship (CIF) and owning company. Filter by company or by CIF.",
+        inputSchema: z.object({
+          company_entity_id: z.string().nullable().describe("Owning company UUID, or null for all."),
+          cif_id: z.string().nullable().describe("Bank relationship (CIF) UUID, or null for all."),
+          status: z.enum(["active", "dormant", "closed"]).nullable().describe("Account status filter, or null."),
+        }),
+        execute: async ({ company_entity_id, cif_id, status }) => {
+          let q = supabase
+            .from("bank_accounts")
+            .select(
+              "id, bank_name, bank_name_custom, account_number, account_type, currency, iban, swift_code, account_status, opening_date, closing_date, branch_name, relationship_manager, company:company_entity_id (id, name), cif:cif_id (id, cif_number, bank_name)",
+            )
+            .eq("workspace_id", workspaceId)
+            .limit(200);
+          if (company_entity_id) q = q.eq("company_entity_id", company_entity_id);
+          if (cif_id) q = q.eq("cif_id", cif_id);
+          if (status) q = q.eq("account_status", status);
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          return { count: data?.length ?? 0, bank_accounts: data };
+        },
+      }),
+
+      list_bank_relationships: tool({
+        description:
+          "List bank relationships (CIFs). Facilities and credit limits hang off a CIF, and each CIF can hold several bank accounts.",
+        inputSchema: z.object({
+          company_entity_id: z.string().nullable().describe("Company UUID, or null for all."),
+        }),
+        execute: async ({ company_entity_id }) => {
+          let q = supabase
+            .from("bank_relationships")
+            .select(
+              "id, bank_name, bank_name_custom, cif_number, status, opening_date, relationship_manager, company:company_entity_id (id, name)",
+            )
+            .eq("workspace_id", workspaceId)
+            .limit(200);
+          if (company_entity_id) q = q.eq("company_entity_id", company_entity_id);
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          return { count: data?.length ?? 0, bank_relationships: data };
+        },
+      }),
+
+      list_signatories: tool({
+        description:
+          "List bank account signatories — who is authorised to sign on which account, with limits, group, status and expiry. Use this to check whether a person is a signatory anywhere.",
+        inputSchema: z.object({
+          bank_account_id: z.string().nullable().describe("Bank account UUID, or null for all accounts."),
+          person_entity_id: z.string().nullable().describe("Person entity UUID, or null for all people."),
+          active_only: z.boolean().describe("Only signatories with status 'active'."),
+        }),
+        execute: async ({ bank_account_id, person_entity_id, active_only }) => {
+          let q = supabase
+            .from("signatories")
+            .select(
+              "id, title, designation, authorised_for, individual_limit, individual_limit_currency, effective_date, expiry_date, status, bank_acknowledged_date, board_resolution_ref, person:person_entity_id (id, name), account:bank_account_id (id, bank_name, account_number, currency, company_entity_id), group:signatory_group_id (id, group_label)",
+            )
+            .eq("workspace_id", workspaceId)
+            .limit(300);
+          if (bank_account_id) q = q.eq("bank_account_id", bank_account_id);
+          if (person_entity_id) q = q.eq("person_entity_id", person_entity_id);
+          if (active_only) q = q.eq("status", "active");
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          return { count: data?.length ?? 0, signatories: data };
+        },
+      }),
+
+      list_signing_rules: tool({
+        description: "List signing matrix rules (solo / joint) and signatory groups for a bank account.",
+        inputSchema: z.object({
+          bank_account_id: z.string().nullable().describe("Bank account UUID, or null for all accounts."),
+        }),
+        execute: async ({ bank_account_id }) => {
+          let rules = supabase
+            .from("signing_matrix_rules")
+            .select(
+              "id, rule_name, rule_type, min_signatories_from_a, min_signatories_from_b, transaction_limit, daily_limit, limit_currency, applies_to, group_a:group_a_id (id, group_label), group_b:group_b_id (id, group_label), account:bank_account_id (id, bank_name, account_number)",
+            )
+            .eq("workspace_id", workspaceId)
+            .limit(200);
+          let groups = supabase
+            .from("signatory_groups")
+            .select("id, group_label, description, bank_account_id")
+            .eq("workspace_id", workspaceId)
+            .limit(200);
+          if (bank_account_id) {
+            rules = rules.eq("bank_account_id", bank_account_id);
+            groups = groups.eq("bank_account_id", bank_account_id);
+          }
+          const [r, g] = await Promise.all([rules, groups]);
+          if (r.error) return { error: r.error.message };
+          return { rules: r.data ?? [], groups: g.data ?? [] };
+        },
+      }),
+
+      list_bank_facilities: tool({
+        description:
+          "List banking facilities held under a CIF — internet banking access, sweeps, statement delivery, cheque books, cards and more.",
+        inputSchema: z.object({
+          cif_id: z.string().nullable().describe("Bank relationship (CIF) UUID, or null for all."),
+          facility_type: z.string().nullable().describe("Facility type filter, or null for all."),
+          active_only: z.boolean().describe("Only facilities with status 'active'."),
+        }),
+        execute: async ({ cif_id, facility_type, active_only }) => {
+          let q = supabase
+            .from("bank_facilities")
+            .select(
+              "id, facility_type, status, access_level, token_serial, token_status, transaction_limit, daily_limit, limit_currency, sweep_target_account, sweep_type, sweep_frequency, statement_method, statement_frequency, statement_recipients, cheque_book_number, effective_date, end_date, bank_reference, person:person_entity_id (id, name), cif:cif_id (id, cif_number, bank_name), account:bank_account_id (id, bank_name, account_number)",
+            )
+            .eq("workspace_id", workspaceId)
+            .limit(200);
+          if (cif_id) q = q.eq("cif_id", cif_id);
+          if (facility_type) q = q.eq("facility_type", facility_type);
+          if (active_only) q = q.eq("status", "active");
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          return { count: data?.length ?? 0, facilities: data };
+        },
+      }),
+
+      list_credit_limits: tool({
+        description:
+          "List borrowing/credit limits under a CIF, with sanctioned and utilised amounts, review and expiry dates.",
+        inputSchema: z.object({
+          cif_id: z.string().nullable().describe("Bank relationship (CIF) UUID, or null for all."),
+          active_only: z.boolean().describe("Only limits with status 'active' or 'sanctioned'."),
+        }),
+        execute: async ({ cif_id, active_only }) => {
+          let q = supabase
+            .from("bank_credit_limits")
+            .select(
+              "id, limit_type, status, is_funded, sanctioned_amount, currency, utilised_amount, utilised_as_of, tenor, pricing_basis, sanction_date, next_review_date, expiry_date, last_renewed_on, offer_letter_ref, cif:cif_id (id, cif_number, bank_name), guarantor:guarantor_entity_id (id, name)",
+            )
+            .eq("workspace_id", workspaceId)
+            .limit(200);
+          if (cif_id) q = q.eq("cif_id", cif_id);
+          if (active_only) q = q.in("status", ["active", "sanctioned"]);
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          return { count: data?.length ?? 0, credit_limits: data };
+        },
+      }),
+
+      list_bank_service_requests: tool({
+        description: "List requests raised with banks, their status, dates and outcome.",
+        inputSchema: z.object({
+          cif_id: z.string().nullable().describe("Bank relationship (CIF) UUID, or null for all."),
+          status: z.string().nullable().describe("Request status filter, or null for all."),
+          open_only: z.boolean().describe("Only requests that are not completed or cancelled."),
+        }),
+        execute: async ({ cif_id, status, open_only }) => {
+          let q = supabase
+            .from("bank_service_requests")
+            .select(
+              "id, request_type, status, subject, date_requested, date_submitted, bank_ack_date, expected_completion, actual_completion, bank_reference, cif:cif_id (id, cif_number, bank_name), account:bank_account_id (id, bank_name, account_number)",
+            )
+            .eq("workspace_id", workspaceId)
+            .order("date_requested", { ascending: false })
+            .limit(200);
+          if (cif_id) q = q.eq("cif_id", cif_id);
+          if (status) q = q.eq("status", status);
+          if (open_only) q = q.not("status", "in", "(completed,cancelled,rejected)");
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          return { count: data?.length ?? 0, requests: data };
+        },
+      }),
+
+      list_appointments: tool({
+        description: "List board and management appointments — who holds which role in which company.",
+        inputSchema: z.object({
+          company_entity_id: z.string().nullable().describe("Company UUID, or null for all."),
+          person_entity_id: z.string().nullable().describe("Person UUID, or null for all."),
+          current_only: z.boolean().describe("Only appointments without a resignation date."),
+        }),
+        execute: async ({ company_entity_id, person_entity_id, current_only }) => {
+          let q = supabase
+            .from("appointments")
+            .select(
+              "id, role_title, role_category, appointment_date, resignation_date, company:company_entity_id (id, name), person:person_entity_id (id, name)",
+            )
+            .eq("workspace_id", workspaceId)
+            .limit(300);
+          if (company_entity_id) q = q.eq("company_entity_id", company_entity_id);
+          if (person_entity_id) q = q.eq("person_entity_id", person_entity_id);
+          if (current_only) q = q.is("resignation_date", null);
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          return { count: data?.length ?? 0, appointments: data };
+        },
+      }),
+
+
 
       workspace_overview: tool({
         description: "High-level counts for the workspace: entities, documents by status, ownership links, bank accounts.",

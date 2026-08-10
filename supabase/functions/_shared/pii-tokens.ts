@@ -54,6 +54,8 @@ const FIELD_TYPES: Record<string, PiiType> = {
   rm_phone: "PHONE",
   iban: "IBAN",
   account_number: "ACCOUNT",
+  sweep_target_account: "ACCOUNT",
+
   swift_code: "SWIFT",
   cif_number: "CIF",
   registered_address: "ADDRESS",
