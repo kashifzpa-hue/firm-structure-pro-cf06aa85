@@ -32,7 +32,7 @@ import { OffboardingTab } from "@/components/offboarding/OffboardingTab";
 import { canDeactivatePerson } from "@/lib/offboarding";
 import { fetchPersonExposure } from "@/lib/person-exposure";
 import { useBankingEnabled } from "@/hooks/use-banking-enabled";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Linkedin, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark, RefreshCw, Clock } from "lucide-react";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Linkedin, Pencil, Trash2, User, UserMinus, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark, RefreshCw, Clock } from "lucide-react";
 import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { DocumentRenewalModal } from "@/components/DocumentRenewalModal";
 import { DocumentVersionHistory } from "@/components/DocumentVersionHistory";
