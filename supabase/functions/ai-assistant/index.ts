@@ -431,7 +431,7 @@ Deno.serve(async (req) => {
       },
     } as const;
 
-    const modelMessages = await convertToModelMessages(messages);
+    const modelMessages = await tokenizer.tokenizeAllText(await convertToModelMessages(messages));
 
     // Service-role client used only for the prompt audit log (table is insert-restricted).
     const logClient = createClient(
