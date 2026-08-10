@@ -15,7 +15,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-  bankAccountId: string;
+  cifId: string;
+  accounts: { id: string; label: string }[];
   facilities: { id: string; label: string }[];
   limits: { id: string; label: string }[];
   signatories: { id: string; label: string }[];
@@ -24,12 +25,13 @@ interface Props {
 }
 
 export function ServiceRequestForm({
-  open, onClose, onSaved, bankAccountId, facilities, limits, signatories, editData, defaults,
+  open, onClose, onSaved, cifId, accounts, facilities, limits, signatories, editData, defaults,
 }: Props) {
   const { workspaceId } = useAuth();
   const [saving, setSaving] = useState(false);
   const [f, setF] = useState<any>({
     request_type: editData?.request_type || defaults?.request_type || "new_facility",
+    bank_account_id: editData?.bank_account_id || "",
     status: editData?.status || "draft",
     subject: editData?.subject || defaults?.subject || "",
     description: editData?.description || "",
@@ -59,7 +61,8 @@ export function ServiceRequestForm({
 
     const payload: any = {
       workspace_id: workspaceId,
-      bank_account_id: bankAccountId,
+      cif_id: cifId,
+      bank_account_id: f.bank_account_id || null,
       request_type: f.request_type,
       status: f.status,
       subject: f.subject,
@@ -85,12 +88,13 @@ export function ServiceRequestForm({
       if (error) { toast.error(error.message); setSaving(false); return; }
       const statusChanged = editData.status !== f.status;
       await logBankingActivity(
-        bankAccountId,
+        f.bank_account_id || null,
         statusChanged ? "request_status_changed" : "request_updated",
         statusChanged
           ? `Request "${f.subject}" moved from ${editData.status} to ${f.status}`
           : `Request "${f.subject}" updated`,
         profile?.id || "", workspaceId,
+        cifId,
       );
       if (statusChanged && f.status === "completed" && f.signatory_id) {
         toast.info("Remember to update the linked signatory record with the bank's confirmation.");
@@ -99,7 +103,7 @@ export function ServiceRequestForm({
     } else {
       const { error } = await supabase.from("bank_service_requests" as any).insert(payload);
       if (error) { toast.error(error.message); setSaving(false); return; }
-      await logBankingActivity(bankAccountId, "request_created", `${typeLabel} request logged: "${f.subject}"`, profile?.id || "", workspaceId);
+      await logBankingActivity(f.bank_account_id || null, "request_created", `${typeLabel} request logged: "${f.subject}"`, profile?.id || "", workspaceId, cifId);
       toast.success("Request logged");
     }
     setSaving(false);
@@ -124,6 +128,16 @@ export function ServiceRequestForm({
                 <SelectContent>{REQUEST_STATUSES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div><Label>Applies To</Label>
+            <Select value={f.bank_account_id || "cif"} onValueChange={v => set("bank_account_id", v === "cif" ? "" : v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cif">Whole relationship (all accounts)</SelectItem>
+                {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <div><Label>Subject *</Label><Input value={f.subject} onChange={e => set("subject", e.target.value)} /></div>

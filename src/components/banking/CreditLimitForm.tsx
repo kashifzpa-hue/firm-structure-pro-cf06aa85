@@ -16,13 +16,13 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-  bankAccountId: string;
+  cifId: string;
   entities: { id: string; name: string }[];
   parentLimits: { id: string; label: string }[];
   editData?: any;
 }
 
-export function CreditLimitForm({ open, onClose, onSaved, bankAccountId, entities, parentLimits, editData }: Props) {
+export function CreditLimitForm({ open, onClose, onSaved, cifId, entities, parentLimits, editData }: Props) {
   const { workspaceId } = useAuth();
   const [saving, setSaving] = useState(false);
   const [f, setF] = useState<any>({
@@ -58,7 +58,8 @@ export function CreditLimitForm({ open, onClose, onSaved, bankAccountId, entitie
     setSaving(true);
     const payload: any = {
       workspace_id: workspaceId,
-      bank_account_id: bankAccountId,
+      cif_id: cifId,
+      bank_account_id: null,
       limit_type: f.limit_type,
       status: f.status,
       is_funded: f.is_funded,
@@ -91,12 +92,12 @@ export function CreditLimitForm({ open, onClose, onSaved, bankAccountId, entitie
     if (editData) {
       const { error } = await supabase.from("bank_credit_limits" as any).update(payload).eq("id", editData.id);
       if (error) { toast.error(error.message); setSaving(false); return; }
-      await logBankingActivity(bankAccountId, "limit_updated", `Borrowing limit "${typeLabel}" updated`, profile?.id || "", workspaceId);
+      await logBankingActivity(null, "limit_updated", `Borrowing limit "${typeLabel}" updated`, profile?.id || "", workspaceId, cifId);
       toast.success("Limit updated");
     } else {
       const { error } = await supabase.from("bank_credit_limits" as any).insert(payload);
       if (error) { toast.error(error.message); setSaving(false); return; }
-      await logBankingActivity(bankAccountId, "limit_created", `Borrowing limit "${typeLabel}" added`, profile?.id || "", workspaceId);
+      await logBankingActivity(null, "limit_created", `Borrowing limit "${typeLabel}" added`, profile?.id || "", workspaceId, cifId);
       toast.success("Limit added");
     }
     setSaving(false);
