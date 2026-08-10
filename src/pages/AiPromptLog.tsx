@@ -234,6 +234,26 @@ export default function AiPromptLog() {
               Clear
             </Button>
           )}
+
+          <div className="ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-1" disabled={rows.length === 0}>
+                  <Download className="h-4 w-4" />
+                  Export
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportRows("csv")}>
+                  Download CSV ({rows.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportRows("json")}>
+                  Download JSON ({rows.length})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">
           Showing {rows.length} of {data?.length ?? 0} requests
