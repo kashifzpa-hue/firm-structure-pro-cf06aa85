@@ -29,6 +29,26 @@ Each facility record captures:
 - Statement details: delivery method (email, post, portal), frequency (daily/weekly/monthly), recipient emails
 - Effective date, end date, bank reference, notes
 
+## Borrowing / Credit Facilities
+
+A dedicated facility group for funded and non-funded borrowing lines, recorded per bank account:
+- Limit type: Overdraft, Term Loan, Revolving Credit, Working Capital, Invoice/Bill Discounting, Letter of Credit (sight/usance), Bank Guarantee, Trust Receipt, Trade Loan, Equipment/Asset Finance, Credit Card Limit, Other
+- Funded vs non-funded classification, and whether it sits under a shared umbrella/combined limit
+- Sanctioned limit amount and currency, sub-limit of a parent line (optional), utilised amount as last recorded with an "as of" date
+- Pricing: interest/margin basis (e.g. EIBOR + spread), commission or fee notes, tenor
+- Security/collateral summary, guarantor entity (linked to a workspace entity), covenant notes
+- Key dates: sanction date, availability start date, **next review/renewal date**, **expiry date**, last renewed on
+- Status: Proposed, Sanctioned, Active, Under Renewal, Expired, Cancelled
+- Facility offer letter / sanction letter reference and attachments
+
+Renewal and expiry tracking:
+- Status badges follow the existing convention — green Valid, amber Expiring Soon (within the workspace threshold), red Expired/Overdue review — calculated from review and expiry dates.
+- A summary strip on the account shows total sanctioned, total utilised, and headroom by currency.
+- New alert rules for borrowing limit review due and borrowing limit expiring, using the same alert-rule and notification pattern as document expiry, with in-app and email options.
+- Renewal actions create a linked service request (type Limit Renewal), so each renewal cycle keeps its own paper trail and history of previous limit amounts and dates.
+
+
+
 ## Service Requests
 
 Each request captures:
