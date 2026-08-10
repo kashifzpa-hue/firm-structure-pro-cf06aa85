@@ -141,6 +141,46 @@ export default function AiPromptLog() {
     setSearch("");
   };
 
+  const exportRows = (kind: "csv" | "json") => {
+    const stamp = dateRange?.from
+      ? `${format(dateRange.from, "yyyy-MM-dd")}_to_${format(dateRange.to ?? dateRange.from, "yyyy-MM-dd")}`
+      : "all-dates";
+    const filename = `ai-prompt-log_${stamp}.${kind}`;
+
+    let content: string;
+    let mime: string;
+
+    if (kind === "json") {
+      content = JSON.stringify(rows, null, 2);
+      mime = "application/json";
+    } else {
+      const columns: (keyof PromptLogRow)[] = [
+        "created_at", "user_email", "model", "provider", "status", "finish_reason",
+        "input_tokens", "output_tokens", "total_tokens", "duration_ms", "thread_id",
+        "run_id", "available_tools", "system_prompt", "sent_messages", "provider_options",
+        "tool_calls", "response_text", "error_message",
+      ];
+      const escape = (v: unknown) => {
+        if (v == null) return "";
+        const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+      content = [
+        columns.join(","),
+        ...rows.map((r) => columns.map((c) => escape(r[c])).join(",")),
+      ].join("\r\n");
+      mime = "text/csv;charset=utf-8";
+    }
+
+    const blob = new Blob([kind === "csv" ? "\uFEFF" + content : content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!isAdmin) {
     return (
       <div className="rounded-lg border bg-card p-10 text-center text-muted-foreground">
