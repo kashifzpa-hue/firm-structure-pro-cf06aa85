@@ -122,6 +122,7 @@ const App = () => (
                   <Route path="/bank-accounts/:id" element={<BankAccountDetail />} />
                   <Route path="/bank-relationships/:id" element={<BankRelationshipDetail />} />
                   <Route path="/signatory-register" element={<SignatoryRegister />} />
+                  <Route path="/signatory-matrix" element={<SignatoryMatrix />} />
                   <Route path="/demo-admin" element={<AdminRoute><DemoAdmin /></AdminRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
