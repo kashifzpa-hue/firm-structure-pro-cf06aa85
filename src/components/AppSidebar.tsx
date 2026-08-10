@@ -1,4 +1,4 @@
-import { Bot, BookOpen, History as HistoryIcon, LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor } from "lucide-react";
+import { Bot, BookOpen, History as HistoryIcon, LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor, Terminal } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,7 @@ const navItems = [
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Audit Log", url: "/audit-log", icon: HistoryIcon },
   { title: "AI Copilot", url: "/assistant", icon: Bot },
+  { title: "AI Prompt Log", url: "/ai-prompt-log", icon: Terminal, adminOnly: true },
   { title: "User Manual", url: "/manual", icon: BookOpen },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
@@ -57,7 +58,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {navItems.filter((item) => !item.adminOnly || isAdmin).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
