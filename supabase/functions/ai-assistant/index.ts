@@ -1,4 +1,5 @@
 import { corsFor } from "../_shared/http.ts";
+import { redactValue, redactText, redactEmail } from "../_shared/redact.ts";
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "npm:ai@^7";
 import { createOpenAI } from "npm:@ai-sdk/openai@^4";
 import { createClient } from "npm:@supabase/supabase-js@^2";
@@ -408,11 +409,11 @@ Deno.serve(async (req) => {
           workspace_id: workspaceId,
           thread_id: threadId,
           user_id: user.id,
-          user_email: user.email ?? null,
+          user_email: redactEmail(user.email),
           model: MODEL_ID,
           run_id: initialRunId ?? null,
           system_prompt: SYSTEM_PROMPT,
-          sent_messages: modelMessages,
+          sent_messages: redactValue(modelMessages),
           provider_options: providerOptions,
           available_tools: Object.keys(tools),
           status: "pending",
@@ -445,20 +446,20 @@ Deno.serve(async (req) => {
         console.error("streamText error:", error);
         await finalizeLog({
           status: "error",
-          error_message: error instanceof Error ? error.message : String(error),
+          error_message: redactText(error instanceof Error ? error.message : String(error)),
         });
       },
       onFinish: async ({ text, finishReason, usage, steps }) => {
         const toolCalls = (steps ?? []).flatMap((step) =>
           (step.toolCalls ?? []).map((call, i) => ({
             tool: call.toolName,
-            input: call.input,
-            output: step.toolResults?.[i]?.output ?? null,
+            input: redactValue(call.input),
+            output: redactValue(step.toolResults?.[i]?.output ?? null),
           })),
         );
         await finalizeLog({
           status: "success",
-          response_text: text ?? null,
+          response_text: text ? redactText(text) : null,
           finish_reason: finishReason ?? null,
           tool_calls: toolCalls,
           input_tokens: usage?.inputTokens ?? null,
