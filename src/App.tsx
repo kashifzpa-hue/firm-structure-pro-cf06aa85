@@ -38,6 +38,7 @@ const BankAccounts = lazy(() => import("./pages/BankAccounts"));
 const BankAccountDetail = lazy(() => import("./pages/BankAccountDetail"));
 const BankRelationshipDetail = lazy(() => import("./pages/BankRelationshipDetail"));
 const SignatoryRegister = lazy(() => import("./pages/SignatoryRegister"));
+const SignatoryMatrix = lazy(() => import("./pages/SignatoryMatrix"));
 const DemoAdmin = lazy(() => import("./pages/DemoAdmin"));
 
 const queryClient = new QueryClient({
@@ -121,6 +122,7 @@ const App = () => (
                   <Route path="/bank-accounts/:id" element={<BankAccountDetail />} />
                   <Route path="/bank-relationships/:id" element={<BankRelationshipDetail />} />
                   <Route path="/signatory-register" element={<SignatoryRegister />} />
+                  <Route path="/signatory-matrix" element={<SignatoryMatrix />} />
                   <Route path="/demo-admin" element={<AdminRoute><DemoAdmin /></AdminRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />

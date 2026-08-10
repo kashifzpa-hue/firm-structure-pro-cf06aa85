@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Bot, BookOpen, History as HistoryIcon, LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor, Terminal } from "lucide-react";
+import { Bot, BookOpen, Grid3x3, History as HistoryIcon, LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor, Terminal } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,6 +36,7 @@ const navItems: { title: string; url: string; icon: LucideIcon; adminOnly?: bool
 const bankingItems = [
   { title: "Bank Accounts", url: "/bank-accounts", icon: Landmark },
   { title: "Signatory Register", url: "/signatory-register", icon: PenLine },
+  { title: "Signatory Matrix", url: "/signatory-matrix", icon: Grid3x3 },
 ];
 
 export function AppSidebar() {
