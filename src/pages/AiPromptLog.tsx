@@ -361,13 +361,27 @@ export default function AiPromptLog() {
                       {r.total_tokens ?? "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="gap-1">
-                          View
-                          <ChevronDown className={`h-4 w-4 transition-transform ${openRow === r.id ? "rotate-180" : ""}`} />
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          disabled={!prevById.has(r.id)}
+                          title={prevById.has(r.id) ? "Compare payload with the previous request" : "No earlier request to compare"}
+                          onClick={() => setDiffRowId(r.id)}
+                        >
+                          <GitCompare className="h-4 w-4" />
+                          Diff
                         </Button>
-                      </CollapsibleTrigger>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm" className="gap-1">
+                            View
+                            <ChevronDown className={`h-4 w-4 transition-transform ${openRow === r.id ? "rotate-180" : ""}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                      </div>
                     </TableCell>
+
                   </TableRow>
                   <CollapsibleContent asChild>
                     <TableRow>
