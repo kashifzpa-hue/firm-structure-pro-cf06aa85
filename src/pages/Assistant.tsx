@@ -311,8 +311,10 @@ function ChatWindow({
                     }
                     return null;
                   })}
+                  {message.role === "assistant" && <MessageSources message={message} />}
                 </MessageContent>
               </Message>
+
             ))
           )}
           {status === "submitted" && (
