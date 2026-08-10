@@ -225,8 +225,11 @@ export default function BankAccountDetail() {
           <TabsTrigger value="details">Account Details</TabsTrigger>
           <TabsTrigger value="signatories">Signatories ({activeSigs.length})</TabsTrigger>
           <TabsTrigger value="matrix">Signing Matrix ({rules.length})</TabsTrigger>
+          <TabsTrigger value="facilities">Facilities &amp; Limits</TabsTrigger>
+          <TabsTrigger value="requests">Service Requests</TabsTrigger>
           <TabsTrigger value="documents">Documents ({docs.length})</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
+
         </TabsList>
 
         {/* Tab 1: Account Details */}
