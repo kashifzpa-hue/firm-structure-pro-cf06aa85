@@ -441,6 +441,37 @@ export default function AiPromptLog() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!diffPair} onOpenChange={(o) => !o && setDiffRowId(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-6xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitCompare className="h-5 w-5 text-primary" />
+              Payload diff with previous request
+            </DialogTitle>
+            {diffPair && (
+              <DialogDescription>
+                {format(parseISO(diffPair.previous.created_at), "dd MMM yyyy HH:mm")} ({diffPair.previous.model})
+                {"  →  "}
+                {format(parseISO(diffPair.current.created_at), "dd MMM yyyy HH:mm")} ({diffPair.current.model})
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          {diffPair && (
+            <PayloadDiff
+              fields={[
+                { key: "messages", label: "Messages", before: diffPair.previous.sent_messages, after: diffPair.current.sent_messages },
+                { key: "system", label: "System prompt", before: diffPair.previous.system_prompt ?? "", after: diffPair.current.system_prompt ?? "" },
+                { key: "tools", label: "Tools available", before: diffPair.previous.available_tools ?? [], after: diffPair.current.available_tools ?? [] },
+                { key: "toolcalls", label: "Tool calls", before: diffPair.previous.tool_calls, after: diffPair.current.tool_calls },
+                { key: "options", label: "Provider options", before: diffPair.previous.provider_options, after: diffPair.current.provider_options },
+                { key: "response", label: "Response", before: diffPair.previous.response_text ?? "", after: diffPair.current.response_text ?? "" },
+              ]}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
