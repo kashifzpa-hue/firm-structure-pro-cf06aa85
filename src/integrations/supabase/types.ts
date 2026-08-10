@@ -489,6 +489,452 @@ export type Database = {
           },
         ]
       }
+      bank_credit_limits: {
+        Row: {
+          availability_start_date: string | null
+          bank_account_id: string
+          covenant_notes: string | null
+          created_at: string
+          currency: string
+          expiry_date: string | null
+          fee_notes: string | null
+          guarantor_entity_id: string | null
+          id: string
+          is_funded: boolean
+          last_renewed_on: string | null
+          limit_type: Database["public"]["Enums"]["credit_limit_type"]
+          next_review_date: string | null
+          notes: string | null
+          offer_letter_ref: string | null
+          parent_limit_id: string | null
+          pricing_basis: string | null
+          sanction_date: string | null
+          sanctioned_amount: number
+          security_summary: string | null
+          status: Database["public"]["Enums"]["credit_limit_status"]
+          tenor: string | null
+          umbrella_ref: string | null
+          updated_at: string
+          utilised_amount: number | null
+          utilised_as_of: string | null
+          workspace_id: string
+        }
+        Insert: {
+          availability_start_date?: string | null
+          bank_account_id: string
+          covenant_notes?: string | null
+          created_at?: string
+          currency?: string
+          expiry_date?: string | null
+          fee_notes?: string | null
+          guarantor_entity_id?: string | null
+          id?: string
+          is_funded?: boolean
+          last_renewed_on?: string | null
+          limit_type: Database["public"]["Enums"]["credit_limit_type"]
+          next_review_date?: string | null
+          notes?: string | null
+          offer_letter_ref?: string | null
+          parent_limit_id?: string | null
+          pricing_basis?: string | null
+          sanction_date?: string | null
+          sanctioned_amount?: number
+          security_summary?: string | null
+          status?: Database["public"]["Enums"]["credit_limit_status"]
+          tenor?: string | null
+          umbrella_ref?: string | null
+          updated_at?: string
+          utilised_amount?: number | null
+          utilised_as_of?: string | null
+          workspace_id: string
+        }
+        Update: {
+          availability_start_date?: string | null
+          bank_account_id?: string
+          covenant_notes?: string | null
+          created_at?: string
+          currency?: string
+          expiry_date?: string | null
+          fee_notes?: string | null
+          guarantor_entity_id?: string | null
+          id?: string
+          is_funded?: boolean
+          last_renewed_on?: string | null
+          limit_type?: Database["public"]["Enums"]["credit_limit_type"]
+          next_review_date?: string | null
+          notes?: string | null
+          offer_letter_ref?: string | null
+          parent_limit_id?: string | null
+          pricing_basis?: string | null
+          sanction_date?: string | null
+          sanctioned_amount?: number
+          security_summary?: string | null
+          status?: Database["public"]["Enums"]["credit_limit_status"]
+          tenor?: string | null
+          umbrella_ref?: string | null
+          updated_at?: string
+          utilised_amount?: number | null
+          utilised_as_of?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_credit_limits_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_credit_limits_guarantor_entity_id_fkey"
+            columns: ["guarantor_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_credit_limits_parent_limit_id_fkey"
+            columns: ["parent_limit_id"]
+            isOneToOne: false
+            referencedRelation: "bank_credit_limits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_credit_limits_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_facilities: {
+        Row: {
+          access_level: Database["public"]["Enums"]["ib_access_level"] | null
+          annual_fee: number | null
+          bank_account_id: string
+          bank_reference: string | null
+          cheque_book_number: string | null
+          created_at: string
+          daily_limit: number | null
+          effective_date: string | null
+          end_date: string | null
+          facility_type: Database["public"]["Enums"]["bank_facility_type"]
+          fee_currency: string | null
+          fee_notes: string | null
+          id: string
+          leaf_range_end: string | null
+          leaf_range_start: string | null
+          leaves_issued_date: string | null
+          limit_currency: string
+          notes: string | null
+          person_entity_id: string | null
+          statement_frequency:
+            | Database["public"]["Enums"]["statement_frequency"]
+            | null
+          statement_method:
+            | Database["public"]["Enums"]["statement_delivery_method"]
+            | null
+          statement_recipients: string[]
+          status: Database["public"]["Enums"]["bank_facility_status"]
+          sweep_frequency: string | null
+          sweep_target_account: string | null
+          sweep_threshold: number | null
+          sweep_type: string | null
+          token_issue_date: string | null
+          token_serial: string | null
+          token_status: Database["public"]["Enums"]["bank_token_status"]
+          transaction_limit: number | null
+          umbrella_ref: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          access_level?: Database["public"]["Enums"]["ib_access_level"] | null
+          annual_fee?: number | null
+          bank_account_id: string
+          bank_reference?: string | null
+          cheque_book_number?: string | null
+          created_at?: string
+          daily_limit?: number | null
+          effective_date?: string | null
+          end_date?: string | null
+          facility_type: Database["public"]["Enums"]["bank_facility_type"]
+          fee_currency?: string | null
+          fee_notes?: string | null
+          id?: string
+          leaf_range_end?: string | null
+          leaf_range_start?: string | null
+          leaves_issued_date?: string | null
+          limit_currency?: string
+          notes?: string | null
+          person_entity_id?: string | null
+          statement_frequency?:
+            | Database["public"]["Enums"]["statement_frequency"]
+            | null
+          statement_method?:
+            | Database["public"]["Enums"]["statement_delivery_method"]
+            | null
+          statement_recipients?: string[]
+          status?: Database["public"]["Enums"]["bank_facility_status"]
+          sweep_frequency?: string | null
+          sweep_target_account?: string | null
+          sweep_threshold?: number | null
+          sweep_type?: string | null
+          token_issue_date?: string | null
+          token_serial?: string | null
+          token_status?: Database["public"]["Enums"]["bank_token_status"]
+          transaction_limit?: number | null
+          umbrella_ref?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          access_level?: Database["public"]["Enums"]["ib_access_level"] | null
+          annual_fee?: number | null
+          bank_account_id?: string
+          bank_reference?: string | null
+          cheque_book_number?: string | null
+          created_at?: string
+          daily_limit?: number | null
+          effective_date?: string | null
+          end_date?: string | null
+          facility_type?: Database["public"]["Enums"]["bank_facility_type"]
+          fee_currency?: string | null
+          fee_notes?: string | null
+          id?: string
+          leaf_range_end?: string | null
+          leaf_range_start?: string | null
+          leaves_issued_date?: string | null
+          limit_currency?: string
+          notes?: string | null
+          person_entity_id?: string | null
+          statement_frequency?:
+            | Database["public"]["Enums"]["statement_frequency"]
+            | null
+          statement_method?:
+            | Database["public"]["Enums"]["statement_delivery_method"]
+            | null
+          statement_recipients?: string[]
+          status?: Database["public"]["Enums"]["bank_facility_status"]
+          sweep_frequency?: string | null
+          sweep_target_account?: string | null
+          sweep_threshold?: number | null
+          sweep_type?: string | null
+          token_issue_date?: string | null
+          token_serial?: string | null
+          token_status?: Database["public"]["Enums"]["bank_token_status"]
+          transaction_limit?: number | null
+          umbrella_ref?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_facilities_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_facilities_person_entity_id_fkey"
+            columns: ["person_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_facilities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_service_request_documents: {
+        Row: {
+          description: string | null
+          document_type: string
+          encryption_version: number
+          file_url: string | null
+          id: string
+          is_encrypted: boolean
+          iv: string | null
+          notes: string | null
+          request_id: string
+          uploaded_at: string
+          workspace_id: string
+        }
+        Insert: {
+          description?: string | null
+          document_type: string
+          encryption_version?: number
+          file_url?: string | null
+          id?: string
+          is_encrypted?: boolean
+          iv?: string | null
+          notes?: string | null
+          request_id: string
+          uploaded_at?: string
+          workspace_id: string
+        }
+        Update: {
+          description?: string | null
+          document_type?: string
+          encryption_version?: number
+          file_url?: string | null
+          id?: string
+          is_encrypted?: boolean
+          iv?: string | null
+          notes?: string | null
+          request_id?: string
+          uploaded_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_service_request_documents_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "bank_service_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_service_request_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_service_requests: {
+        Row: {
+          actual_completion: string | null
+          approved_by: string | null
+          bank_account_id: string
+          bank_ack_date: string | null
+          bank_contact: string | null
+          bank_reference: string | null
+          created_at: string
+          credit_limit_id: string | null
+          date_requested: string
+          date_submitted: string | null
+          description: string | null
+          expected_completion: string | null
+          facility_id: string | null
+          id: string
+          outcome_notes: string | null
+          request_type: Database["public"]["Enums"]["bank_request_type"]
+          requested_by: string | null
+          signatory_id: string | null
+          status: Database["public"]["Enums"]["bank_request_status"]
+          subject: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          actual_completion?: string | null
+          approved_by?: string | null
+          bank_account_id: string
+          bank_ack_date?: string | null
+          bank_contact?: string | null
+          bank_reference?: string | null
+          created_at?: string
+          credit_limit_id?: string | null
+          date_requested?: string
+          date_submitted?: string | null
+          description?: string | null
+          expected_completion?: string | null
+          facility_id?: string | null
+          id?: string
+          outcome_notes?: string | null
+          request_type: Database["public"]["Enums"]["bank_request_type"]
+          requested_by?: string | null
+          signatory_id?: string | null
+          status?: Database["public"]["Enums"]["bank_request_status"]
+          subject: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          actual_completion?: string | null
+          approved_by?: string | null
+          bank_account_id?: string
+          bank_ack_date?: string | null
+          bank_contact?: string | null
+          bank_reference?: string | null
+          created_at?: string
+          credit_limit_id?: string | null
+          date_requested?: string
+          date_submitted?: string | null
+          description?: string | null
+          expected_completion?: string | null
+          facility_id?: string | null
+          id?: string
+          outcome_notes?: string | null
+          request_type?: Database["public"]["Enums"]["bank_request_type"]
+          requested_by?: string | null
+          signatory_id?: string | null
+          status?: Database["public"]["Enums"]["bank_request_status"]
+          subject?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_service_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_service_requests_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_service_requests_credit_limit_id_fkey"
+            columns: ["credit_limit_id"]
+            isOneToOne: false
+            referencedRelation: "bank_credit_limits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_service_requests_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "bank_facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_service_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_service_requests_signatory_id_fkey"
+            columns: ["signatory_id"]
+            isOneToOne: false
+            referencedRelation: "signatories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_service_requests_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banking_activity_log: {
         Row: {
           action_type: string
@@ -1859,6 +2305,41 @@ export type Database = {
         | "savings"
         | "call_deposit"
         | "trade_finance"
+      bank_facility_status: "requested" | "active" | "suspended" | "cancelled"
+      bank_facility_type:
+        | "internet_banking"
+        | "sweep"
+        | "statement_delivery"
+        | "cheque_book"
+        | "card"
+        | "standing_instruction"
+        | "trade_finance"
+        | "payroll_wps"
+        | "host_to_host"
+        | "other"
+      bank_request_status:
+        | "draft"
+        | "submitted"
+        | "acknowledged"
+        | "in_progress"
+        | "completed"
+        | "rejected"
+        | "cancelled"
+      bank_request_type:
+        | "new_facility"
+        | "modify"
+        | "suspend"
+        | "reactivate"
+        | "cancel"
+        | "access_reset"
+        | "limit_change"
+        | "limit_renewal"
+        | "new_cheque_book"
+        | "token_replacement"
+        | "stop_payment"
+        | "signatory_update"
+        | "other"
+      bank_token_status: "none" | "issued" | "lost" | "replaced" | "returned"
       captable_status: "setup" | "live"
       circular_ownership_exception_type:
         | "legal_representative"
@@ -1866,6 +2347,27 @@ export type Database = {
         | "pre_existing"
         | "other"
       circular_type: "illegal" | "legal_exception"
+      credit_limit_status:
+        | "proposed"
+        | "sanctioned"
+        | "active"
+        | "under_renewal"
+        | "expired"
+        | "cancelled"
+      credit_limit_type:
+        | "overdraft"
+        | "term_loan"
+        | "revolving_credit"
+        | "working_capital"
+        | "invoice_discounting"
+        | "lc_sight"
+        | "lc_usance"
+        | "bank_guarantee"
+        | "trust_receipt"
+        | "trade_loan"
+        | "equipment_finance"
+        | "credit_card_limit"
+        | "other"
       document_renewal_frequency:
         | "none"
         | "annual"
@@ -1876,6 +2378,7 @@ export type Database = {
         | "custom"
       entity_status: "active" | "inactive" | "archived"
       entity_type: "person" | "company"
+      ib_access_level: "view_only" | "initiator" | "approver" | "administrator"
       movement_document_type:
         | "Share Transfer Deed"
         | "Share Purchase Agreement"
@@ -1910,8 +2413,19 @@ export type Database = {
         | "BANK_ACK_PENDING"
         | "CIRCULAR_DISPOSAL_DUE"
         | "CIRCULAR_DISPOSAL_OVERDUE"
+        | "BANK_REQUEST_OVERDUE"
+        | "CREDIT_LIMIT_REVIEW_DUE"
+        | "CREDIT_LIMIT_EXPIRING"
+        | "FACILITY_INACTIVE_PERSON"
       signatory_status: "active" | "suspended" | "revoked"
       signing_rule_type: "solo" | "joint_same_group" | "joint_cross_group"
+      statement_delivery_method: "email" | "post" | "portal"
+      statement_frequency:
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "quarterly"
+        | "annual"
       ubo_snapshot_type: "live" | "historical"
     }
     CompositeTypes: {
@@ -2049,6 +2563,44 @@ export const Constants = {
         "call_deposit",
         "trade_finance",
       ],
+      bank_facility_status: ["requested", "active", "suspended", "cancelled"],
+      bank_facility_type: [
+        "internet_banking",
+        "sweep",
+        "statement_delivery",
+        "cheque_book",
+        "card",
+        "standing_instruction",
+        "trade_finance",
+        "payroll_wps",
+        "host_to_host",
+        "other",
+      ],
+      bank_request_status: [
+        "draft",
+        "submitted",
+        "acknowledged",
+        "in_progress",
+        "completed",
+        "rejected",
+        "cancelled",
+      ],
+      bank_request_type: [
+        "new_facility",
+        "modify",
+        "suspend",
+        "reactivate",
+        "cancel",
+        "access_reset",
+        "limit_change",
+        "limit_renewal",
+        "new_cheque_book",
+        "token_replacement",
+        "stop_payment",
+        "signatory_update",
+        "other",
+      ],
+      bank_token_status: ["none", "issued", "lost", "replaced", "returned"],
       captable_status: ["setup", "live"],
       circular_ownership_exception_type: [
         "legal_representative",
@@ -2057,6 +2609,29 @@ export const Constants = {
         "other",
       ],
       circular_type: ["illegal", "legal_exception"],
+      credit_limit_status: [
+        "proposed",
+        "sanctioned",
+        "active",
+        "under_renewal",
+        "expired",
+        "cancelled",
+      ],
+      credit_limit_type: [
+        "overdraft",
+        "term_loan",
+        "revolving_credit",
+        "working_capital",
+        "invoice_discounting",
+        "lc_sight",
+        "lc_usance",
+        "bank_guarantee",
+        "trust_receipt",
+        "trade_loan",
+        "equipment_finance",
+        "credit_card_limit",
+        "other",
+      ],
       document_renewal_frequency: [
         "none",
         "annual",
@@ -2068,6 +2643,7 @@ export const Constants = {
       ],
       entity_status: ["active", "inactive", "archived"],
       entity_type: ["person", "company"],
+      ib_access_level: ["view_only", "initiator", "approver", "administrator"],
       movement_document_type: [
         "Share Transfer Deed",
         "Share Purchase Agreement",
@@ -2104,9 +2680,21 @@ export const Constants = {
         "BANK_ACK_PENDING",
         "CIRCULAR_DISPOSAL_DUE",
         "CIRCULAR_DISPOSAL_OVERDUE",
+        "BANK_REQUEST_OVERDUE",
+        "CREDIT_LIMIT_REVIEW_DUE",
+        "CREDIT_LIMIT_EXPIRING",
+        "FACILITY_INACTIVE_PERSON",
       ],
       signatory_status: ["active", "suspended", "revoked"],
       signing_rule_type: ["solo", "joint_same_group", "joint_cross_group"],
+      statement_delivery_method: ["email", "post", "portal"],
+      statement_frequency: [
+        "daily",
+        "weekly",
+        "monthly",
+        "quarterly",
+        "annual",
+      ],
       ubo_snapshot_type: ["live", "historical"],
     },
   },

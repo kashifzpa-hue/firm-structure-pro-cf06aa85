@@ -19,6 +19,9 @@ import { toast } from "sonner";
 import { maskAccountNumber, maskIban, formatLimit, getAuthorityLabels, logBankingActivity, BANK_DOC_TYPES } from "@/lib/banking-utils";
 import { BankAccountForm } from "@/components/banking/BankAccountForm";
 import { SignatoryForm } from "@/components/banking/SignatoryForm";
+import { FacilitiesTab } from "@/components/banking/FacilitiesTab";
+import { ServiceRequestsTab } from "@/components/banking/ServiceRequestsTab";
+
 import { SignatoryCard } from "@/components/banking/SignatoryCard";
 import { MatrixRuleForm } from "@/components/banking/MatrixRuleForm";
 import { encryptedUpload, encryptedDownload } from "@/lib/encryption";
@@ -225,8 +228,11 @@ export default function BankAccountDetail() {
           <TabsTrigger value="details">Account Details</TabsTrigger>
           <TabsTrigger value="signatories">Signatories ({activeSigs.length})</TabsTrigger>
           <TabsTrigger value="matrix">Signing Matrix ({rules.length})</TabsTrigger>
+          <TabsTrigger value="facilities">Facilities &amp; Limits</TabsTrigger>
+          <TabsTrigger value="requests">Service Requests</TabsTrigger>
           <TabsTrigger value="documents">Documents ({docs.length})</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
+
         </TabsList>
 
         {/* Tab 1: Account Details */}
@@ -361,9 +367,20 @@ export default function BankAccountDetail() {
           </div>
         </TabsContent>
 
+        {/* Facilities & Limits */}
+        <TabsContent value="facilities">
+          <FacilitiesTab bankAccountId={id!} persons={persons} entities={companies} isAdmin={isAdmin} />
+        </TabsContent>
+
+        {/* Service Requests */}
+        <TabsContent value="requests">
+          <ServiceRequestsTab bankAccountId={id!} isAdmin={isAdmin} />
+        </TabsContent>
+
         {/* Tab 4: Documents */}
         <TabsContent value="documents">
           <div className="space-y-4">
+
             <div className="flex justify-end">
               {isAdmin && <Button size="sm" onClick={() => setDocUploadOpen(true)}><Plus className="h-3 w-3 mr-1" /> Upload Document</Button>}
             </div>
