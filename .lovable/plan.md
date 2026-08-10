@@ -15,9 +15,11 @@ Model answer ──detokenize──> User
 Everything logged = tokenized only
 ```
 
-- Each real value gets a deterministic token derived from an HMAC of the workspace key plus the value (or the entity id). Same person = same token every time, in every thread — so the model can still reason about relationships and prompt-log diffs stay meaningful.
+- Each real value gets a deterministic token derived from an HMAC of a workspace-scoped subkey plus the value (or the entity id). Same person = same token every time, in every thread — so the model can still reason about relationships and prompt-log diffs stay meaningful.
+- Tokens are **7 base32 characters (~35 bits)** and fixed length. No collision-extension logic: at that size collisions are negligible even for very large workspaces, and — critically — a fixed length is the only way the "same person = same token" guarantee survives a map that is rebuilt fresh on every request. Nothing about the token depends on which other values happened to be in the same request.
 - The token map is built per request in the backend and never sent to the model, never written to the database.
 - Tokens keep a type prefix (`PERSON`, `COMPANY`, `EMAIL`, `PHONE`, `IBAN`, `ACCOUNT`, `EMIRATES_ID`, `ADDRESS`, `DOB`) so the model knows what kind of value it is holding.
+
 
 ## Scope of what gets tokenized
 
