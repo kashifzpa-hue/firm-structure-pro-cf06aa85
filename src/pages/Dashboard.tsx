@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,22 +15,21 @@ import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
   const { workspaceId } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalEntities: 0, expiringCount: 0, expiredCount: 0, totalCompanies: 0, totalLinks: 0, draftMovements: 0 });
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [recentLinks, setRecentLinks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [appointmentAlerts, setAppointmentAlerts] = useState<any[]>([]);
-  const [shareholdingGaps, setShareholdingGaps] = useState<any[]>([]);
-  const [recentMovements, setRecentMovements] = useState<any[]>([]);
-  const [uboAlerts, setUboAlerts] = useState<any[]>([]);
-  const [unreadAlerts, setUnreadAlerts] = useState({ total: 0, critical: 0, warnings: 0 });
-  const [bankingEnabled, setBankingEnabled] = useState(false);
-  const [bankingStats, setBankingStats] = useState({ accounts: 0, signatories: 0, expiring: 0, pendingAck: 0 });
-  const [govStats, setGovStats] = useState({ boardAppts: 0, mgmtAppts: 0, companiesNoBoard: 0, totalCompanies: 0 });
-
-  useEffect(() => {
-    if (!workspaceId) return;
-    const fetchData = async () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard", workspaceId],
+    enabled: !!workspaceId,
+    queryFn: async () => {
+      let stats = { totalEntities: 0, expiringCount: 0, expiredCount: 0, totalCompanies: 0, totalLinks: 0, draftMovements: 0 };
+      let alerts: any[] = [];
+      let recentLinks: any[] = [];
+      let appointmentAlerts: any[] = [];
+      let shareholdingGaps: any[] = [];
+      let recentMovements: any[] = [];
+      let uboAlerts: any[] = [];
+      let unreadAlerts = { total: 0, critical: 0, warnings: 0 };
+      let bankingEnabled = false;
+      let bankingStats = { accounts: 0, signatories: 0, expiring: 0, pendingAck: 0 };
+      let govStats = { boardAppts: 0, mgmtAppts: 0, companiesNoBoard: 0, totalCompanies: 0 };
       const [entitiesRes, docsRes, linksCountRes, recentLinksRes, appointmentsRes, shareClassesRes, equityLinksRes, draftMovRes, recentMovRes] = await Promise.all([
         supabase.from("entities").select("id, type, name").eq("workspace_id", workspaceId),
         supabase.from("documents").select("*, entities!inner(name, type)").eq("workspace_id", workspaceId),
@@ -77,10 +76,10 @@ export default function Dashboard() {
         return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime();
       });
 
-      setStats({ totalEntities, expiringCount, expiredCount, totalCompanies, totalLinks, draftMovements: (draftMovRes.data || []).length });
-      setAlerts(alertDocs);
-      setRecentLinks(recentLinksRes.data || []);
-      setRecentMovements(recentMovRes.data || []);
+      stats = ({ totalEntities, expiringCount, expiredCount, totalCompanies, totalLinks, draftMovements: (draftMovRes.data || []).length });
+      alerts = (alertDocs);
+      recentLinks = (recentLinksRes.data || []);
+      recentMovements = (recentMovRes.data || []);
 
       // Appointment alerts
       const activeAppointments = appointmentsRes.data || [];
@@ -103,7 +102,7 @@ export default function Dashboard() {
           }
         });
       }
-      setAppointmentAlerts(apptAlerts);
+      appointmentAlerts = (apptAlerts);
 
       // Shareholding gaps
       const allShareClasses = shareClassesRes.data || [];
@@ -128,7 +127,7 @@ export default function Dashboard() {
           });
         }
       });
-      setShareholdingGaps(gaps);
+      shareholdingGaps = (gaps);
 
       // UBO Alerts — above threshold with passport data
       const { data: uboData } = await supabase.from("ubo_snapshots").select("*").eq("workspace_id", workspaceId).eq("snapshot_type", "live").eq("is_above_threshold", true).eq("calculation_error", false);
@@ -140,7 +139,7 @@ export default function Dashboard() {
           const passport = (uboDocs || []).find((d: any) => d.entity_id === u.person_entity_id);
           return { ...u, personName: uboEntityMap[u.person_entity_id]?.name, companyName: uboEntityMap[u.company_entity_id]?.name, passport };
         });
-        setUboAlerts(alerts);
+        uboAlerts = (alerts);
       }
 
       // Fetch unread notification counts
@@ -152,7 +151,7 @@ export default function Dashboard() {
       
       const criticalTypes = ["DOCUMENT_EXPIRED", "UBO_THRESHOLD_BREACH"];
       const warningTypes = ["DOCUMENT_EXPIRING_SOON", "SHAREHOLDING_GAP", "MOVEMENT_DRAFT_PENDING"];
-      setUnreadAlerts({
+      unreadAlerts = ({
         total: (unreadNotifs || []).length,
         critical: (unreadNotifs || []).filter((n: any) => criticalTypes.includes(n.notification_type)).length,
         warnings: (unreadNotifs || []).filter((n: any) => warningTypes.includes(n.notification_type)).length,
@@ -161,11 +160,11 @@ export default function Dashboard() {
       // Banking stats
       const { data: wsData } = await supabase.from("workspaces").select("banking_enabled").eq("id", workspaceId).single();
       const isBankingEnabled = !!(wsData as any)?.banking_enabled;
-      setBankingEnabled(isBankingEnabled);
+      bankingEnabled = (isBankingEnabled);
 
       if (isBankingEnabled) {
         const today30 = new Date();
-        today30.setDate(today30.getDate() + 30);
+        today30.date = (today30.getDate() + 30);
         const today30Str = today30.toISOString().split("T")[0];
 
         const [baRes, sigRes] = await Promise.all([
@@ -173,7 +172,7 @@ export default function Dashboard() {
           supabase.from("signatories").select("id, expiry_date, bank_acknowledged_date").eq("workspace_id", workspaceId).eq("status", "active"),
         ]);
         const activeSigs = sigRes.data || [];
-        setBankingStats({
+        bankingStats = ({
           accounts: (baRes.data || []).length,
           signatories: activeSigs.length,
           expiring: activeSigs.filter(s => s.expiry_date && s.expiry_date <= today30Str).length,
@@ -187,17 +186,29 @@ export default function Dashboard() {
       const boardAppts = activeAppts.filter((a: any) => a.role_category === "board");
       const mgmtAppts = activeAppts.filter((a: any) => a.role_category === "management");
       const companiesWithBoard = new Set(boardAppts.map((a: any) => a.company_entity_id));
-      setGovStats({
+      govStats = ({
         boardAppts: boardAppts.length,
         mgmtAppts: mgmtAppts.length,
         companiesNoBoard: companyIds.filter(id => !companiesWithBoard.has(id)).length,
         totalCompanies: companyIds.length,
       });
 
-      setLoading(false);
-    };
-    fetchData();
-  }, [workspaceId]);
+      return { stats, alerts, recentLinks, appointmentAlerts, shareholdingGaps, recentMovements, uboAlerts, unreadAlerts, bankingEnabled, bankingStats, govStats };
+    },
+  });
+
+  const stats = data?.stats ?? { totalEntities: 0, expiringCount: 0, expiredCount: 0, totalCompanies: 0, totalLinks: 0, draftMovements: 0 };
+  const alerts = data?.alerts ?? [];
+  const recentLinks = data?.recentLinks ?? [];
+  const appointmentAlerts = data?.appointmentAlerts ?? [];
+  const shareholdingGaps = data?.shareholdingGaps ?? [];
+  const recentMovements = data?.recentMovements ?? [];
+  const uboAlerts = data?.uboAlerts ?? [];
+  const unreadAlerts = data?.unreadAlerts ?? { total: 0, critical: 0, warnings: 0 };
+  const bankingEnabled = data?.bankingEnabled ?? false;
+  const bankingStats = data?.bankingStats ?? { accounts: 0, signatories: 0, expiring: 0, pendingAck: 0 };
+  const govStats = data?.govStats ?? { boardAppts: 0, mgmtAppts: 0, companiesNoBoard: 0, totalCompanies: 0 };
+  const loading = isLoading;
 
   if (loading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
