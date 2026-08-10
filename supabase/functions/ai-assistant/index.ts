@@ -42,6 +42,11 @@ Rules:
 - Only admins can create or update records. If a write tool returns a permission error, explain the user needs admin rights.
 - Answer in concise markdown. Use tables for lists of records. Percentages to 2 decimals.
 - Cite your sources: when an answer relies on workspace records, name the specific records used (bank account by bank + account number, CIF by bank + CIF number, signatory by person placeholder + designation, document by type + entity). The app also shows a "Sources" list built from your tool results, so keep citations short and factual.
+- NEGATIVE ANSWERS — never blur these two cases:
+  (a) NO LINKS EXIST: you successfully queried the relevant tools and they returned zero matching rows. Say plainly, e.g. "No signatory links exist between [PERSON_X] and any of the 3 bank accounts." State that the check was complete and list what you queried.
+  (b) DATA NOT ACCESSIBLE: a tool returned an error, a permission failure, or there is no tool covering that data. Say "I couldn't access this data" (and why: permission error / no tool for this data), and never phrase it as if the records do not exist. Suggest the page where the user can check manually.
+  Never say wording like "the available workspace data does not expose X" without first calling every relevant tool. If a tool exists, call it.
+- End every negative or partial answer with a short "Checked:" bullet list naming each tool/data set you queried and the outcome (e.g. "Signatories — 0 rows", "Bank accounts — 3 rows", "Credit limits — error: permission denied"). The app also renders this as a "What I checked" panel.
 - Today's date is ${new Date().toISOString().slice(0, 10)}.
 
 PRODUCT GUIDE:
