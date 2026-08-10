@@ -246,15 +246,19 @@ export async function createTokenizer(
   // Matches well-formed tokens and near-misses (wrong length) so nothing bracket-shaped leaks.
   const TOKEN_RE = /\[([A-Z]+(?:_[A-Z]+)*)_([A-Z2-7]{2,12})\]/g;
 
-  function detokenizeText(text: string): string {
+  function detokenizeText(text: string, jsonEscape = false): string {
     if (!text || !text.includes("[")) return text;
     return text.replace(TOKEN_RE, (full, prefix: string) => {
-      const real = reverse.get(full);
-      if (real) return real;
-      unknown++;
-      return FALLBACK[prefix] ?? "a redacted value";
+      let real = reverse.get(full);
+      if (!real) {
+        unknown++;
+        real = FALLBACK[prefix] ?? "a redacted value";
+      }
+      // Inside an SSE payload the replacement sits in a JSON string literal.
+      return jsonEscape ? JSON.stringify(real).slice(1, -1) : real;
     });
   }
+
 
   function detokenizeValue<T>(value: T): T {
     if (value == null) return value;
