@@ -278,10 +278,11 @@ export default function EntityDetail() {
   const handleDownloadPersonPdf = async () => {
     if (!entity || !id || !workspaceId) return;
     try {
-      const [posRes, apptRes, shRes] = await Promise.all([
+      const [posRes, apptRes, shRes, exposure] = await Promise.all([
         supabase.from("previous_positions").select("*").eq("entity_id", id).eq("workspace_id", workspaceId).order("display_order").order("from_date", { ascending: false }),
         supabase.from("appointments").select("*, company:entities!appointments_company_entity_id_fkey(name)").eq("person_entity_id", id).eq("workspace_id", workspaceId).is("resignation_date", null),
         supabase.from("equity_links").select("*, owned:entities!equity_links_owned_entity_id_fkey(name), share_class:share_classes(class_name)").eq("owner_entity_id", id).eq("workspace_id", workspaceId).is("end_date", null),
+        fetchPersonExposure(id, workspaceId).catch(() => null),
       ]);
       const pdfData = {
         entity,
@@ -294,7 +295,20 @@ export default function EntityDetail() {
           shares_owned: s.shares_owned,
           percentage: s.percentage,
         })),
+        signatories: exposure?.signatories ?? [],
+        signingRules: exposure?.signingRules ?? [],
+        facilities: exposure?.facilities ?? [],
+        guarantees: exposure?.guarantees ?? [],
+        serviceRequests: exposure?.serviceRequests ?? [],
+        offboarding: offboardingSteps.length
+          ? {
+              status: deactivationGate.allowed ? "completed" : "in_progress",
+              progress: `${offboardingSteps.filter((s: any) => ["done", "not_applicable"].includes(s.status)).length} of ${offboardingSteps.length} steps closed`,
+              openMandates: offboardingSteps.filter((s: any) => s.category === "signatory" && !["done", "not_applicable"].includes(s.status)).length,
+            }
+          : null,
       };
+
       const blob = await pdf(<PersonProfilePdf data={pdfData} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
