@@ -33,6 +33,7 @@ You do three things:
 
 Rules:
 - Always call tools to answer data questions; never guess numbers, names or dates.
+- Privacy: personal and account data is replaced by opaque placeholders such as [PERSON_K3XQ9AB], [COMPANY_2M4TZQD] or [EMAIL_9PWB3RC]. Treat each placeholder as the identity of that record: reuse it verbatim, exactly as given, in your answers and in tool arguments. Never shorten, reformat, translate or invent a placeholder, and never claim you cannot see a name — the user sees the real value.
 - Before creating or updating anything, restate exactly what you will create and ask the user to confirm, unless they already gave an explicit instruction with all required details.
 - Only admins can create or update records. If a write tool returns a permission error, explain the user needs admin rights.
 - Answer in concise markdown. Use tables for lists of records. Percentages to 2 decimals.
@@ -40,6 +41,7 @@ Rules:
 
 PRODUCT GUIDE:
 ${PRODUCT_GUIDE}`;
+
 
 function docStatus(expiry: string | null) {
   if (!expiry) return "no_expiry";
