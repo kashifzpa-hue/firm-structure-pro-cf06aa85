@@ -112,6 +112,27 @@ export default function AiPromptLog() {
     [data],
   );
 
+  // Rows are ordered newest-first within the workspace, so the "previous request"
+  // for a given entry is simply the next one in the unfiltered list.
+  const prevById = useMemo(() => {
+    const map = new Map<string, PromptLogRow>();
+    const all = data ?? [];
+    all.forEach((r, i) => {
+      const prev = all[i + 1];
+      if (prev) map.set(r.id, prev);
+    });
+    return map;
+  }, [data]);
+
+  const diffPair = useMemo(() => {
+    if (!diffRowId) return null;
+    const current = (data ?? []).find((r) => r.id === diffRowId);
+    const previous = prevById.get(diffRowId);
+    if (!current || !previous) return null;
+    return { current, previous };
+  }, [diffRowId, data, prevById]);
+
+
   const rows = useMemo(() => {
     return (data ?? []).filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
