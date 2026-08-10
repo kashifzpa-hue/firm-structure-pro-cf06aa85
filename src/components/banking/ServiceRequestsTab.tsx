@@ -20,7 +20,8 @@ import {
 import { ServiceRequestForm } from "@/components/banking/ServiceRequestForm";
 
 interface Props {
-  bankAccountId: string;
+  cifId: string;
+  accounts: { id: string; label: string }[];
   isAdmin: boolean;
 }
 
@@ -34,7 +35,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-slate-100 text-slate-500",
 };
 
-export function ServiceRequestsTab({ bankAccountId, isAdmin }: Props) {
+export function ServiceRequestsTab({ cifId, accounts, isAdmin }: Props) {
   const { workspaceId } = useAuth();
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
@@ -44,13 +45,13 @@ export function ServiceRequestsTab({ bankAccountId, isAdmin }: Props) {
   const [typeFilter, setTypeFilter] = useState("all");
 
   const { data: requests = [] } = useQuery({
-    queryKey: ["bank-service-requests", bankAccountId],
-    enabled: !!bankAccountId && !!workspaceId,
+    queryKey: ["bank-service-requests", cifId],
+    enabled: !!cifId && !!workspaceId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bank_service_requests" as any)
         .select("*")
-        .eq("bank_account_id", bankAccountId)
+        .eq("cif_id", cifId)
         .order("date_requested", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -58,36 +59,36 @@ export function ServiceRequestsTab({ bankAccountId, isAdmin }: Props) {
   });
 
   const { data: facilities = [] } = useQuery({
-    queryKey: ["bank-facilities", bankAccountId],
-    enabled: !!bankAccountId && !!workspaceId,
+    queryKey: ["bank-facilities", cifId],
+    enabled: !!cifId && !!workspaceId,
     queryFn: async () => {
-      const { data } = await supabase.from("bank_facilities" as any).select("id, facility_type").eq("bank_account_id", bankAccountId);
+      const { data } = await supabase.from("bank_facilities" as any).select("id, facility_type").eq("cif_id", cifId);
       return data || [];
     },
   });
 
   const { data: limits = [] } = useQuery({
-    queryKey: ["bank-credit-limits", bankAccountId],
-    enabled: !!bankAccountId && !!workspaceId,
+    queryKey: ["bank-credit-limits", cifId],
+    enabled: !!cifId && !!workspaceId,
     queryFn: async () => {
-      const { data } = await supabase.from("bank_credit_limits" as any).select("id, limit_type").eq("bank_account_id", bankAccountId);
+      const { data } = await supabase.from("bank_credit_limits" as any).select("id, limit_type").eq("cif_id", cifId);
       return data || [];
     },
   });
 
   const { data: signatories = [] } = useQuery({
-    queryKey: ["bank-signatories-simple", bankAccountId],
-    enabled: !!bankAccountId && !!workspaceId,
+    queryKey: ["bank-signatories-simple", cifId],
+    enabled: !!cifId && !!workspaceId,
     queryFn: async () => {
       const { data } = await supabase
         .from("signatories")
         .select("id, person:entities!signatories_person_entity_id_fkey(name)")
-        .eq("bank_account_id", bankAccountId);
+        .eq("cif_id", cifId);
       return (data || []).map((s: any) => ({ id: s.id, label: s.person?.name || "Signatory" }));
     },
   });
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["bank-service-requests", bankAccountId] });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["bank-service-requests", cifId] });
 
   const filtered = useMemo(() => requests.filter((r: any) => {
     if (statusFilter === "open" && !OPEN_REQUEST_STATUSES.includes(r.status)) return false;
@@ -191,7 +192,8 @@ export function ServiceRequestsTab({ bankAccountId, isAdmin }: Props) {
           open={formOpen}
           onClose={() => { setFormOpen(false); setEditData(null); }}
           onSaved={() => { setFormOpen(false); setEditData(null); refresh(); }}
-          bankAccountId={bankAccountId}
+          cifId={cifId}
+          accounts={accounts}
           facilities={(facilities as any[]).map(f => ({ id: f.id, label: f.facility_type }))}
           limits={(limits as any[]).map(l => ({ id: l.id, label: l.limit_type }))}
           signatories={signatories as any[]}

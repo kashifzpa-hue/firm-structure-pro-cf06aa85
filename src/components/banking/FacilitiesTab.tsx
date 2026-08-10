@@ -26,9 +26,10 @@ import { CreditLimitForm } from "@/components/banking/CreditLimitForm";
 import { ServiceRequestForm } from "@/components/banking/ServiceRequestForm";
 
 interface Props {
-  bankAccountId: string;
+  cifId: string;
   persons: { id: string; name: string; entity_status?: string }[];
   entities: { id: string; name: string }[];
+  accounts: { id: string; label: string }[];
   isAdmin: boolean;
 }
 
@@ -43,7 +44,7 @@ function StatusPill({ status }: { status: "valid" | "expiring" | "expired" | "no
   return <Badge className={`${map[status]} hover:${map[status]}`}>{label[status]}</Badge>;
 }
 
-export function FacilitiesTab({ bankAccountId, persons, entities, isAdmin }: Props) {
+export function FacilitiesTab({ cifId, persons, entities, accounts, isAdmin }: Props) {
   const { workspaceId } = useAuth();
   const qc = useQueryClient();
   const [facilityFormOpen, setFacilityFormOpen] = useState(false);
@@ -53,13 +54,13 @@ export function FacilitiesTab({ bankAccountId, persons, entities, isAdmin }: Pro
   const [renewLimit, setRenewLimit] = useState<any>(null);
 
   const { data: facilities = [] } = useQuery({
-    queryKey: ["bank-facilities", bankAccountId],
-    enabled: !!bankAccountId && !!workspaceId,
+    queryKey: ["bank-facilities", cifId],
+    enabled: !!cifId && !!workspaceId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bank_facilities" as any)
         .select("*, person:entities!bank_facilities_person_entity_id_fkey(id, name, entity_status)")
-        .eq("bank_account_id", bankAccountId)
+        .eq("cif_id", cifId)
         .order("facility_type");
       if (error) throw error;
       return (data || []).map((f: any) => ({
@@ -71,13 +72,13 @@ export function FacilitiesTab({ bankAccountId, persons, entities, isAdmin }: Pro
   });
 
   const { data: limits = [] } = useQuery({
-    queryKey: ["bank-credit-limits", bankAccountId],
-    enabled: !!bankAccountId && !!workspaceId,
+    queryKey: ["bank-credit-limits", cifId],
+    enabled: !!cifId && !!workspaceId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bank_credit_limits" as any)
         .select("*, guarantor:entities!bank_credit_limits_guarantor_entity_id_fkey(name)")
-        .eq("bank_account_id", bankAccountId)
+        .eq("cif_id", cifId)
         .order("next_review_date", { nullsFirst: false });
       if (error) throw error;
       return data || [];
@@ -85,9 +86,9 @@ export function FacilitiesTab({ bankAccountId, persons, entities, isAdmin }: Pro
   });
 
   const refresh = () => {
-    qc.invalidateQueries({ queryKey: ["bank-facilities", bankAccountId] });
-    qc.invalidateQueries({ queryKey: ["bank-credit-limits", bankAccountId] });
-    qc.invalidateQueries({ queryKey: ["bank-service-requests", bankAccountId] });
+    qc.invalidateQueries({ queryKey: ["bank-facilities", cifId] });
+    qc.invalidateQueries({ queryKey: ["bank-credit-limits", cifId] });
+    qc.invalidateQueries({ queryKey: ["bank-service-requests", cifId] });
   };
 
   const issues = useMemo(() => dualControlIssues(facilities as any), [facilities]);
@@ -319,8 +320,9 @@ export function FacilitiesTab({ bankAccountId, persons, entities, isAdmin }: Pro
           open={facilityFormOpen}
           onClose={() => { setFacilityFormOpen(false); setEditFacility(null); }}
           onSaved={() => { setFacilityFormOpen(false); setEditFacility(null); refresh(); }}
-          bankAccountId={bankAccountId}
+          cifId={cifId}
           persons={persons}
+          accounts={accounts}
           editData={editFacility}
         />
       )}
@@ -330,7 +332,7 @@ export function FacilitiesTab({ bankAccountId, persons, entities, isAdmin }: Pro
           open={limitFormOpen}
           onClose={() => { setLimitFormOpen(false); setEditLimit(null); }}
           onSaved={() => { setLimitFormOpen(false); setEditLimit(null); refresh(); }}
-          bankAccountId={bankAccountId}
+          cifId={cifId}
           entities={entities}
           parentLimits={limits.map((l: any) => ({
             id: l.id,
@@ -345,7 +347,8 @@ export function FacilitiesTab({ bankAccountId, persons, entities, isAdmin }: Pro
           open={!!renewLimit}
           onClose={() => setRenewLimit(null)}
           onSaved={() => { setRenewLimit(null); refresh(); }}
-          bankAccountId={bankAccountId}
+          cifId={cifId}
+          accounts={accounts}
           facilities={facilities.map((f: any) => ({ id: f.id, label: labelFor(FACILITY_TYPES, f.facility_type) }))}
           limits={limits.map((l: any) => ({ id: l.id, label: labelFor(CREDIT_LIMIT_TYPES, l.limit_type) }))}
           signatories={[]}
