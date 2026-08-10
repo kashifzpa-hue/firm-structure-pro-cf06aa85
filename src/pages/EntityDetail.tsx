@@ -189,6 +189,32 @@ export default function EntityDetail() {
     navigate("/entities");
   };
 
+  // Offboarding gate — a person cannot be deactivated while steps remain open
+  useEffect(() => {
+    if (!id || !workspaceId) return;
+    let cancelled = false;
+    (async () => {
+      const { data: ob } = await supabase
+        .from("person_offboardings")
+        .select("id")
+        .eq("workspace_id", workspaceId)
+        .eq("person_entity_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!ob) { if (!cancelled) setOffboardingSteps([]); return; }
+      const { data: st } = await supabase
+        .from("person_offboarding_steps")
+        .select("status, category")
+        .eq("offboarding_id", ob.id);
+      if (!cancelled) setOffboardingSteps(st ?? []);
+    })();
+    return () => { cancelled = true; };
+  }, [id, workspaceId, deactivateOpen]);
+
+  const deactivationGate = canDeactivatePerson(offboardingSteps as any);
+
+
   const handleDeactivate = async () => {
     if (!entity || !workspaceId || !deactivateReason) return;
     setDeactivating(true);
