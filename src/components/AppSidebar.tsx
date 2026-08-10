@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Bot, BookOpen, History as HistoryIcon, LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor, Terminal } from "lucide-react";
+import { Bot, BookOpen, Grid3x3, History as HistoryIcon, LayoutDashboard, Building2, FileText, Settings, LogOut, Link2, GitBranch, ScrollText, Shield, FileBarChart, Bell, Landmark, PenLine, Lock, Monitor, Terminal } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
