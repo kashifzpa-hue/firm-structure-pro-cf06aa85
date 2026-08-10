@@ -367,15 +367,28 @@ export default function BankAccountDetail() {
           </div>
         </TabsContent>
 
-        {/* Facilities & Limits */}
+        {/* Facilities & Limits (managed at CIF level) */}
         <TabsContent value="facilities">
-          <FacilitiesTab bankAccountId={id!} persons={persons} entities={companies} isAdmin={isAdmin} />
+          <Card className="shadow-sm">
+            <CardContent className="py-10 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Facilities, borrowing limits and service requests are held at the bank relationship (CIF) level,
+                which covers every account under it.
+              </p>
+              <Button
+                variant="outline"
+                disabled={!account.cif_id}
+                onClick={() => navigate(`/bank-relationships/${account.cif_id}`)}
+              >
+                Open bank relationship (CIF)
+              </Button>
+              {!account.cif_id && (
+                <p className="text-xs text-muted-foreground">This account is not linked to a CIF yet — edit the account to link it.</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Service Requests */}
-        <TabsContent value="requests">
-          <ServiceRequestsTab bankAccountId={id!} isAdmin={isAdmin} />
-        </TabsContent>
 
         {/* Tab 4: Documents */}
         <TabsContent value="documents">
