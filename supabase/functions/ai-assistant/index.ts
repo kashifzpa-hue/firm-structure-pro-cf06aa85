@@ -106,6 +106,20 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const isAdmin = roleRow?.role === "admin";
 
+    // PII tokenizer: real values never reach the model or the prompt log.
+    const { data: nameRows } = await supabase
+      .from("entities")
+      .select("name")
+      .eq("workspace_id", workspaceId)
+      .limit(5000);
+    const tokenizer = await createTokenizer(
+      Deno.env.get("ENCRYPTION_MASTER_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!,
+      workspaceId,
+      { names: (nameRows ?? []).map((r) => r.name as string) },
+    );
+
+
+
     // Persist the incoming user message.
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.role === "user") {
