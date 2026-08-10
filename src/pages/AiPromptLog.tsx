@@ -89,6 +89,8 @@ export default function AiPromptLog() {
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [openRow, setOpenRow] = useState<string | null>(null);
+  const [diffRowId, setDiffRowId] = useState<string | null>(null);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["ai-prompt-log", workspaceId],
