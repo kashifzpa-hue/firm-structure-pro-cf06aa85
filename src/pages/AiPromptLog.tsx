@@ -109,6 +109,7 @@ export default function AiPromptLog() {
           <h1 className="text-2xl font-semibold tracking-tight">AI Prompt Log</h1>
           <p className="text-sm text-muted-foreground">
             Every AI Copilot request, including the exact instructions, conversation and workspace data sent to the model.
+            Emails, phone numbers, IBANs, IDs, card numbers, keys and tokens are automatically redacted before being stored.
           </p>
         </div>
       </div>
