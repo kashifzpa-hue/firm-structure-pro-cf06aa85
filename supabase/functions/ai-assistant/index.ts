@@ -5,6 +5,8 @@ import { createOpenAI } from "npm:@ai-sdk/openai@^4";
 import { createClient } from "npm:@supabase/supabase-js@^2";
 import { z } from "npm:zod@^4";
 import { createLovableAiGatewayRunIdFetch, getLovableAiGatewayRunId } from "../_shared/ai-gateway.ts";
+import { createTokenizer } from "../_shared/pii-tokens.ts";
+
 
 
 const PRODUCT_GUIDE = `
