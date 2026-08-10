@@ -969,6 +969,14 @@ export default function EntityDetail() {
           </TabsContent>
         )}
 
+        {/* Offboarding Tab for persons */}
+        {isPerson && (
+          <TabsContent value="offboarding">
+            <OffboardingTab personId={id!} personName={entity.name} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+
+
         {/* Banking Tab */}
         {!isPerson && bankingEnabled && (
           <TabsContent value="banking">
