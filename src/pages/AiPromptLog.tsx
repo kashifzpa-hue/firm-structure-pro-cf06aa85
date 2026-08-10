@@ -161,8 +161,8 @@ export default function AiPromptLog() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search user, model or prompt content…"
@@ -171,15 +171,73 @@ export default function AiPromptLog() {
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="success">Success</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="error">Error</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-3">
+          <Select value={modelFilter} onValueChange={setModelFilter}>
+            <SelectTrigger className="w-full sm:w-56"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All models</SelectItem>
+              {models.map((m) => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="success">Success</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="error">Error</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+            <SelectTrigger className="w-full sm:w-52"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All data touched</SelectItem>
+              <SelectItem value="entities">Entities</SelectItem>
+              <SelectItem value="documents">Documents</SelectItem>
+              <SelectItem value="ownership">Ownership / UBO</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn("w-full justify-start text-left font-normal sm:w-64", !dateRange?.from && "text-muted-foreground")}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange?.from
+                  ? dateRange.to
+                    ? `${format(dateRange.from, "dd MMM yyyy")} – ${format(dateRange.to, "dd MMM yyyy")}`
+                    : format(dateRange.from, "dd MMM yyyy")
+                  : "Any date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {filtersActive && (
+            <Button variant="ghost" onClick={clearFilters} className="gap-1">
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Showing {rows.length} of {data?.length ?? 0} requests
+        </p>
       </div>
 
       <div className="rounded-lg border bg-card">
