@@ -164,7 +164,7 @@ export default function Dashboard() {
 
       if (isBankingEnabled) {
         const today30 = new Date();
-        today30.date = (today30.getDate() + 30);
+        today30.setDate(today30.getDate() + 30);
         const today30Str = today30.toISOString().split("T")[0];
 
         const [baRes, sigRes] = await Promise.all([
