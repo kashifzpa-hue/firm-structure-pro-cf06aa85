@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { UAE_BANKS, ACCOUNT_TYPES, ACCOUNT_STATUSES, logBankingActivity } from "@/lib/banking-utils";
+import { ACCOUNT_TYPES, ACCOUNT_STATUSES, logBankingActivity } from "@/lib/banking-utils";
+import { useBanks } from "@/hooks/use-banks";
 import { toast } from "sonner";
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 
 export function BankAccountForm({ open, onClose, onSaved, companies, relationships = [], editData }: Props) {
   const { workspaceId } = useAuth();
+  const { bankNames } = useBanks();
   const [saving, setSaving] = useState(false);
   const [companyId, setCompanyId] = useState(editData?.company_entity_id || "");
   const [bankName, setBankName] = useState(editData?.bank_name || "");
@@ -101,7 +103,12 @@ export function BankAccountForm({ open, onClose, onSaved, companies, relationshi
           <div><Label>Bank Name *</Label>
             <Select value={bankName} onValueChange={setBankName}>
               <SelectTrigger><SelectValue placeholder="Select bank" /></SelectTrigger>
-              <SelectContent>{UAE_BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {bankNames.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                {editData?.bank_name && !bankNames.includes(editData.bank_name) && (
+                  <SelectItem value={editData.bank_name}>{editData.bank_name}</SelectItem>
+                )}
+              </SelectContent>
             </Select>
           </div>
           {bankName === "Other" && <div><Label>Bank Name (Custom)</Label><Input value={bankNameCustom} onChange={e => setBankNameCustom(e.target.value)} /></div>}
