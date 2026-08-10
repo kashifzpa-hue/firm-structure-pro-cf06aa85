@@ -5,6 +5,8 @@ import { createOpenAI } from "npm:@ai-sdk/openai@^4";
 import { createClient } from "npm:@supabase/supabase-js@^2";
 import { z } from "npm:zod@^4";
 import { createLovableAiGatewayRunIdFetch, getLovableAiGatewayRunId } from "../_shared/ai-gateway.ts";
+import { createTokenizer } from "../_shared/pii-tokens.ts";
+
 
 
 const PRODUCT_GUIDE = `
@@ -33,6 +35,7 @@ You do three things:
 
 Rules:
 - Always call tools to answer data questions; never guess numbers, names or dates.
+- Privacy: personal and account data is replaced by opaque placeholders such as [PERSON_K3XQ9AB], [COMPANY_2M4TZQD] or [EMAIL_9PWB3RC]. Treat each placeholder as the identity of that record: reuse it verbatim, exactly as given, in your answers and in tool arguments. Never shorten, reformat, translate or invent a placeholder, and never claim you cannot see a name — the user sees the real value.
 - Before creating or updating anything, restate exactly what you will create and ask the user to confirm, unless they already gave an explicit instruction with all required details.
 - Only admins can create or update records. If a write tool returns a permission error, explain the user needs admin rights.
 - Answer in concise markdown. Use tables for lists of records. Percentages to 2 decimals.
@@ -40,6 +43,7 @@ Rules:
 
 PRODUCT GUIDE:
 ${PRODUCT_GUIDE}`;
+
 
 function docStatus(expiry: string | null) {
   if (!expiry) return "no_expiry";
@@ -101,6 +105,20 @@ Deno.serve(async (req) => {
       .eq("workspace_id", workspaceId)
       .maybeSingle();
     const isAdmin = roleRow?.role === "admin";
+
+    // PII tokenizer: real values never reach the model or the prompt log.
+    const { data: nameRows } = await supabase
+      .from("entities")
+      .select("name")
+      .eq("workspace_id", workspaceId)
+      .limit(5000);
+    const tokenizer = await createTokenizer(
+      Deno.env.get("ENCRYPTION_MASTER_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!,
+      workspaceId,
+      { names: (nameRows ?? []).map((r) => r.name as string) },
+    );
+
+
 
     // Persist the incoming user message.
     const lastMessage = messages[messages.length - 1];
@@ -371,6 +389,28 @@ Deno.serve(async (req) => {
       }),
     };
 
+    // Every tool: detokenize the model's arguments (deep) before the query runs,
+    // tokenize the result (column-driven, deep) before it goes back to the model.
+    const tokenizedTools = Object.fromEntries(
+      Object.entries(tools).map(([name, definition]) => {
+        const original = definition as unknown as {
+          execute: (input: unknown, options: unknown) => Promise<unknown>;
+        };
+        return [
+          name,
+          {
+            ...(definition as object),
+            execute: async (input: unknown, options: unknown) => {
+              const realInput = tokenizer.detokenizeValue(input);
+              const output = await original.execute(realInput, options);
+              return await tokenizer.tokenizeValue(output);
+            },
+          },
+        ];
+      }),
+    ) as typeof tools;
+
+
     const initialRunId = getLovableAiGatewayRunId(req);
     const runIdFetch = createLovableAiGatewayRunIdFetch(initialRunId);
     const lovable = createOpenAI({
@@ -391,7 +431,7 @@ Deno.serve(async (req) => {
       },
     } as const;
 
-    const modelMessages = await convertToModelMessages(messages);
+    const modelMessages = await tokenizer.tokenizeAllText(await convertToModelMessages(messages));
 
     // Service-role client used only for the prompt audit log (table is insert-restricted).
     const logClient = createClient(
@@ -439,7 +479,7 @@ Deno.serve(async (req) => {
       model: lovable.responses(MODEL_ID),
       system: SYSTEM_PROMPT,
       messages: modelMessages,
-      tools,
+      tools: tokenizedTools,
       stopWhen: stepCountIs(50),
       providerOptions,
       onError: async ({ error }) => {
@@ -470,7 +510,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    return result.toUIMessageStreamResponse({
+    const streamed = result.toUIMessageStreamResponse({
       sendReasoning: true,
       originalMessages: messages,
       headers: corsHeaders,
@@ -480,11 +520,19 @@ Deno.serve(async (req) => {
           workspace_id: workspaceId,
           user_id: user.id,
           role: "assistant",
-          parts: responseMessage.parts,
+          // Stored history keeps the real values so reloads read normally.
+          parts: tokenizer.detokenizeValue(responseMessage.parts),
         });
         if (error) console.error("Failed to save assistant message:", error.message);
       },
     });
+
+    // Swap placeholders back to real values on the way to the browser.
+    return new Response(
+      streamed.body ? streamed.body.pipeThrough(tokenizer.createDetokenizeTransform()) : streamed.body,
+      { status: streamed.status, statusText: streamed.statusText, headers: streamed.headers },
+    );
+
   } catch (e) {
     console.error("ai-assistant error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unexpected error" }), {
