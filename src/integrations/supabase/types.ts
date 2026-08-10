@@ -1824,6 +1824,228 @@ export type Database = {
           },
         ]
       }
+      person_offboarding_steps: {
+        Row: {
+          acknowledged_date: string | null
+          appointment_id: string | null
+          bank_account_id: string | null
+          bank_reference: string | null
+          category: Database["public"]["Enums"]["offboarding_step_category"]
+          cif_id: string | null
+          completed_date: string | null
+          created_at: string
+          credit_limit_id: string | null
+          description: string | null
+          display_order: number
+          due_date: string | null
+          facility_id: string | null
+          id: string
+          notes: string | null
+          offboarding_id: string
+          owner_profile_id: string | null
+          service_request_id: string | null
+          signatory_id: string | null
+          stage: number
+          status: Database["public"]["Enums"]["offboarding_step_status"]
+          submitted_date: string | null
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          acknowledged_date?: string | null
+          appointment_id?: string | null
+          bank_account_id?: string | null
+          bank_reference?: string | null
+          category?: Database["public"]["Enums"]["offboarding_step_category"]
+          cif_id?: string | null
+          completed_date?: string | null
+          created_at?: string
+          credit_limit_id?: string | null
+          description?: string | null
+          display_order?: number
+          due_date?: string | null
+          facility_id?: string | null
+          id?: string
+          notes?: string | null
+          offboarding_id: string
+          owner_profile_id?: string | null
+          service_request_id?: string | null
+          signatory_id?: string | null
+          stage?: number
+          status?: Database["public"]["Enums"]["offboarding_step_status"]
+          submitted_date?: string | null
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          acknowledged_date?: string | null
+          appointment_id?: string | null
+          bank_account_id?: string | null
+          bank_reference?: string | null
+          category?: Database["public"]["Enums"]["offboarding_step_category"]
+          cif_id?: string | null
+          completed_date?: string | null
+          created_at?: string
+          credit_limit_id?: string | null
+          description?: string | null
+          display_order?: number
+          due_date?: string | null
+          facility_id?: string | null
+          id?: string
+          notes?: string | null
+          offboarding_id?: string
+          owner_profile_id?: string | null
+          service_request_id?: string | null
+          signatory_id?: string | null
+          stage?: number
+          status?: Database["public"]["Enums"]["offboarding_step_status"]
+          submitted_date?: string | null
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_offboarding_steps_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_cif_id_fkey"
+            columns: ["cif_id"]
+            isOneToOne: false
+            referencedRelation: "bank_relationships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_credit_limit_id_fkey"
+            columns: ["credit_limit_id"]
+            isOneToOne: false
+            referencedRelation: "bank_credit_limits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "bank_facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_offboarding_id_fkey"
+            columns: ["offboarding_id"]
+            isOneToOne: false
+            referencedRelation: "person_offboardings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: false
+            referencedRelation: "bank_service_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_signatory_id_fkey"
+            columns: ["signatory_id"]
+            isOneToOne: false
+            referencedRelation: "signatories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboarding_steps_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      person_offboardings: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          id: string
+          notes: string | null
+          person_entity_id: string
+          reason: string | null
+          resolution_ref: string | null
+          status: Database["public"]["Enums"]["offboarding_status"]
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          id?: string
+          notes?: string | null
+          person_entity_id: string
+          reason?: string | null
+          resolution_ref?: string | null
+          status?: Database["public"]["Enums"]["offboarding_status"]
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          id?: string
+          notes?: string | null
+          person_entity_id?: string
+          reason?: string | null
+          resolution_ref?: string | null
+          status?: Database["public"]["Enums"]["offboarding_status"]
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_offboardings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboardings_person_entity_id_fkey"
+            columns: ["person_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_offboardings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       previous_positions: {
         Row: {
           company_name: string
@@ -2580,6 +2802,23 @@ export type Database = {
         | "CREDIT_LIMIT_REVIEW_DUE"
         | "CREDIT_LIMIT_EXPIRING"
         | "FACILITY_INACTIVE_PERSON"
+      offboarding_status: "draft" | "in_progress" | "completed" | "cancelled"
+      offboarding_step_category:
+        | "approval"
+        | "signatory"
+        | "facility"
+        | "appointment"
+        | "guarantee"
+        | "shareholding"
+        | "document"
+        | "closeout"
+        | "other"
+      offboarding_step_status:
+        | "pending"
+        | "submitted"
+        | "acknowledged"
+        | "done"
+        | "not_applicable"
       signatory_status: "active" | "suspended" | "revoked"
       signing_rule_type: "solo" | "joint_same_group" | "joint_cross_group"
       statement_delivery_method: "email" | "post" | "portal"
@@ -2847,6 +3086,25 @@ export const Constants = {
         "CREDIT_LIMIT_REVIEW_DUE",
         "CREDIT_LIMIT_EXPIRING",
         "FACILITY_INACTIVE_PERSON",
+      ],
+      offboarding_status: ["draft", "in_progress", "completed", "cancelled"],
+      offboarding_step_category: [
+        "approval",
+        "signatory",
+        "facility",
+        "appointment",
+        "guarantee",
+        "shareholding",
+        "document",
+        "closeout",
+        "other",
+      ],
+      offboarding_step_status: [
+        "pending",
+        "submitted",
+        "acknowledged",
+        "done",
+        "not_applicable",
       ],
       signatory_status: ["active", "suspended", "revoked"],
       signing_rule_type: ["solo", "joint_same_group", "joint_cross_group"],
