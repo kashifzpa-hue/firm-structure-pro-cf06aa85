@@ -19,6 +19,9 @@ import { toast } from "sonner";
 import { maskAccountNumber, maskIban, formatLimit, getAuthorityLabels, logBankingActivity, BANK_DOC_TYPES } from "@/lib/banking-utils";
 import { BankAccountForm } from "@/components/banking/BankAccountForm";
 import { SignatoryForm } from "@/components/banking/SignatoryForm";
+import { FacilitiesTab } from "@/components/banking/FacilitiesTab";
+import { ServiceRequestsTab } from "@/components/banking/ServiceRequestsTab";
+
 import { SignatoryCard } from "@/components/banking/SignatoryCard";
 import { MatrixRuleForm } from "@/components/banking/MatrixRuleForm";
 import { encryptedUpload, encryptedDownload } from "@/lib/encryption";
