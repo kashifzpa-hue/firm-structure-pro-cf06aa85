@@ -25,6 +25,7 @@ import {
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Tool, ToolHeader, ToolContent, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
 import { MessageSources } from "@/components/ai-elements/message-sources";
+import { MessageChecklist } from "@/components/ai-elements/message-checklist";
 
 
 type ThreadRow = { id: string; title: string; updated_at: string };
@@ -313,6 +314,7 @@ function ChatWindow({
                     }
                     return null;
                   })}
+                  {message.role === "assistant" && <MessageChecklist message={message} />}
                   {message.role === "assistant" && <MessageSources message={message} />}
                 </MessageContent>
               </Message>
