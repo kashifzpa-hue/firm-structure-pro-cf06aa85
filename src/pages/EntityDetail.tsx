@@ -28,8 +28,11 @@ import { CompanyUBOTab } from "@/components/ubo/CompanyUBOTab";
 import { PersonUBOTab } from "@/components/ubo/PersonUBOTab";
 import { BankingTab } from "@/components/banking/BankingTab";
 import { CapTableWaterfall } from "@/components/CapTableWaterfall";
+import { OffboardingTab } from "@/components/offboarding/OffboardingTab";
+import { canDeactivatePerson } from "@/lib/offboarding";
+import { fetchPersonExposure } from "@/lib/person-exposure";
 import { useBankingEnabled } from "@/hooks/use-banking-enabled";
-import { ArrowLeft, Building2, Download, Edit, ExternalLink, Linkedin, Pencil, Trash2, User, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark, RefreshCw, Clock } from "lucide-react";
+import { ArrowLeft, Building2, Download, Edit, ExternalLink, Linkedin, Pencil, Trash2, User, UserMinus, AlertTriangle, Wrench, CheckCircle, Plus, ScrollText, Shield, Ban, History, FileBarChart, ChevronDown, Landmark, RefreshCw, Clock } from "lucide-react";
 import { EncryptionLockIcon } from "@/components/EncryptionLockIcon";
 import { DocumentRenewalModal } from "@/components/DocumentRenewalModal";
 import { DocumentVersionHistory } from "@/components/DocumentVersionHistory";
@@ -74,7 +77,9 @@ export default function EntityDetail() {
   const [deactivateReason, setDeactivateReason] = useState("");
   const [deactivateNotes, setDeactivateNotes] = useState("");
   const [deactivating, setDeactivating] = useState(false);
-  
+  const [offboardingSteps, setOffboardingSteps] = useState<any[]>([]);
+
+
   // Field history
   const [fieldHistory, setFieldHistory] = useState<any[]>([]);
   
@@ -184,6 +189,32 @@ export default function EntityDetail() {
     navigate("/entities");
   };
 
+  // Offboarding gate — a person cannot be deactivated while steps remain open
+  useEffect(() => {
+    if (!id || !workspaceId) return;
+    let cancelled = false;
+    (async () => {
+      const { data: ob } = await supabase
+        .from("person_offboardings")
+        .select("id")
+        .eq("workspace_id", workspaceId)
+        .eq("person_entity_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!ob) { if (!cancelled) setOffboardingSteps([]); return; }
+      const { data: st } = await supabase
+        .from("person_offboarding_steps")
+        .select("status, category")
+        .eq("offboarding_id", ob.id);
+      if (!cancelled) setOffboardingSteps(st ?? []);
+    })();
+    return () => { cancelled = true; };
+  }, [id, workspaceId, deactivateOpen]);
+
+  const deactivationGate = canDeactivatePerson(offboardingSteps as any);
+
+
   const handleDeactivate = async () => {
     if (!entity || !workspaceId || !deactivateReason) return;
     setDeactivating(true);
@@ -247,10 +278,11 @@ export default function EntityDetail() {
   const handleDownloadPersonPdf = async () => {
     if (!entity || !id || !workspaceId) return;
     try {
-      const [posRes, apptRes, shRes] = await Promise.all([
+      const [posRes, apptRes, shRes, exposure] = await Promise.all([
         supabase.from("previous_positions").select("*").eq("entity_id", id).eq("workspace_id", workspaceId).order("display_order").order("from_date", { ascending: false }),
         supabase.from("appointments").select("*, company:entities!appointments_company_entity_id_fkey(name)").eq("person_entity_id", id).eq("workspace_id", workspaceId).is("resignation_date", null),
         supabase.from("equity_links").select("*, owned:entities!equity_links_owned_entity_id_fkey(name), share_class:share_classes(class_name)").eq("owner_entity_id", id).eq("workspace_id", workspaceId).is("end_date", null),
+        fetchPersonExposure(id, workspaceId).catch(() => null),
       ]);
       const pdfData = {
         entity,
@@ -263,7 +295,20 @@ export default function EntityDetail() {
           shares_owned: s.shares_owned,
           percentage: s.percentage,
         })),
+        signatories: exposure?.signatories ?? [],
+        signingRules: exposure?.signingRules ?? [],
+        facilities: exposure?.facilities ?? [],
+        guarantees: exposure?.guarantees ?? [],
+        serviceRequests: exposure?.serviceRequests ?? [],
+        offboarding: offboardingSteps.length
+          ? {
+              status: deactivationGate.allowed ? "completed" : "in_progress",
+              progress: `${offboardingSteps.filter((s: any) => ["done", "not_applicable"].includes(s.status)).length} of ${offboardingSteps.length} steps closed`,
+              openMandates: offboardingSteps.filter((s: any) => s.category === "signatory" && !["done", "not_applicable"].includes(s.status)).length,
+            }
+          : null,
       };
+
       const blob = await pdf(<PersonProfilePdf data={pdfData} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -450,6 +495,7 @@ export default function EntityDetail() {
           {!isPerson && isLiveMode && <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1" />Ledger</TabsTrigger>}
           {!isPerson && <TabsTrigger value="ubo"><Shield className="h-4 w-4 mr-1" />UBO</TabsTrigger>}
           {isPerson && <TabsTrigger value="ubo-exposure"><Shield className="h-4 w-4 mr-1" />UBO Exposure</TabsTrigger>}
+          {isPerson && <TabsTrigger value="offboarding"><UserMinus className="h-4 w-4 mr-1" />Offboarding</TabsTrigger>}
           {!isPerson && bankingEnabled && <TabsTrigger value="banking"><Landmark className="h-4 w-4 mr-1" />Banking</TabsTrigger>}
         </TabsList>
 
@@ -923,6 +969,14 @@ export default function EntityDetail() {
           </TabsContent>
         )}
 
+        {/* Offboarding Tab for persons */}
+        {isPerson && (
+          <TabsContent value="offboarding">
+            <OffboardingTab personId={id!} personName={entity.name} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+
+
         {/* Banking Tab */}
         {!isPerson && bankingEnabled && (
           <TabsContent value="banking">
@@ -1106,16 +1160,27 @@ export default function EntityDetail() {
                 </AlertDescription>
               </Alert>
             )}
+            {/* Offboarding gate */}
+            {isPerson && !deactivationGate.allowed && (
+              <Alert className="border-destructive/50 bg-destructive/5">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-sm">
+                  Deactivation is blocked — {deactivationGate.reason} Complete the checklist on the{" "}
+                  <strong>Offboarding</strong> tab first.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeactivateOpen(false)}>Cancel</Button>
             <Button
               onClick={handleDeactivate}
-              disabled={!deactivateReason || (deactivateReason === "Other" && !deactivateNotes.trim()) || deactivating}
+              disabled={!deactivateReason || (deactivateReason === "Other" && !deactivateNotes.trim()) || deactivating || (isPerson && !deactivationGate.allowed)}
               className="bg-warning text-warning-foreground hover:bg-warning/90"
             >
               {deactivating ? "Deactivating..." : "Deactivate Entity"}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
