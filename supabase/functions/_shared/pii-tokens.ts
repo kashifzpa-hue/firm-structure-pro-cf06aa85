@@ -295,7 +295,7 @@ export async function createTokenizer(
         // Drop a trailing bracket fragment that never completed.
         const open = tail.lastIndexOf("[");
         if (open !== -1 && !tail.slice(open).includes("]")) tail = tail.slice(0, open);
-        const out = detokenizeText(tail);
+        const out = detokenizeText(tail, true);
         if (out) controller.enqueue(encoder.encode(out));
         buffer = "";
       },
