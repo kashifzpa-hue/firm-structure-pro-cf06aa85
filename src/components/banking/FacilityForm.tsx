@@ -22,12 +22,14 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-  bankAccountId: string;
+  cifId: string;
   persons: { id: string; name: string }[];
+  accounts: { id: string; label: string }[];
   editData?: any;
 }
 
-export function FacilityForm({ open, onClose, onSaved, bankAccountId, persons, editData }: Props) {
+export function FacilityForm({ open, onClose, onSaved, cifId, persons, accounts, editData }: Props) {
+
   const { workspaceId } = useAuth();
   const [saving, setSaving] = useState(false);
   const [f, setF] = useState<any>({
