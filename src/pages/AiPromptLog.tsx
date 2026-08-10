@@ -11,7 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, Terminal, ChevronDown, CalendarIcon, X, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import PayloadDiff from "@/components/ai-prompt-log/PayloadDiff";
+import { Search, Terminal, ChevronDown, CalendarIcon, X, Download, GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
@@ -87,6 +89,8 @@ export default function AiPromptLog() {
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [openRow, setOpenRow] = useState<string | null>(null);
+  const [diffRowId, setDiffRowId] = useState<string | null>(null);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["ai-prompt-log", workspaceId],
@@ -107,6 +111,27 @@ export default function AiPromptLog() {
     () => Array.from(new Set((data ?? []).map((r) => r.model).filter(Boolean))).sort(),
     [data],
   );
+
+  // Rows are ordered newest-first within the workspace, so the "previous request"
+  // for a given entry is simply the next one in the unfiltered list.
+  const prevById = useMemo(() => {
+    const map = new Map<string, PromptLogRow>();
+    const all = data ?? [];
+    all.forEach((r, i) => {
+      const prev = all[i + 1];
+      if (prev) map.set(r.id, prev);
+    });
+    return map;
+  }, [data]);
+
+  const diffPair = useMemo(() => {
+    if (!diffRowId) return null;
+    const current = (data ?? []).find((r) => r.id === diffRowId);
+    const previous = prevById.get(diffRowId);
+    if (!current || !previous) return null;
+    return { current, previous };
+  }, [diffRowId, data, prevById]);
+
 
   const rows = useMemo(() => {
     return (data ?? []).filter((r) => {
@@ -310,7 +335,7 @@ export default function AiPromptLog() {
               <TableHead className="w-48">Model</TableHead>
               <TableHead className="w-28">Status</TableHead>
               <TableHead className="w-28 text-right">Tokens</TableHead>
-              <TableHead className="w-28 text-right">Payload</TableHead>
+              <TableHead className="w-44 text-right">Payload</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -336,13 +361,27 @@ export default function AiPromptLog() {
                       {r.total_tokens ?? "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="gap-1">
-                          View
-                          <ChevronDown className={`h-4 w-4 transition-transform ${openRow === r.id ? "rotate-180" : ""}`} />
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          disabled={!prevById.has(r.id)}
+                          title={prevById.has(r.id) ? "Compare payload with the previous request" : "No earlier request to compare"}
+                          onClick={() => setDiffRowId(r.id)}
+                        >
+                          <GitCompare className="h-4 w-4" />
+                          Diff
                         </Button>
-                      </CollapsibleTrigger>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm" className="gap-1">
+                            View
+                            <ChevronDown className={`h-4 w-4 transition-transform ${openRow === r.id ? "rotate-180" : ""}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                      </div>
                     </TableCell>
+
                   </TableRow>
                   <CollapsibleContent asChild>
                     <TableRow>
@@ -402,6 +441,37 @@ export default function AiPromptLog() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!diffPair} onOpenChange={(o) => !o && setDiffRowId(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-6xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitCompare className="h-5 w-5 text-primary" />
+              Payload diff with previous request
+            </DialogTitle>
+            {diffPair && (
+              <DialogDescription>
+                {format(parseISO(diffPair.previous.created_at), "dd MMM yyyy HH:mm")} ({diffPair.previous.model})
+                {"  →  "}
+                {format(parseISO(diffPair.current.created_at), "dd MMM yyyy HH:mm")} ({diffPair.current.model})
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          {diffPair && (
+            <PayloadDiff
+              fields={[
+                { key: "messages", label: "Messages", before: diffPair.previous.sent_messages, after: diffPair.current.sent_messages },
+                { key: "system", label: "System prompt", before: diffPair.previous.system_prompt ?? "", after: diffPair.current.system_prompt ?? "" },
+                { key: "tools", label: "Tools available", before: diffPair.previous.available_tools ?? [], after: diffPair.current.available_tools ?? [] },
+                { key: "toolcalls", label: "Tool calls", before: diffPair.previous.tool_calls, after: diffPair.current.tool_calls },
+                { key: "options", label: "Provider options", before: diffPair.previous.provider_options, after: diffPair.current.provider_options },
+                { key: "response", label: "Response", before: diffPair.previous.response_text ?? "", after: diffPair.current.response_text ?? "" },
+              ]}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
