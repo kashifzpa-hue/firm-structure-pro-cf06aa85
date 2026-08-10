@@ -25,6 +25,7 @@ const navItems = [
   { title: "UBO Registry", url: "/ubo", icon: Shield },
   { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Documents", url: "/documents", icon: FileText },
+  { title: "Audit Log", url: "/audit-log", icon: History },
   { title: "AI Copilot", url: "/assistant", icon: Bot },
   { title: "User Manual", url: "/manual", icon: BookOpen },
   { title: "Settings", url: "/settings", icon: Settings },
