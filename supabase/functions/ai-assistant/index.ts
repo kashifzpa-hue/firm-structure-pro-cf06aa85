@@ -510,7 +510,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    return result.toUIMessageStreamResponse({
+    const streamed = result.toUIMessageStreamResponse({
       sendReasoning: true,
       originalMessages: messages,
       headers: corsHeaders,
@@ -520,11 +520,19 @@ Deno.serve(async (req) => {
           workspace_id: workspaceId,
           user_id: user.id,
           role: "assistant",
-          parts: responseMessage.parts,
+          // Stored history keeps the real values so reloads read normally.
+          parts: tokenizer.detokenizeValue(responseMessage.parts),
         });
         if (error) console.error("Failed to save assistant message:", error.message);
       },
     });
+
+    // Swap placeholders back to real values on the way to the browser.
+    return new Response(
+      streamed.body ? streamed.body.pipeThrough(tokenizer.createDetokenizeTransform()) : streamed.body,
+      { status: streamed.status, statusText: streamed.statusText, headers: streamed.headers },
+    );
+
   } catch (e) {
     console.error("ai-assistant error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unexpected error" }), {
