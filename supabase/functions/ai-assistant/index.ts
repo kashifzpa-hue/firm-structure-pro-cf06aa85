@@ -1,4 +1,5 @@
 import { corsFor } from "../_shared/http.ts";
+import { redactValue, redactText, redactEmail } from "../_shared/redact.ts";
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "npm:ai@^7";
 import { createOpenAI } from "npm:@ai-sdk/openai@^4";
 import { createClient } from "npm:@supabase/supabase-js@^2";
