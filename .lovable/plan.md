@@ -66,15 +66,17 @@ Status changes are appended to the existing banking activity log so the account 
 ## UI
 
 - New **Facilities** tab on the bank account detail page: cards grouped by facility type with status badges, limits, and linked person; add/edit/cancel actions for admins.
+- New **Borrowing Limits** section within Facilities: table of sanctioned limits with type, amount, utilised, headroom, review date, expiry date and status badge, sorted with soonest review first.
 - New **Service Requests** tab: table of requests (type, subject, status, requested date, bank ref, days open) with filters by status and type, a detail drawer showing the timeline and attachments, and a "Log Request" button.
 - Facility detail shows its request history inline.
-- Overdue requests (past expected completion and not complete) are flagged amber; the bank account list gets a small counter of open requests.
-- Optional alert rule so open requests past their expected date raise a notification, matching the existing alert-rule pattern.
+- Overdue requests (past expected completion and not complete) are flagged amber; the bank account list gets a small counter of open requests and of limits due for review.
+- Optional alert rules so open requests past their expected date, and borrowing limits nearing review or expiry, raise notifications, matching the existing alert-rule pattern.
 
 ## Technical notes
 
-- Two new tables, `bank_facilities` and `bank_service_requests`, plus `bank_service_request_documents`, all workspace-scoped with the same RLS pattern as `bank_accounts` (admins write, workspace members read) and explicit grants.
-- New enums for facility type/status, request type/status, internet-banking access level, statement frequency and delivery method.
+- New tables: `bank_facilities`, `bank_credit_limits`, `bank_service_requests`, and `bank_service_request_documents`, all workspace-scoped with the same RLS pattern as `bank_accounts` (admins write, workspace members read) and explicit grants.
+- New enums for facility type/status, credit limit type and status, request type/status, internet-banking access level, statement frequency and delivery method.
+
 - Reuse `logBankingActivity` for audit entries and `encryptedUpload`/`encryptedDownload` for attachments.
 - Constants and label helpers added to `src/lib/banking-utils.ts`; new components under `src/components/banking/`.
 - Facility and request lists load through React Query, consistent with recently migrated pages.
