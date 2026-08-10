@@ -77,7 +77,9 @@ export default function EntityDetail() {
   const [deactivateReason, setDeactivateReason] = useState("");
   const [deactivateNotes, setDeactivateNotes] = useState("");
   const [deactivating, setDeactivating] = useState(false);
-  
+  const [offboardingSteps, setOffboardingSteps] = useState<any[]>([]);
+
+
   // Field history
   const [fieldHistory, setFieldHistory] = useState<any[]>([]);
   
