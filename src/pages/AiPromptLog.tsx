@@ -61,11 +61,30 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function subjectsOf(r: PromptLogRow): Set<string> {
+  const names = [
+    ...(r.available_tools ?? []),
+    ...(Array.isArray(r.tool_calls) ? (r.tool_calls as { tool?: string }[]).map((c) => c?.tool ?? "") : []),
+  ].join(" ").toLowerCase();
+  const used = Array.isArray(r.tool_calls)
+    ? (r.tool_calls as { tool?: string }[]).map((c) => (c?.tool ?? "").toLowerCase()).join(" ")
+    : "";
+  const scope = used || names;
+  const out = new Set<string>();
+  if (scope.includes("entit")) out.add("entities");
+  if (scope.includes("document")) out.add("documents");
+  if (scope.includes("ownership") || scope.includes("ubo")) out.add("ownership");
+  return out;
+}
+
 export default function AiPromptLog() {
   const { workspaceId, userRole } = useAuth();
   const isAdmin = userRole === "admin";
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [modelFilter, setModelFilter] = useState("all");
+  const [subjectFilter, setSubjectFilter] = useState("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [openRow, setOpenRow] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -83,9 +102,22 @@ export default function AiPromptLog() {
     },
   });
 
+  const models = useMemo(
+    () => Array.from(new Set((data ?? []).map((r) => r.model).filter(Boolean))).sort(),
+    [data],
+  );
+
   const rows = useMemo(() => {
     return (data ?? []).filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (modelFilter !== "all" && r.model !== modelFilter) return false;
+      if (subjectFilter !== "all" && !subjectsOf(r).has(subjectFilter)) return false;
+      if (dateRange?.from) {
+        const when = parseISO(r.created_at);
+        const start = startOfDay(dateRange.from);
+        const end = endOfDay(dateRange.to ?? dateRange.from);
+        if (!isWithinInterval(when, { start, end })) return false;
+      }
       if (!search) return true;
       const q = search.toLowerCase();
       return (
@@ -95,7 +127,18 @@ export default function AiPromptLog() {
         JSON.stringify(r.sent_messages ?? "").toLowerCase().includes(q)
       );
     });
-  }, [data, statusFilter, search]);
+  }, [data, statusFilter, modelFilter, subjectFilter, dateRange, search]);
+
+  const filtersActive =
+    statusFilter !== "all" || modelFilter !== "all" || subjectFilter !== "all" || !!dateRange?.from || !!search;
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setModelFilter("all");
+    setSubjectFilter("all");
+    setDateRange(undefined);
+    setSearch("");
+  };
 
   if (!isAdmin) {
     return (
