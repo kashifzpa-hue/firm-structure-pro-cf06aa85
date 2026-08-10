@@ -15,10 +15,11 @@ interface Props {
   onClose: () => void;
   onSaved: () => void;
   companies: any[];
+  relationships?: any[];
   editData?: any;
 }
 
-export function BankAccountForm({ open, onClose, onSaved, companies, editData }: Props) {
+export function BankAccountForm({ open, onClose, onSaved, companies, relationships = [], editData }: Props) {
   const { workspaceId } = useAuth();
   const [saving, setSaving] = useState(false);
   const [companyId, setCompanyId] = useState(editData?.company_entity_id || "");
@@ -38,6 +39,7 @@ export function BankAccountForm({ open, onClose, onSaved, companies, editData }:
   const [rmEmail, setRmEmail] = useState(editData?.rm_email || "");
   const [rmPhone, setRmPhone] = useState(editData?.rm_phone || "");
   const [notes, setNotes] = useState(editData?.notes || "");
+  const [cifId, setCifId] = useState(editData?.cif_id || "");
 
   const handleSave = async () => {
     if (!workspaceId || !companyId || !bankName || !accountNumber) {
@@ -65,6 +67,7 @@ export function BankAccountForm({ open, onClose, onSaved, companies, editData }:
       rm_email: rmEmail || null,
       rm_phone: rmPhone || null,
       notes: notes || null,
+      cif_id: cifId || null,
     };
 
     const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", (await supabase.auth.getUser()).data.user?.id || "").single();
@@ -102,6 +105,22 @@ export function BankAccountForm({ open, onClose, onSaved, companies, editData }:
             </Select>
           </div>
           {bankName === "Other" && <div><Label>Bank Name (Custom)</Label><Input value={bankNameCustom} onChange={e => setBankNameCustom(e.target.value)} /></div>}
+          <div><Label>Bank Relationship (CIF)</Label>
+            <Select value={cifId || "none"} onValueChange={v => setCifId(v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Not linked" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Not linked</SelectItem>
+                {relationships
+                  .filter(r => !companyId || r.company_entity_id === companyId)
+                  .map(r => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {(r.bank_name === "Other" ? r.bank_name_custom || "Other" : r.bank_name)}{r.cif_number ? ` — CIF ${r.cif_number}` : ""}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">Facilities, limits and service requests are tracked on the CIF.</p>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Account Number *</Label><Input value={accountNumber} onChange={e => setAccountNumber(e.target.value)} /></div>
             <div><Label>Account Type</Label>
