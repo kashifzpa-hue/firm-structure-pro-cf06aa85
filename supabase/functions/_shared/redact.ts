@@ -6,7 +6,7 @@ type Rule = { name: string; re: RegExp; replace?: (m: string) => string };
 
 const maskEmail = (email: string) => {
   const [local, domain] = email.split("@");
-  if (!domain) return `${REDACTED:EMAIL}`;
+  if (!domain) return REDACTED;
   const head = local.slice(0, 1);
   return `${head}${"*".repeat(Math.max(local.length - 1, 2))}@${domain}`;
 };
