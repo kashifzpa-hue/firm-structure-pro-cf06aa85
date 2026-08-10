@@ -36,6 +36,7 @@ const Assistant = lazy(() => import("./pages/Assistant"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const BankAccounts = lazy(() => import("./pages/BankAccounts"));
 const BankAccountDetail = lazy(() => import("./pages/BankAccountDetail"));
+const BankRelationshipDetail = lazy(() => import("./pages/BankRelationshipDetail"));
 const SignatoryRegister = lazy(() => import("./pages/SignatoryRegister"));
 const DemoAdmin = lazy(() => import("./pages/DemoAdmin"));
 
@@ -118,6 +119,7 @@ const App = () => (
                   <Route path="/assistant/:threadId" element={<Assistant />} />
                   <Route path="/bank-accounts" element={<BankAccounts />} />
                   <Route path="/bank-accounts/:id" element={<BankAccountDetail />} />
+                  <Route path="/bank-relationships/:id" element={<BankRelationshipDetail />} />
                   <Route path="/signatory-register" element={<SignatoryRegister />} />
                   <Route path="/demo-admin" element={<AdminRoute><DemoAdmin /></AdminRoute>} />
                 </Route>

@@ -81,17 +81,20 @@ export function getAuthorityLabels(values: string[]): string[] {
 }
 
 export async function logBankingActivity(
-  bankAccountId: string,
+  bankAccountId: string | null,
   actionType: string,
   details: string,
   doneBy: string,
-  workspaceId: string
+  workspaceId: string,
+  cifId?: string | null
 ) {
   await supabase.from("banking_activity_log").insert({
-    bank_account_id: bankAccountId,
+    bank_account_id: bankAccountId || null,
+    cif_id: cifId || null,
     action_type: actionType,
     details,
     done_by: doneBy,
     workspace_id: workspaceId,
   } as any);
 }
+

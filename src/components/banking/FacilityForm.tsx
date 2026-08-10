@@ -22,16 +22,19 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-  bankAccountId: string;
+  cifId: string;
   persons: { id: string; name: string }[];
+  accounts: { id: string; label: string }[];
   editData?: any;
 }
 
-export function FacilityForm({ open, onClose, onSaved, bankAccountId, persons, editData }: Props) {
+export function FacilityForm({ open, onClose, onSaved, cifId, persons, accounts, editData }: Props) {
+
   const { workspaceId } = useAuth();
   const [saving, setSaving] = useState(false);
   const [f, setF] = useState<any>({
     facility_type: editData?.facility_type || "internet_banking",
+    bank_account_id: editData?.bank_account_id || "",
     status: editData?.status || "active",
     person_entity_id: editData?.person_entity_id || "",
     access_level: editData?.access_level || "",
@@ -70,7 +73,8 @@ export function FacilityForm({ open, onClose, onSaved, bankAccountId, persons, e
     setSaving(true);
     const payload: any = {
       workspace_id: workspaceId,
-      bank_account_id: bankAccountId,
+      cif_id: cifId,
+      bank_account_id: f.bank_account_id || null,
       facility_type: f.facility_type,
       status: f.status,
       person_entity_id: f.person_entity_id || null,
@@ -113,12 +117,12 @@ export function FacilityForm({ open, onClose, onSaved, bankAccountId, persons, e
     if (editData) {
       const { error } = await supabase.from("bank_facilities" as any).update(payload).eq("id", editData.id);
       if (error) { toast.error(error.message); setSaving(false); return; }
-      await logBankingActivity(bankAccountId, "facility_updated", `Facility "${typeLabel}" updated`, profile?.id || "", workspaceId);
+      await logBankingActivity(f.bank_account_id || null, "facility_updated", `Facility "${typeLabel}" updated`, profile?.id || "", workspaceId, cifId);
       toast.success("Facility updated");
     } else {
       const { error } = await supabase.from("bank_facilities" as any).insert(payload);
       if (error) { toast.error(error.message); setSaving(false); return; }
-      await logBankingActivity(bankAccountId, "facility_created", `Facility "${typeLabel}" added`, profile?.id || "", workspaceId);
+      await logBankingActivity(f.bank_account_id || null, "facility_created", `Facility "${typeLabel}" added`, profile?.id || "", workspaceId, cifId);
       toast.success("Facility added");
     }
     setSaving(false);
@@ -145,6 +149,16 @@ export function FacilityForm({ open, onClose, onSaved, bankAccountId, persons, e
                 <SelectContent>{FACILITY_STATUSES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div><Label>Applies To</Label>
+            <Select value={f.bank_account_id || "cif"} onValueChange={v => set("bank_account_id", v === "cif" ? "" : v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cif">Whole relationship (all accounts)</SelectItem>
+                {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
