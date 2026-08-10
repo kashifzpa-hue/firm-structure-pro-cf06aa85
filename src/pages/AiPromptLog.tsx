@@ -335,7 +335,7 @@ export default function AiPromptLog() {
               <TableHead className="w-48">Model</TableHead>
               <TableHead className="w-28">Status</TableHead>
               <TableHead className="w-28 text-right">Tokens</TableHead>
-              <TableHead className="w-28 text-right">Payload</TableHead>
+              <TableHead className="w-44 text-right">Payload</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
