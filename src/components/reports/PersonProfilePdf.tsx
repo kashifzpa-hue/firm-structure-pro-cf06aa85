@@ -174,6 +174,137 @@ export function PersonProfilePdf({ data }: { data: PersonProfileData }) {
           </>
         )}
 
+        {/* Bank Signatory Mandates */}
+        {signatories.length > 0 && (
+          <>
+            <PdfSection title="Bank Signatory Mandates" />
+            <PdfTable
+              columns={[
+                { label: "Bank / Account", width: "28%" },
+                { label: "Designation", width: "18%" },
+                { label: "Group", width: "12%" },
+                { label: "Limit", width: "14%" },
+                { label: "Effective", width: "14%" },
+                { label: "Bank Ack.", width: "14%" },
+              ]}
+              rows={signatories.map((s: any) => [
+                `${s.account?.bank_name || "—"} · ${s.account?.account_number || "—"}`,
+                s.designation || "—",
+                s.group?.group_label || "—",
+                s.individual_limit != null
+                  ? `${s.individual_limit_currency || ""} ${Number(s.individual_limit).toLocaleString()}`.trim()
+                  : "—",
+                formatDate(s.effective_date),
+                formatDate(s.bank_acknowledged_date),
+              ])}
+            />
+          </>
+        )}
+
+        {/* Signing rules the person participates in */}
+        {signingRules.length > 0 && (
+          <>
+            <PdfSection title="Signing Rules Affected" />
+            <PdfTable
+              columns={[
+                { label: "Account", width: "30%" },
+                { label: "Rule", width: "26%" },
+                { label: "Type", width: "22%" },
+                { label: "Limit", width: "22%" },
+              ]}
+              rows={signingRules.map((r: any) => [
+                `${r.account?.bank_name || "—"} · ${r.account?.account_number || "—"}`,
+                r.rule_name || "—",
+                titleCase(r.rule_type),
+                r.transaction_limit != null
+                  ? `${r.limit_currency || ""} ${Number(r.transaction_limit).toLocaleString()}`.trim()
+                  : "—",
+              ])}
+            />
+          </>
+        )}
+
+        {/* Facilities & access */}
+        {facilities.length > 0 && (
+          <>
+            <PdfSection title="Facilities & Access Held" />
+            <PdfTable
+              columns={[
+                { label: "Facility", width: "26%" },
+                { label: "Bank / CIF", width: "26%" },
+                { label: "Access Level", width: "18%" },
+                { label: "Token", width: "16%" },
+                { label: "Status", width: "14%" },
+              ]}
+              rows={facilities.map((f: any) => [
+                FACILITY_LABELS[f.facility_type] || titleCase(f.facility_type),
+                `${f.cif?.bank_name || "—"}${f.cif?.cif_number ? ` · ${f.cif.cif_number}` : ""}`,
+                titleCase(f.access_level),
+                f.token_serial ? `${f.token_serial} (${titleCase(f.token_status)})` : "—",
+                titleCase(f.status),
+              ])}
+            />
+          </>
+        )}
+
+        {/* Guarantees given */}
+        {guarantees.length > 0 && (
+          <>
+            <PdfSection title="Guarantees Given" />
+            <PdfTable
+              columns={[
+                { label: "Bank", width: "28%" },
+                { label: "Limit Type", width: "26%" },
+                { label: "Sanctioned", width: "22%" },
+                { label: "Expiry", width: "24%" },
+              ]}
+              rows={guarantees.map((g: any) => [
+                g.cif?.bank_name || "—",
+                titleCase(g.limit_type),
+                g.sanctioned_amount != null
+                  ? `${g.currency || ""} ${Number(g.sanctioned_amount).toLocaleString()}`.trim()
+                  : "—",
+                formatDate(g.expiry_date),
+              ])}
+            />
+          </>
+        )}
+
+        {/* Open bank requests naming this person */}
+        {serviceRequests.length > 0 && (
+          <>
+            <PdfSection title="Open Bank Requests" />
+            <PdfTable
+              columns={[
+                { label: "Subject", width: "36%" },
+                { label: "Type", width: "22%" },
+                { label: "Status", width: "18%" },
+                { label: "Requested", width: "24%" },
+              ]}
+              rows={serviceRequests.map((r: any) => [
+                r.subject || "—",
+                titleCase(r.request_type),
+                titleCase(r.status),
+                formatDate(r.date_requested),
+              ])}
+            />
+          </>
+        )}
+
+        {/* Offboarding status */}
+        {offboarding && (
+          <>
+            <PdfSection title="Offboarding Status" />
+            <View style={{ paddingHorizontal: 8 }}>
+              <View style={s.row}><Text style={s.label}>Status</Text><Text style={s.value}>{titleCase(offboarding.status)}</Text></View>
+              <View style={s.row}><Text style={s.label}>Effective Date</Text><Text style={s.value}>{formatDate(offboarding.effective_date || null)}</Text></View>
+              <View style={s.row}><Text style={s.label}>Progress</Text><Text style={s.value}>{offboarding.progress}</Text></View>
+              <View style={s.row}><Text style={s.label}>Mandates Outstanding</Text><Text style={s.value}>{offboarding.openMandates}</Text></View>
+            </View>
+          </>
+        )}
+
+
         {/* Shareholdings */}
         {shareholdings.length > 0 && (
           <>
