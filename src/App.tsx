@@ -38,6 +38,7 @@ const BankAccounts = lazy(() => import("./pages/BankAccounts"));
 const BankAccountDetail = lazy(() => import("./pages/BankAccountDetail"));
 const BankRelationshipDetail = lazy(() => import("./pages/BankRelationshipDetail"));
 const SignatoryRegister = lazy(() => import("./pages/SignatoryRegister"));
+const SignatoryMatrix = lazy(() => import("./pages/SignatoryMatrix"));
 const DemoAdmin = lazy(() => import("./pages/DemoAdmin"));
 
 const queryClient = new QueryClient({
