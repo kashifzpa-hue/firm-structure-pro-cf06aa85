@@ -255,6 +255,10 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="banks" className="mt-4">
+          <BanksSettingsTab />
+        </TabsContent>
+
         <TabsContent value="security" className="mt-4">
           <SecurityTab />
         </TabsContent>
