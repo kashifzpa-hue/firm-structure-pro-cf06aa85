@@ -23,6 +23,7 @@ const EntityForm = lazy(() => import("./pages/EntityForm"));
 const EntityDetail = lazy(() => import("./pages/EntityDetail"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Ownership = lazy(() => import("./pages/Ownership"));
+const AuditLog = lazy(() => import("./pages/AuditLog"));
 const OrgChart = lazy(() => import("./pages/OrgChart"));
 const Ledger = lazy(() => import("./pages/Ledger"));
 const MovementDetail = lazy(() => import("./pages/MovementDetail"));
@@ -109,6 +110,7 @@ const App = () => (
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/audit-log" element={<AuditLog />} />
                   <Route path="/manual" element={<UserManual />} />
                   <Route path="/assistant" element={<Assistant />} />
                   <Route path="/assistant/:threadId" element={<Assistant />} />
