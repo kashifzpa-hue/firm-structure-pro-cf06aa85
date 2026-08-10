@@ -155,6 +155,7 @@ export function FacilitiesTab({ cifId, persons, entities, accounts, isAdmin }: P
                 <TableRow>
                   <TableHead>Person</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Scope</TableHead>
                   <TableHead>Token</TableHead>
                   <TableHead>Daily Limit</TableHead>
                   <TableHead>Status</TableHead>
@@ -166,6 +167,7 @@ export function FacilitiesTab({ cifId, persons, entities, accounts, isAdmin }: P
                   <TableRow key={f.id}>
                     <TableCell>{f.person_name || "—"}</TableCell>
                     <TableCell>{labelFor(ACCESS_LEVELS, f.access_level)}</TableCell>
+                    <TableCell className="text-muted-foreground">{accounts.find(a => a.id === f.bank_account_id)?.label || "All accounts"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {f.token_serial ? `${f.token_serial} (${f.token_status})` : "—"}
                     </TableCell>
@@ -198,6 +200,7 @@ export function FacilitiesTab({ cifId, persons, entities, accounts, isAdmin }: P
                   <TableHead>Type</TableHead>
                   <TableHead>Details</TableHead>
                   <TableHead>Person</TableHead>
+                  <TableHead>Scope</TableHead>
                   <TableHead>Fee</TableHead>
                   <TableHead>Status</TableHead>
                   {isAdmin && <TableHead className="w-20" />}
@@ -221,6 +224,7 @@ export function FacilitiesTab({ cifId, persons, entities, accounts, isAdmin }: P
                       </TableCell>
                       <TableCell className="text-muted-foreground">{detail || "—"}</TableCell>
                       <TableCell>{f.person_name || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{accounts.find(a => a.id === f.bank_account_id)?.label || "All accounts"}</TableCell>
                       <TableCell>{f.annual_fee != null ? formatLimit(f.annual_fee, f.fee_currency || "AED") : "—"}</TableCell>
                       <TableCell><Badge variant="secondary">{labelFor(FACILITY_STATUSES, f.status)}</Badge></TableCell>
                       {isAdmin && (

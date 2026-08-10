@@ -77,13 +77,15 @@ export function ServiceRequestsTab({ cifId, accounts, isAdmin }: Props) {
   });
 
   const { data: signatories = [] } = useQuery({
-    queryKey: ["bank-signatories-simple", cifId],
+    queryKey: ["bank-signatories-simple", cifId, accounts.map(a => a.id).join(",")],
     enabled: !!cifId && !!workspaceId,
     queryFn: async () => {
+      const ids = accounts.map(a => a.id);
+      if (ids.length === 0) return [];
       const { data } = await supabase
         .from("signatories")
         .select("id, person:entities!signatories_person_entity_id_fkey(name)")
-        .eq("cif_id", cifId);
+        .in("bank_account_id", ids);
       return (data || []).map((s: any) => ({ id: s.id, label: s.person?.name || "Signatory" }));
     },
   });
@@ -149,6 +151,7 @@ export function ServiceRequestsTab({ cifId, accounts, isAdmin }: Props) {
               <TableRow>
                 <TableHead>Subject</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Scope</TableHead>
                 <TableHead>Requested</TableHead>
                 <TableHead>Submitted</TableHead>
                 <TableHead>Expected</TableHead>
@@ -162,6 +165,7 @@ export function ServiceRequestsTab({ cifId, accounts, isAdmin }: Props) {
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.subject}</TableCell>
                   <TableCell>{labelFor(REQUEST_TYPES, r.request_type)}</TableCell>
+                  <TableCell className="text-muted-foreground">{accounts.find(a => a.id === r.bank_account_id)?.label || "All accounts"}</TableCell>
                   <TableCell>{r.date_requested || "—"}</TableCell>
                   <TableCell>{r.date_submitted || "—"}</TableCell>
                   <TableCell>
