@@ -205,6 +205,59 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_name: string | null
+          actor_profile_id: string | null
+          actor_user_id: string | null
+          changed_fields: Json
+          created_at: string
+          id: string
+          record_id: string
+          record_label: string | null
+          table_name: string
+          workspace_id: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_profile_id?: string | null
+          actor_user_id?: string | null
+          changed_fields?: Json
+          created_at?: string
+          id?: string
+          record_id: string
+          record_label?: string | null
+          table_name: string
+          workspace_id: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_profile_id?: string | null
+          actor_user_id?: string | null
+          changed_fields?: Json
+          created_at?: string
+          id?: string
+          record_id?: string
+          record_label?: string | null
+          table_name?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_account_documents: {
         Row: {
           bank_account_id: string
