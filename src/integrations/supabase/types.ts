@@ -1103,6 +1103,53 @@ export type Database = {
           },
         ]
       }
+      banks: {
+        Row: {
+          country: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          short_code: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          short_code?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          short_code?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_versions: {
         Row: {
           document_id: string
