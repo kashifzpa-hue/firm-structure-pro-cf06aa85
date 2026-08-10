@@ -27,10 +27,39 @@ interface PersonProfileData {
   appointments: any[];
   documents: any[];
   shareholdings: any[];
+  /** Banking & authority exposure — optional so older callers keep working. */
+  signatories?: any[];
+  signingRules?: any[];
+  facilities?: any[];
+  guarantees?: any[];
+  serviceRequests?: any[];
+  offboarding?: { status: string; effective_date?: string | null; progress: string; openMandates: number } | null;
 }
+
+const FACILITY_LABELS: Record<string, string> = {
+  internet_banking: "Internet banking",
+  sweep: "Sweep",
+  statement_delivery: "Statement delivery",
+  cheque_book: "Cheque book",
+  card: "Card",
+  standing_instruction: "Standing instruction",
+  trade_finance: "Trade finance",
+  payroll_wps: "Payroll / WPS",
+  host_to_host: "Host-to-host",
+  other: "Other",
+};
+
+const titleCase = (v?: string | null) =>
+  v ? v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
 
 export function PersonProfilePdf({ data }: { data: PersonProfileData }) {
   const { entity, positions, appointments, documents, shareholdings } = data;
+  const signatories = data.signatories ?? [];
+  const signingRules = data.signingRules ?? [];
+  const facilities = data.facilities ?? [];
+  const guarantees = data.guarantees ?? [];
+  const serviceRequests = data.serviceRequests ?? [];
+  const offboarding = data.offboarding ?? null;
   const genDate = formatDateTime(new Date());
 
   const formatDate = (d: string | null) => {
