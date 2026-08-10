@@ -414,6 +414,7 @@ export type Database = {
           bank_name_custom: string | null
           branch_code: string | null
           branch_name: string | null
+          cif_id: string | null
           closing_date: string | null
           company_entity_id: string
           created_at: string
@@ -436,6 +437,7 @@ export type Database = {
           bank_name_custom?: string | null
           branch_code?: string | null
           branch_name?: string | null
+          cif_id?: string | null
           closing_date?: string | null
           company_entity_id: string
           created_at?: string
@@ -458,6 +460,7 @@ export type Database = {
           bank_name_custom?: string | null
           branch_code?: string | null
           branch_name?: string | null
+          cif_id?: string | null
           closing_date?: string | null
           company_entity_id?: string
           created_at?: string
@@ -473,6 +476,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bank_accounts_cif_id_fkey"
+            columns: ["cif_id"]
+            isOneToOne: false
+            referencedRelation: "bank_relationships"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bank_accounts_company_entity_id_fkey"
             columns: ["company_entity_id"]
@@ -492,7 +502,8 @@ export type Database = {
       bank_credit_limits: {
         Row: {
           availability_start_date: string | null
-          bank_account_id: string
+          bank_account_id: string | null
+          cif_id: string | null
           covenant_notes: string | null
           created_at: string
           currency: string
@@ -521,7 +532,8 @@ export type Database = {
         }
         Insert: {
           availability_start_date?: string | null
-          bank_account_id: string
+          bank_account_id?: string | null
+          cif_id?: string | null
           covenant_notes?: string | null
           created_at?: string
           currency?: string
@@ -550,7 +562,8 @@ export type Database = {
         }
         Update: {
           availability_start_date?: string | null
-          bank_account_id?: string
+          bank_account_id?: string | null
+          cif_id?: string | null
           covenant_notes?: string | null
           created_at?: string
           currency?: string
@@ -586,6 +599,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bank_credit_limits_cif_id_fkey"
+            columns: ["cif_id"]
+            isOneToOne: false
+            referencedRelation: "bank_relationships"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bank_credit_limits_guarantor_entity_id_fkey"
             columns: ["guarantor_entity_id"]
             isOneToOne: false
@@ -612,9 +632,10 @@ export type Database = {
         Row: {
           access_level: Database["public"]["Enums"]["ib_access_level"] | null
           annual_fee: number | null
-          bank_account_id: string
+          bank_account_id: string | null
           bank_reference: string | null
           cheque_book_number: string | null
+          cif_id: string | null
           created_at: string
           daily_limit: number | null
           effective_date: string | null
@@ -652,9 +673,10 @@ export type Database = {
         Insert: {
           access_level?: Database["public"]["Enums"]["ib_access_level"] | null
           annual_fee?: number | null
-          bank_account_id: string
+          bank_account_id?: string | null
           bank_reference?: string | null
           cheque_book_number?: string | null
+          cif_id?: string | null
           created_at?: string
           daily_limit?: number | null
           effective_date?: string | null
@@ -692,9 +714,10 @@ export type Database = {
         Update: {
           access_level?: Database["public"]["Enums"]["ib_access_level"] | null
           annual_fee?: number | null
-          bank_account_id?: string
+          bank_account_id?: string | null
           bank_reference?: string | null
           cheque_book_number?: string | null
+          cif_id?: string | null
           created_at?: string
           daily_limit?: number | null
           effective_date?: string | null
@@ -738,6 +761,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bank_facilities_cif_id_fkey"
+            columns: ["cif_id"]
+            isOneToOne: false
+            referencedRelation: "bank_relationships"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bank_facilities_person_entity_id_fkey"
             columns: ["person_entity_id"]
             isOneToOne: false
@@ -746,6 +776,72 @@ export type Database = {
           },
           {
             foreignKeyName: "bank_facilities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_relationships: {
+        Row: {
+          bank_name: string
+          bank_name_custom: string | null
+          cif_number: string | null
+          company_entity_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          opening_date: string | null
+          relationship_manager: string | null
+          rm_email: string | null
+          rm_phone: string | null
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          bank_name: string
+          bank_name_custom?: string | null
+          cif_number?: string | null
+          company_entity_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opening_date?: string | null
+          relationship_manager?: string | null
+          rm_email?: string | null
+          rm_phone?: string | null
+          status?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          bank_name?: string
+          bank_name_custom?: string | null
+          cif_number?: string | null
+          company_entity_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opening_date?: string | null
+          relationship_manager?: string | null
+          rm_email?: string | null
+          rm_phone?: string | null
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_relationships_company_entity_id_fkey"
+            columns: ["company_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_relationships_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -814,10 +910,11 @@ export type Database = {
         Row: {
           actual_completion: string | null
           approved_by: string | null
-          bank_account_id: string
+          bank_account_id: string | null
           bank_ack_date: string | null
           bank_contact: string | null
           bank_reference: string | null
+          cif_id: string | null
           created_at: string
           credit_limit_id: string | null
           date_requested: string
@@ -838,10 +935,11 @@ export type Database = {
         Insert: {
           actual_completion?: string | null
           approved_by?: string | null
-          bank_account_id: string
+          bank_account_id?: string | null
           bank_ack_date?: string | null
           bank_contact?: string | null
           bank_reference?: string | null
+          cif_id?: string | null
           created_at?: string
           credit_limit_id?: string | null
           date_requested?: string
@@ -862,10 +960,11 @@ export type Database = {
         Update: {
           actual_completion?: string | null
           approved_by?: string | null
-          bank_account_id?: string
+          bank_account_id?: string | null
           bank_ack_date?: string | null
           bank_contact?: string | null
           bank_reference?: string | null
+          cif_id?: string | null
           created_at?: string
           credit_limit_id?: string | null
           date_requested?: string
@@ -896,6 +995,13 @@ export type Database = {
             columns: ["bank_account_id"]
             isOneToOne: false
             referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_service_requests_cif_id_fkey"
+            columns: ["cif_id"]
+            isOneToOne: false
+            referencedRelation: "bank_relationships"
             referencedColumns: ["id"]
           },
           {
@@ -938,7 +1044,8 @@ export type Database = {
       banking_activity_log: {
         Row: {
           action_type: string
-          bank_account_id: string
+          bank_account_id: string | null
+          cif_id: string | null
           created_at: string
           details: string
           done_by: string | null
@@ -947,7 +1054,8 @@ export type Database = {
         }
         Insert: {
           action_type: string
-          bank_account_id: string
+          bank_account_id?: string | null
+          cif_id?: string | null
           created_at?: string
           details: string
           done_by?: string | null
@@ -956,7 +1064,8 @@ export type Database = {
         }
         Update: {
           action_type?: string
-          bank_account_id?: string
+          bank_account_id?: string | null
+          cif_id?: string | null
           created_at?: string
           details?: string
           done_by?: string | null
@@ -969,6 +1078,13 @@ export type Database = {
             columns: ["bank_account_id"]
             isOneToOne: false
             referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banking_activity_log_cif_id_fkey"
+            columns: ["cif_id"]
+            isOneToOne: false
+            referencedRelation: "bank_relationships"
             referencedColumns: ["id"]
           },
           {
