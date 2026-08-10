@@ -479,7 +479,7 @@ Deno.serve(async (req) => {
       model: lovable.responses(MODEL_ID),
       system: SYSTEM_PROMPT,
       messages: modelMessages,
-      tools,
+      tools: tokenizedTools,
       stopWhen: stepCountIs(50),
       providerOptions,
       onError: async ({ error }) => {
