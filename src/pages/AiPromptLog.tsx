@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, Terminal, ChevronDown, CalendarIcon, X } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, Terminal, ChevronDown, CalendarIcon, X, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
@@ -140,6 +141,46 @@ export default function AiPromptLog() {
     setSearch("");
   };
 
+  const exportRows = (kind: "csv" | "json") => {
+    const stamp = dateRange?.from
+      ? `${format(dateRange.from, "yyyy-MM-dd")}_to_${format(dateRange.to ?? dateRange.from, "yyyy-MM-dd")}`
+      : "all-dates";
+    const filename = `ai-prompt-log_${stamp}.${kind}`;
+
+    let content: string;
+    let mime: string;
+
+    if (kind === "json") {
+      content = JSON.stringify(rows, null, 2);
+      mime = "application/json";
+    } else {
+      const columns: (keyof PromptLogRow)[] = [
+        "created_at", "user_email", "model", "provider", "status", "finish_reason",
+        "input_tokens", "output_tokens", "total_tokens", "duration_ms", "thread_id",
+        "run_id", "available_tools", "system_prompt", "sent_messages", "provider_options",
+        "tool_calls", "response_text", "error_message",
+      ];
+      const escape = (v: unknown) => {
+        if (v == null) return "";
+        const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+      content = [
+        columns.join(","),
+        ...rows.map((r) => columns.map((c) => escape(r[c])).join(",")),
+      ].join("\r\n");
+      mime = "text/csv;charset=utf-8";
+    }
+
+    const blob = new Blob([kind === "csv" ? "\uFEFF" + content : content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!isAdmin) {
     return (
       <div className="rounded-lg border bg-card p-10 text-center text-muted-foreground">
@@ -234,6 +275,26 @@ export default function AiPromptLog() {
               Clear
             </Button>
           )}
+
+          <div className="ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-1" disabled={rows.length === 0}>
+                  <Download className="h-4 w-4" />
+                  Export
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportRows("csv")}>
+                  Download CSV ({rows.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportRows("json")}>
+                  Download JSON ({rows.length})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">
           Showing {rows.length} of {data?.length ?? 0} requests
